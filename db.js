@@ -8,10 +8,27 @@ const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
 
-// DATA_DIR env lets a host mount a persistent volume (e.g. Railway) so the
-// SQLite file survives redeploys. Falls back to ./data for local runs.
-const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
-if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+// DATA_DIR env lets a host mount a persistent volume (e.g. Render disk, Railway
+// volume) so the SQLite file survives redeploys. If the configured dir can't be
+// created/used (permissions, disk not attached), fall back to ./data so the app
+// still boots — non-persistent, but alive — and log a loud warning.
+function resolveDataDir() {
+  const preferred = process.env.DATA_DIR || path.join(__dirname, 'data');
+  const fallback = path.join(__dirname, 'data');
+  for (const dir of [preferred, fallback]) {
+    try {
+      fs.mkdirSync(dir, { recursive: true });
+      fs.accessSync(dir, fs.constants.W_OK);
+      if (dir === fallback && preferred !== fallback) {
+        console.warn(`[db] WARNING: could not use DATA_DIR "${preferred}" — falling back to "${fallback}" (NOT persistent). Attach a disk at "${preferred}" to keep data across deploys.`);
+      }
+      return dir;
+    } catch (e) {
+      if (dir === fallback) throw e; // even fallback failed — real problem
+    }
+  }
+}
+const DATA_DIR = resolveDataDir();
 
 const db = new DatabaseSync(path.join(DATA_DIR, 'paigaam.db'));
 db.exec('PRAGMA journal_mode = WAL;');
