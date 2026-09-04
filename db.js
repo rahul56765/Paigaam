@@ -118,6 +118,8 @@ function parse(row, fields = ['config', 'customer_data']) {
   for (const f of fields) {
     if (typeof out[f] === 'string') { try { out[f] = JSON.parse(out[f]); } catch { /* keep raw */ } }
   }
+  // paigaam rows joined with templates carry template_config — always parse it.
+  if (typeof out.template_config === 'string') { try { out.template_config = JSON.parse(out.template_config); } catch { /* keep raw */ } }
   return out;
 }
 

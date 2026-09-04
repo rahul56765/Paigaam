@@ -90,6 +90,24 @@ const TEMPLATES = [
       motif: 'ring', ampersand: true, serifCase: 'title', layout: 'minimal',
     },
   },
+  {
+    slug: 'apology',
+    name: 'Khaat',           // "khaat" — a letter/note; the apology arrives like a folded letter
+    category: 'Personal',
+    description: 'Some things deserve more than a text. A small interactive apology, folded like a letter — ten gentle scenes that mend a torn heart.',
+    price: 299,
+    currency: 'INR',
+    // Custom template: an external webapp rendered full-screen. Uneditable — no fields.
+    custom: true,
+    editable: false,
+    appPath: '/experiences/apology/',   // static bundle served from public/experiences/apology/
+    fields: [],                          // fully fixed — nothing to personalize
+    sections: [],
+    theme: {
+      bg: '#F7F1E6', ink: '#3B2E26', accent: '#8F1018', soft: '#EFE7D7',
+      motif: 'dove', ampersand: false, serifCase: 'title', layout: 'custom',
+    },
+  },
 ];
 
 function getTemplateConfig(slug) {

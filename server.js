@@ -17,6 +17,7 @@ const { templateDetail } = require('./pages/templateDetail');
 const { createPage } = require('./pages/create');
 const { previewPage } = require('./pages/preview');
 const { contactPage } = require('./pages/contact');
+const { fixedPage } = require('./pages/fixed');
 const admin = require('./pages/admin');
 const { qrSVG } = require('./lib/qrcode');
 
@@ -60,11 +61,14 @@ const send = (res, code, body, type = 'text/html; charset=utf-8', headers = {}) 
 const redirect = (res, to, headers = {}) => { res.writeHead(303, { Location: to, ...headers }); res.end(); };
 const json = (res, code, obj) => send(res, code, JSON.stringify(obj), 'application/json; charset=utf-8');
 
-const MIME = { '.css': 'text/css', '.js': 'text/javascript', '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg', '.webp': 'image/webp', '.ico': 'image/x-icon', '.woff2': 'font/woff2' };
+const MIME = { '.css': 'text/css', '.js': 'text/javascript', '.mjs': 'text/javascript', '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp', '.ico': 'image/x-icon', '.woff': 'font/woff', '.woff2': 'font/woff2', '.txt': 'text/plain', '.json': 'application/json', '.html': 'text/html', '.map': 'application/json' };
 function serveStatic(res, urlPath) {
   const rel = urlPath.replace(/^\/+/, '');
-  const file = path.join(PUBLIC_DIR, rel);
-  if (!file.startsWith(PUBLIC_DIR) || !fs.existsSync(file) || !fs.statSync(file).isFile()) return false;
+  let file = path.join(PUBLIC_DIR, rel);
+  if (!file.startsWith(PUBLIC_DIR)) return false;
+  // Resolve directories to their index.html (e.g. /experiences/apology/ → …/index.html)
+  if (fs.existsSync(file) && fs.statSync(file).isDirectory()) file = path.join(file, 'index.html');
+  if (!fs.existsSync(file) || !fs.statSync(file).isFile()) return false;
   send(res, 200, fs.readFileSync(file), (MIME[path.extname(file)] || 'application/octet-stream') + (path.extname(file) === '.css' || path.extname(file) === '.js' ? '; charset=utf-8' : ''), { 'Cache-Control': 'public, max-age=3600' });
   return true;
 }
@@ -90,9 +94,16 @@ function seed() {
       q.templateInsert({
         name: t.name, slug: t.slug, category: t.category, description: t.description,
         price: t.price, currency: t.currency, status: 'published',
-        config: { fields: t.fields, sections: t.sections, theme: t.theme },
+        config: { name: t.name, fields: t.fields, sections: t.sections, theme: t.theme, custom: !!t.custom, editable: t.editable !== false, appPath: t.appPath },
       });
       console.log('[seed] template:', t.name);
+    } else if (t.custom) {
+      // keep custom template config fresh on every boot (cheap, idempotent)
+      const cur = q.templateBySlug(t.slug);
+      if (cur && (!cur.config || !cur.config.custom)) {
+        q.templateUpdate(cur.id, { ...cur, name: t.name, description: t.description, price: t.price, category: t.category,
+          config: { fields: [], sections: [], theme: t.theme, custom: true, editable: false, appPath: t.appPath } });
+      }
     }
   }
   // one demo published Paigaam so /p/… can be experienced immediately
@@ -139,6 +150,8 @@ const server = http.createServer(async (req, res) => {
     if (method === 'GET' && m) {
       const tpl = q.templateBySlug(m[1]);
       if (!tpl || tpl.status !== 'published') return send(res, 404, errorPage('404', 'This Paigaam seems to have wandered away.', "Let's take you back to the collection."));
+      // Fully-fixed custom templates skip the personalization form.
+      if (tpl.config && tpl.config.custom) return send(res, 200, fixedPage(tpl));
       let draft = null, draftId = null;
       const draftParam = u.searchParams.get('draft');
       if (draftParam) {
@@ -201,7 +214,12 @@ const server = http.createServer(async (req, res) => {
       const tpl = q.templateBySlug(body.template);
       if (!tpl) return json(res, 404, { error: 'template_not_found' });
       const data = body.customer_data && typeof body.customer_data === 'object' ? body.customer_data : {};
-      const names = displayNames(tpl.slug, data).join(' & ');
+      const isCustom = !!(tpl.config && tpl.config.custom);
+      // For fixed templates, the sender's name is the display name; for native
+      // templates, derive it from the template's name fields.
+      const names = isCustom
+        ? (body.customer_name || data.senderName || displayNames(tpl.slug, data).join(' & '))
+        : displayNames(tpl.slug, data).join(' & ');
       if (body.id) {
         const existing = q.paigaamById(body.id);
         if (existing && ['draft', 'payment_pending'].includes(existing.status)) {
@@ -328,7 +346,12 @@ const server = http.createServer(async (req, res) => {
       if (method === 'POST' && m) {
         const pg = q.paigaamById(m[1]);
         if (pg) {
-          const base = slugifyNames(displayNames(pg.template_slug, pg.customer_data).join('-'));
+          const isCustom = !!(pg.template_config && pg.template_config.custom);
+          // Custom templates: slug from the sender's name; native: from the names fields.
+          const baseName = isCustom
+            ? (pg.customer_name || (pg.customer_data && pg.customer_data.senderName) || 'paigaam')
+            : displayNames(pg.template_slug, pg.customer_data).join('-');
+          const base = slugifyNames(baseName);
           const slug = pg.slug || uniquePaigaamSlug(base);
           q.paigaamUpdate(pg.id, { slug, status: 'published', payment_status: 'paid', published_at: new Date().toISOString().replace('T', ' ').slice(0, 19) });
           q.ordersAll().filter(o => o.paigaam_id === pg.id && o.status === 'pending').forEach(o => q.orderUpdate(o.id, 'paid'));

@@ -24,14 +24,30 @@ function sampleData(tpl) {
 }
 
 function templateDetail(tpl) {
-  const sample = sampleData(tpl);
-  const previewHTML = renderPaigaamPage(
-    { slug: tpl.slug, category: tpl.category, config: tpl.config },
-    { customer_data: sample, slug: null },
-    { isPreview: true }
-  );
-  const srcdoc = previewHTML.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').length < 200000
-    ? previewHTML.replace(/"/g, '&quot;') : '';
+  const isCustom = !!(tpl.config && tpl.config.custom) || !!tpl.custom;
+  const appPath = (tpl.config && tpl.config.appPath) || tpl.appPath || '';
+  // Custom templates embed the live app directly; native templates render a srcdoc preview.
+  let previewInner;
+  if (isCustom) {
+    previewInner = `<iframe title="Preview of ${esc(tpl.name)}" src="${esc(appPath)}" style="width:100%;height:100%;border:0" loading="lazy" allow="autoplay"></iframe>`;
+  } else {
+    const sample = sampleData(tpl);
+    const previewHTML = renderPaigaamPage(
+      { slug: tpl.slug, category: tpl.category, config: tpl.config },
+      { customer_data: sample, slug: null },
+      { isPreview: true }
+    );
+    const srcdoc = previewHTML.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').length < 200000
+      ? previewHTML.replace(/"/g, '&quot;') : '';
+    previewInner = `<iframe title="Preview of ${esc(tpl.name)}" srcdoc="${srcdoc}" style="width:100%;height:100%;border:0" loading="lazy"></iframe>`;
+  }
+
+  const cta = isCustom
+    ? `<a class="btn btn--primary" href="/create/${esc(tpl.slug)}">Get this Paigaam</a>`
+    : `<a class="btn btn--primary" href="/create/${esc(tpl.slug)}">Personalize this Paigaam</a>`;
+  const note = isCustom
+    ? `A fixed, ready-made experience — exactly as designed. Get yours and share the link.`
+    : `You'll see your Paigaam come alive as you fill it in — and receive your own link to share.`;
 
   return page(tpl.name, `
 <main>
@@ -40,7 +56,7 @@ function templateDetail(tpl) {
       <div class="reveal in">
         <div class="phone" role="img" aria-label="Live preview of the ${esc(tpl.name)} Paigaam on a phone">
           <div class="phone__screen">
-            <iframe title="Preview of ${esc(tpl.name)}" srcdoc="${srcdoc}" style="width:100%;height:100%;border:0" loading="lazy"></iframe>
+            ${previewInner}
           </div>
         </div>
       </div>
@@ -50,10 +66,10 @@ function templateDetail(tpl) {
         <p style="font-family:var(--serif);font-style:italic;font-size:20px;color:var(--ink-soft);margin-top:16px;line-height:1.5">${esc(tpl.description)}</p>
         <div class="detail__price"><small>One Paigaam</small>₹${esc(tpl.price)}</div>
         <div class="detail__actions">
-          <a class="btn btn--primary" href="/create/${esc(tpl.slug)}">Personalize this Paigaam</a>
+          ${cta}
           <a class="btn btn--ghost" href="/templates">Back to templates</a>
         </div>
-        <p class="detail__note">You'll see your Paigaam come alive as you fill it in — and receive your own link to share.</p>
+        <p class="detail__note">${note}</p>
       </div>
     </div>
   </div>
