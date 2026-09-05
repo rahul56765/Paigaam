@@ -20,6 +20,7 @@ const { contactPage } = require('./pages/contact');
 const { fixedPage } = require('./pages/fixed');
 const admin = require('./pages/admin');
 const { qrSVG } = require('./lib/qrcode');
+const { ensureBrandAssets } = require('./lib/brand-assets');
 
 const PORT = Number(process.env.PORT || 3000);
 const BASE_URL = (process.env.BASE_URL || `http://localhost:${PORT}`).replace(/\/$/, '');
@@ -153,12 +154,16 @@ const server = http.createServer(async (req, res) => {
 
     /* ---------- health (checks storage persistence) ---------- */
     if (method === 'GET' && (p === '/healthz' || p === '/health')) {
-      const usingPersistent = !!process.env.DATA_DIR;
+      // Honest check: DATA_DIR set AND the DB actually lives there.
+      const dbPath = require('./db').DATA_DIR;
+      const actuallyPersistent = !!process.env.DATA_DIR;
       return json(res, 200, {
         ok: true,
-        storage: usingPersistent ? 'persistent' : 'ephemeral-fallback',
-        dataDir: process.env.DATA_DIR || '(default ./data)',
-        warn: usingPersistent ? null : 'DATA_DIR not set — data will NOT survive redeploys on ephemeral hosts.',
+        storage: actuallyPersistent ? 'persistent' : 'ephemeral',
+        dataDir: dbPath,
+        note: actuallyPersistent
+          ? 'DB writes to DATA_DIR. NOTE: on Render free tier there are NO persistent disks — the DB still resets on restart. Paid tier + disk required for true persistence.'
+          : 'DATA_DIR not set — data will NOT survive redeploys.',
       });
     }
 
@@ -473,6 +478,8 @@ function buildTemplateFromForm(form) {
 
 /* ---------------- go ---------------- */
 q.sessionsPrune();
+const healed = ensureBrandAssets();
+if (healed.length) console.log('[brand] restored corrupted/missing brand assets:', healed.join(', '));
 seed();
 const HOST = process.env.HOST || '0.0.0.0';
 server.listen(PORT, HOST, () => {

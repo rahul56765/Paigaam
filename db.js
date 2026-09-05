@@ -30,6 +30,9 @@ function resolveDataDir() {
 }
 const DATA_DIR = resolveDataDir();
 
+// True when we're on the preferred (DATA_DIR) location, not the fallback.
+const PERSISTENT = DATA_DIR === (process.env.DATA_DIR || path.join(__dirname, 'data')) && !!process.env.DATA_DIR;
+
 const db = new DatabaseSync(path.join(DATA_DIR, 'paigaam.db'));
 db.exec('PRAGMA journal_mode = WAL;');
 db.exec('PRAGMA foreign_keys = ON;');
@@ -245,4 +248,4 @@ const q = {
   sessionsPrune: () => db.prepare('DELETE FROM sessions WHERE expires_at < ?').run(Date.now()),
 };
 
-module.exports = { db, q, uid };
+module.exports = { db, q, uid, DATA_DIR, PERSISTENT };
