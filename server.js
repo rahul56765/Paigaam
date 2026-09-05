@@ -154,16 +154,16 @@ const server = http.createServer(async (req, res) => {
 
     /* ---------- health (checks storage persistence) ---------- */
     if (method === 'GET' && (p === '/healthz' || p === '/health')) {
-      // Honest check: DATA_DIR set AND the DB actually lives there.
-      const dbPath = require('./db').DATA_DIR;
-      const actuallyPersistent = !!process.env.DATA_DIR;
+      // Honest check: did the DB actually land in DATA_DIR, or fall back?
+      const { DATA_DIR: resolved, PERSISTENT } = require('./db');
       return json(res, 200, {
         ok: true,
-        storage: actuallyPersistent ? 'persistent' : 'ephemeral',
-        dataDir: dbPath,
-        note: actuallyPersistent
-          ? 'DB writes to DATA_DIR. NOTE: on Render free tier there are NO persistent disks — the DB still resets on restart. Paid tier + disk required for true persistence.'
-          : 'DATA_DIR not set — data will NOT survive redeploys.',
+        storage: PERSISTENT ? 'persistent' : 'ephemeral',
+        dataDir: resolved,
+        envDataDir: process.env.DATA_DIR || null,
+        note: PERSISTENT
+          ? 'DB is on the DATA_DIR volume — data survives redeploys.'
+          : 'DB is on the ephemeral filesystem — data is LOST on every restart/redeploy. Attach a persistent disk (paid plan) and set DATA_DIR to its mount path.',
       });
     }
 
