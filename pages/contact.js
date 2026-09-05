@@ -1,13 +1,13 @@
 'use strict';
 const { page, esc } = require('../lib/layout');
-const { doveSVG } = require('../lib/logo');
+const { logoFull } = require('../lib/brand');
 
 function contactPage(settings) {
   const num = (settings.whatsapp_number || '').replace(/\D/g, '');
   return page('Say hello', `
 <main class="section">
   <div class="wrap-narrow" style="text-align:center;padding-top:60px">
-    <div style="width:110px;margin:0 auto 30px" aria-hidden="true">${doveSVG('#8F1018', 'width="100%"')}</div>
+    <div style="margin:0 auto 30px;display:flex;justify-content:center" aria-hidden="true">${logoFull(200, 'Paigaam')}</div>
     <span class="kicker">Contact</span>
     <h1 class="section__title">Say hello.</h1>
     <p class="section__sub" style="margin:18px auto 44px">Questions, custom designs, or a Paigaam for something we've never imagined — we'd love to hear it.</p>

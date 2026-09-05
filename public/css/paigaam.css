@@ -124,6 +124,12 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
   padding: 80px 24px 110px;
   overflow: hidden;
 }
+.hero__logo {
+  margin-bottom: 8px;
+  animation: float 8s ease-in-out infinite;
+  filter: drop-shadow(0 24px 44px rgba(143, 16, 24, 0.10));
+}
+.hero__logo img { width: clamp(250px, 42vw, 380px); height: auto; display: block; }
 .hero__dove {
   width: clamp(150px, 20vw, 230px);
   margin-bottom: 34px;

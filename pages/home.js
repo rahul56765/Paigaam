@@ -1,6 +1,7 @@
 'use strict';
 const { page, esc } = require('../lib/layout');
 const { doveSVG } = require('../lib/logo');
+const { logoFull } = require('../lib/brand');
 const { qrSVG } = require('../lib/qrcode');
 
 const OCCASIONS = [
@@ -44,8 +45,7 @@ function home(templates) {
   return page('Beautiful greetings, made personal', `
 <main>
   <section class="hero">
-    <div class="hero__dove" aria-hidden="true">${doveSVG('#8F1018', 'width="100%"')}</div>
-    <h1 class="hero__title">PAIGAAM</h1>
+    <div class="hero__logo reveal in">${logoFull(340, 'Paigaam')}</div>
     <p class="hero__tag">Beautiful greetings,<br>made personal.</p>
     <p class="hero__sub">Create a beautiful digital Paigaam for the people and moments that matter.</p>
     <div class="hero__ctas">

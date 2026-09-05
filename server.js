@@ -82,6 +82,18 @@ function uniquePaigaamSlug(base) {
   return slug;
 }
 
+/** Publish a paigaam: assign a unique slug (idempotent if already published). */
+function publishPaigaam(pg) {
+  const isCustom = !!(pg.template_config && pg.template_config.custom);
+  const baseName = isCustom
+    ? (pg.customer_name || (pg.customer_data && pg.customer_data.senderName) || 'paigaam')
+    : displayNames(pg.template_slug, pg.customer_data).join('-');
+  const slug = pg.slug || uniquePaigaamSlug(slugifyNames(baseName));
+  q.paigaamUpdate(pg.id, { slug, status: 'published', payment_status: 'paid', published_at: pg.published_at || new Date().toISOString().replace('T', ' ').slice(0, 19) });
+  q.ordersAll().filter(o => o.paigaam_id === pg.id && o.status === 'pending').forEach(o => q.orderUpdate(o.id, 'paid'));
+  return q.paigaamById(pg.id);
+}
+
 /* ---------------- seed ---------------- */
 function seed() {
   if (!q.adminByEmail(process.env.ADMIN_EMAIL || 'admin@paigaam.in')) {
@@ -103,6 +115,12 @@ function seed() {
       if (cur && (!cur.config || !cur.config.custom)) {
         q.templateUpdate(cur.id, { ...cur, name: t.name, description: t.description, price: t.price, category: t.category,
           config: { fields: [], sections: [], theme: t.theme, custom: true, editable: false, appPath: t.appPath } });
+      }
+    } else {
+      // native templates: keep name/description/price/category in sync with registry
+      const cur = q.templateBySlug(t.slug);
+      if (cur && (cur.price !== t.price || cur.name !== t.name || cur.description !== t.description || cur.category !== t.category)) {
+        q.templateUpdate(cur.id, { ...cur, name: t.name, description: t.description, price: t.price, category: t.category });
       }
     }
   }
@@ -132,6 +150,17 @@ const server = http.createServer(async (req, res) => {
     const method = req.method;
 
     if (method === 'GET' && serveStatic(res, p)) return;
+
+    /* ---------- health (checks storage persistence) ---------- */
+    if (method === 'GET' && (p === '/healthz' || p === '/health')) {
+      const usingPersistent = !!process.env.DATA_DIR;
+      return json(res, 200, {
+        ok: true,
+        storage: usingPersistent ? 'persistent' : 'ephemeral-fallback',
+        dataDir: process.env.DATA_DIR || '(default ./data)',
+        warn: usingPersistent ? null : 'DATA_DIR not set — data will NOT survive redeploys on ephemeral hosts.',
+      });
+    }
 
     /* ---------- public ---------- */
     if (method === 'GET' && p === '/') {
@@ -164,7 +193,7 @@ const server = http.createServer(async (req, res) => {
     if (method === 'GET' && m) {
       const pg = q.paigaamById(m[1]);
       if (!pg) return send(res, 404, errorPage('404', 'This preview seems to have wandered away.', 'Perhaps it was never begun — or already published.'));
-      return send(res, 200, previewPage(pg, q.settings()));
+      return send(res, 200, previewPage(pg, q.settings(), { baseUrl: BASE_URL }));
     }
     m = p.match(/^\/p\/([a-z0-9-]+)$/);
     if (method === 'GET' && m) {
@@ -209,6 +238,22 @@ const server = http.createServer(async (req, res) => {
     }
 
     /* ---------- JSON API (customer) ---------- */
+    // Branded QR SVG for any published Paigaam URL (used by free self-serve + admin).
+    if (method === 'GET' && p === '/api/qr') {
+      const url = u.searchParams.get('url');
+      if (!url || !/^https?:\/\//.test(url)) return json(res, 400, { error: 'bad_url' });
+      return send(res, 200, qrSVG(url, { module: 6, margin: 3, dark: '#3B2420', light: '#FBF4ED' }), 'image/svg+xml');
+    }
+    // Self-publish for FREE templates: no WhatsApp, no payment — publish instantly
+    // and hand the customer their live link + QR.
+    if (method === 'POST' && p === '/api/free-publish') {
+      const body = JSON.parse(await readBody(req) || '{}');
+      const pg = q.paigaamById(body.id);
+      if (!pg) return json(res, 404, { error: 'not_found' });
+      if (Number(pg.template_price) > 0) return json(res, 403, { error: 'not_free' });
+      const pub = publishPaigaam(pg);
+      return json(res, 200, { slug: pub.slug, url: `${BASE_URL}/p/${pub.slug}` });
+    }
     if (method === 'POST' && p === '/api/drafts') {
       const body = JSON.parse(await readBody(req) || '{}');
       const tpl = q.templateBySlug(body.template);
@@ -274,7 +319,7 @@ const server = http.createServer(async (req, res) => {
           orders: q.ordersAll().length,
           published: paigaams.filter(x => ['published', 'active'].includes(x.status)).length,
         };
-        return send(res, 200, admin.dashboard(stats, paigaams.slice(0, 6)));
+        return send(res, 200, admin.dashboard(stats, paigaams.slice(0, 6), { persistent: !!process.env.DATA_DIR }));
       }
 
       if (method === 'GET' && p === '/admin/templates') return send(res, 200, admin.templatesAdmin(q.templatesAll()));
@@ -346,15 +391,7 @@ const server = http.createServer(async (req, res) => {
       if (method === 'POST' && m) {
         const pg = q.paigaamById(m[1]);
         if (pg) {
-          const isCustom = !!(pg.template_config && pg.template_config.custom);
-          // Custom templates: slug from the sender's name; native: from the names fields.
-          const baseName = isCustom
-            ? (pg.customer_name || (pg.customer_data && pg.customer_data.senderName) || 'paigaam')
-            : displayNames(pg.template_slug, pg.customer_data).join('-');
-          const base = slugifyNames(baseName);
-          const slug = pg.slug || uniquePaigaamSlug(base);
-          q.paigaamUpdate(pg.id, { slug, status: 'published', payment_status: 'paid', published_at: new Date().toISOString().replace('T', ' ').slice(0, 19) });
-          q.ordersAll().filter(o => o.paigaam_id === pg.id && o.status === 'pending').forEach(o => q.orderUpdate(o.id, 'paid'));
+          publishPaigaam(pg);
         }
         return redirect(res, `/admin/paigaams/${m[1]}`);
       }

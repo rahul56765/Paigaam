@@ -1,6 +1,7 @@
 'use strict';
 const { page, esc, head } = require('../lib/layout');
 const { doveSVG } = require('../lib/logo');
+const { logoFull } = require('../lib/brand');
 const { displayNames, displayDate } = require('../templates/registry');
 const { qrSVG } = require('../lib/qrcode');
 
@@ -17,9 +18,8 @@ function adminShell(current, title, inner, opts = {}) {
   return page(title, `
 <div class="admin">
   <aside class="admin__side">
-    <a href="/" class="nav__brand" aria-label="Paigaam home">
-      <span style="width:34px;display:inline-block">${doveSVG('#8F1018', 'width="100%"')}</span>
-      <span class="nav__word" style="font-size:19px">PAIGAAM</span>
+    <a href="/" class="nav__brand" aria-label="Paigaam home" style="display:inline-block">
+      ${logoFull(120, 'Paigaam')}
     </a>
     <ul class="admin__nav">
       <li>${link('/admin', 'Dashboard')}</li>
@@ -40,7 +40,7 @@ function loginPage(error) {
 <body>
 <main class="login">
   <div class="login__card">
-    ${doveSVG('#8F1018', 'width="100%" style="max-width:120px;margin:0 auto 22px;display:block"')}
+    <div style="margin:0 auto 22px;display:flex;justify-content:center">${logoFull(170, 'Paigaam')}</div>
     <h1>Welcome back.</h1>
     <p class="sub">The quiet room where Paigaams are kept.</p>
     ${error ? `<div class="form-error" role="alert">${esc(error)}</div>` : ''}
@@ -58,13 +58,19 @@ function loginPage(error) {
 }
 
 /* ---------- dashboard ---------- */
-function dashboard(stats, recent) {
+function dashboard(stats, recent, opts = {}) {
   const hr = new Date().getHours();
   const greet = hr < 12 ? 'Good morning.' : hr < 17 ? 'Good afternoon.' : 'Good evening.';
   const today = new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  const storageWarn = opts.persistent === false ? `
+  <div style="border:1px solid #E4C08B;background:#FBF3E2;color:#8A6A2B;padding:18px 22px;margin:22px 0 0;border-radius:4px;font-size:14px;line-height:1.5">
+    <strong>⚠ Storage is not persistent.</strong> No <code style="font-size:12px">DATA_DIR</code> volume detected, so Paigaams, orders and logins are <strong>erased on every redeploy/restart</strong> (this is why links go to 404).
+    Attach a disk at <code style="font-size:12px">/var/data</code> (Render: Settings → Disks → Add Disk) and set <code style="font-size:12px">DATA_DIR=/var/data</code> to fix it permanently.
+  </div>` : '';
   const inner = `
   <p class="admin__greet">${greet}</p>
   <p class="admin__date">${esc(today)}</p>
+  ${storageWarn}
   <div class="stats">
     <div class="stat"><div class="stat__num">${stats.templates}</div><div class="stat__label">Templates</div></div>
     <div class="stat"><div class="stat__num">${stats.paigaams}</div><div class="stat__label">Paigaams</div></div>
@@ -290,23 +296,31 @@ function paigaamDetail(p, baseUrl) {
       card.width = 1080; card.height = 1350;
       var ctx = card.getContext('2d');
       var xml = new XMLSerializer().serializeToString(svg);
-      var img = new Image();
-      img.onload = function () {
+      var img = new Image();          // QR
+      var logo = new Image();         // real Paigaam logo
+      var shortUrl = '${esc(url.replace(/^https?:\/\//, ''))}';
+      function draw() {
         ctx.fillStyle = '#FBF4ED'; ctx.fillRect(0, 0, 1080, 1350);
         ctx.strokeStyle = '#E9DCC3'; ctx.lineWidth = 2; ctx.strokeRect(40, 40, 1000, 1270);
-        ctx.fillStyle = '#8F1018'; ctx.textAlign = 'center';
-        ctx.font = '600 64px Georgia, serif'; ctx.fillText('PAIGAAM', 540, 210);
-        ctx.font = 'italic 44px Georgia, serif'; ctx.fillStyle = '#3B2420';
-        ctx.fillText('Scan to open', 540, 330); ctx.fillText('our Paigaam', 540, 390);
-        ctx.drawImage(img, 240, 470, 600, 600);
+        // logo (1200x600 → 2:1), centered
+        var lw = 460, lh = lw * (logo.height / logo.width);
+        ctx.drawImage(logo, (1080 - lw) / 2, 120, lw, lh);
+        ctx.fillStyle = '#3B2420'; ctx.textAlign = 'center';
+        ctx.font = 'italic 44px Georgia, serif';
+        ctx.fillText('Scan to open', 540, 470); ctx.fillText('our Paigaam', 540, 528);
+        ctx.drawImage(img, 240, 590, 600, 600);
         ctx.font = '32px Inter, sans-serif'; ctx.fillStyle = '#A8917E';
-        ctx.fillText('${esc(url.replace(/^https?:\/\//, ''))}', 540, 1180);
+        ctx.fillText(shortUrl, 540, 1260);
         var a = document.createElement('a');
         a.download = 'paigaam-${esc(p.slug || 'qr')}.png';
         a.href = card.toDataURL('image/png');
         a.click();
-      };
+      }
+      var loaded = 0;
+      function ready() { if (++loaded === 2) draw(); }
+      img.onload = ready; logo.onload = ready;
       img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(xml)));
+      logo.src = '/brand/logo-full.png';
     });
   })();
   </script>` : '';
@@ -319,7 +333,7 @@ function qrCardHTML(url, names) {
     .replace('<svg ', '<svg data-qr="1" class="qr-img" ');
   const short = url.replace(/^https?:\/\//, '');
   return `<div class="qr-card">
-    <div style="font-family:var(--serif);letter-spacing:0.3em;text-indent:0.3em;color:var(--accent);font-size:20px;font-weight:600;margin-bottom:16px">PAIGAAM</div>
+    <div style="display:flex;justify-content:center;margin-bottom:16px">${logoFull(120, 'Paigaam')}</div>
     <p class="qr-line">Scan to open<br>our Paigaam</p>
     ${svg}
     <p class="qr-url">${esc(short)}</p>

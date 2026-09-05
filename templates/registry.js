@@ -81,7 +81,7 @@ const TEMPLATES = [
     name: 'Aashi',
     category: 'Anniversary',
     description: 'A minimal, intimate anniversary keepsake — two names, one line of years, and room for a quiet photograph.',
-    price: 399,
+    price: 0,   // free → customers self-publish and get their link + QR instantly
     currency: 'INR',
     fields: AASHI_FIELDS,
     sections: ['hero', 'message', 'years', 'photo', 'closing'],
