@@ -28,7 +28,9 @@ function templateDetail(tpl) {
   const appPath = (tpl.config && tpl.config.appPath) || tpl.appPath || '';
   // Custom templates embed the live app directly; native templates render a srcdoc preview.
   let previewInner;
-  if (isCustom) {
+  if (tpl.slug === 'ganapati-aagman') {
+    previewInner = '<iframe title="Ganapati Aagman live preview" src="/ganapati/demo" style="width:100%;height:100%;border:0" loading="lazy" allow="autoplay"></iframe>';
+  } else if (isCustom) {
     previewInner = `<iframe title="Preview of ${esc(tpl.name)}" src="${esc(appPath)}" style="width:100%;height:100%;border:0" loading="lazy" allow="autoplay"></iframe>`;
   } else {
     const sample = sampleData(tpl);
@@ -67,6 +69,7 @@ function templateDetail(tpl) {
         <div class="detail__price"><small>One Paigaam</small>₹${esc(tpl.price)}</div>
         <div class="detail__actions">
           ${cta}
+          ${tpl.slug === 'ganapati-aagman' ? '<a class="btn btn--ghost" href="/ganapati/demo" target="_blank" rel="noopener">Experience full preview</a>' : ''}
           <a class="btn btn--ghost" href="/templates">Back to templates</a>
         </div>
         <p class="detail__note">${note}</p>

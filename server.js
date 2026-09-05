@@ -21,6 +21,8 @@ const { fixedPage } = require('./pages/fixed');
 const admin = require('./pages/admin');
 const { qrSVG } = require('./lib/qrcode');
 const { ensureBrandAssets } = require('./lib/brand-assets');
+const ganapati = require('./lib/ganapatiRoutes');
+const { streamFile } = require('./lib/streamFile');
 
 const PORT = Number(process.env.PORT || 3000);
 const BASE_URL = (process.env.BASE_URL || `http://localhost:${PORT}`).replace(/\/$/, '');
@@ -62,16 +64,16 @@ const send = (res, code, body, type = 'text/html; charset=utf-8', headers = {}) 
 const redirect = (res, to, headers = {}) => { res.writeHead(303, { Location: to, ...headers }); res.end(); };
 const json = (res, code, obj) => send(res, code, JSON.stringify(obj), 'application/json; charset=utf-8');
 
-const MIME = { '.css': 'text/css', '.js': 'text/javascript', '.mjs': 'text/javascript', '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp', '.ico': 'image/x-icon', '.woff': 'font/woff', '.woff2': 'font/woff2', '.txt': 'text/plain', '.json': 'application/json', '.html': 'text/html', '.map': 'application/json' };
-function serveStatic(res, urlPath) {
-  const rel = urlPath.replace(/^\/+/, '');
-  let file = path.join(PUBLIC_DIR, rel);
-  if (!file.startsWith(PUBLIC_DIR)) return false;
-  // Resolve directories to their index.html (e.g. /experiences/apology/ → …/index.html)
+const MIME = { '.mp4':'video/mp4', '.mp3':'audio/mpeg', '.css':'text/css; charset=utf-8', '.js':'text/javascript; charset=utf-8', '.mjs':'text/javascript', '.svg':'image/svg+xml', '.png':'image/png', '.jpg':'image/jpeg', '.jpeg':'image/jpeg', '.webp':'image/webp', '.ico':'image/x-icon', '.woff':'font/woff', '.woff2':'font/woff2', '.txt':'text/plain', '.json':'application/json', '.html':'text/html; charset=utf-8', '.map':'application/json' };
+function serveStatic(req, res, urlPath) {
+  let rel; try { rel = decodeURIComponent(urlPath).replace(/^\/+/, ''); } catch { return false; }
+  if (rel.includes('\0') || rel.includes('\\')) return false;
+  let file = path.resolve(PUBLIC_DIR, rel);
+  if (!file.startsWith(PUBLIC_DIR + path.sep)) return false;
   if (fs.existsSync(file) && fs.statSync(file).isDirectory()) file = path.join(file, 'index.html');
-  if (!fs.existsSync(file) || !fs.statSync(file).isFile()) return false;
-  send(res, 200, fs.readFileSync(file), (MIME[path.extname(file)] || 'application/octet-stream') + (path.extname(file) === '.css' || path.extname(file) === '.js' ? '; charset=utf-8' : ''), { 'Cache-Control': 'public, max-age=3600' });
-  return true;
+  if (!fs.existsSync(file)) return false;
+  if (!fs.realpathSync(file).startsWith(fs.realpathSync(PUBLIC_DIR) + path.sep)) return false;
+  return streamFile(req, res, file, MIME[path.extname(file)] || 'application/octet-stream');
 }
 
 function slugifyNames(s) {
@@ -106,7 +108,7 @@ function seed() {
     if (!q.templateBySlug(t.slug)) {
       q.templateInsert({
         name: t.name, slug: t.slug, category: t.category, description: t.description,
-        price: t.price, currency: t.currency, status: 'published',
+        price: t.price, currency: t.currency, thumbnail_url: t.thumbnail_url || '', status: 'published',
         config: { name: t.name, fields: t.fields, sections: t.sections, theme: t.theme, custom: !!t.custom, editable: t.editable !== false, appPath: t.appPath },
       });
       console.log('[seed] template:', t.name);
@@ -150,7 +152,8 @@ const server = http.createServer(async (req, res) => {
     const p = u.pathname.replace(/\/+$/, '') || '/';
     const method = req.method;
 
-    if (method === 'GET' && serveStatic(res, p)) return;
+    if (await ganapati.handle(req, res, u, { baseUrl: BASE_URL, isAdmin: !!getAdmin(req) })) return;
+    if (['GET', 'HEAD'].includes(method) && serveStatic(req, res, p)) return;
 
     /* ---------- health (checks storage persistence) ---------- */
     if (method === 'GET' && (p === '/healthz' || p === '/health')) {
@@ -198,6 +201,10 @@ const server = http.createServer(async (req, res) => {
     if (method === 'GET' && m) {
       const pg = q.paigaamById(m[1]);
       if (!pg) return send(res, 404, errorPage('404', 'This preview seems to have wandered away.', 'Perhaps it was never begun — or already published.'));
+      if (pg.template_slug === ganapati.SLUG) {
+        if (!getAdmin(req) && !ganapati.owned(req, pg.id)) return json(res, 403, { error: 'forbidden' });
+        return redirect(res, '/ganapati/preview/' + pg.id);
+      }
       return send(res, 200, previewPage(pg, q.settings(), { baseUrl: BASE_URL }));
     }
     m = p.match(/^\/p\/([a-z0-9-]+)$/);
@@ -218,6 +225,7 @@ const server = http.createServer(async (req, res) => {
     if (method === 'GET' && m) {
       const pg = q.paigaamById(m[1]);
       if (!pg) return send(res, 404, errorPage('404', 'This Paigaam seems to have wandered away.', "Let's take you back home."));
+      if (pg.template_slug === ganapati.SLUG) return json(res, 403, { error: 'use_template_endpoint' });
       const settings = q.settings();
       const num = (settings.whatsapp_number || '').replace(/\D/g, '');
       const d = pg.customer_data || {};
@@ -255,6 +263,7 @@ const server = http.createServer(async (req, res) => {
       const body = JSON.parse(await readBody(req) || '{}');
       const pg = q.paigaamById(body.id);
       if (!pg) return json(res, 404, { error: 'not_found' });
+      if (pg.template_slug === ganapati.SLUG) return json(res, 403, { error: 'use_template_endpoint' });
       if (Number(pg.template_price) > 0) return json(res, 403, { error: 'not_free' });
       const pub = publishPaigaam(pg);
       return json(res, 200, { slug: pub.slug, url: `${BASE_URL}/p/${pub.slug}` });
@@ -263,6 +272,7 @@ const server = http.createServer(async (req, res) => {
       const body = JSON.parse(await readBody(req) || '{}');
       const tpl = q.templateBySlug(body.template);
       if (!tpl) return json(res, 404, { error: 'template_not_found' });
+      if (tpl.slug === ganapati.SLUG || (body.id && q.paigaamById(body.id)?.template_slug === ganapati.SLUG)) return json(res, 403, { error: 'use_template_endpoint' });
       const data = body.customer_data && typeof body.customer_data === 'object' ? body.customer_data : {};
       const isCustom = !!(tpl.config && tpl.config.custom);
       // For fixed templates, the sender's name is the display name; for native
@@ -284,6 +294,7 @@ const server = http.createServer(async (req, res) => {
       const body = JSON.parse(await readBody(req) || '{}');
       const tpl = q.templateBySlug(body.template);
       if (!tpl) return json(res, 404, { error: 'template_not_found' });
+      if (tpl.slug === ganapati.SLUG) return json(res, 403, { error: 'use_template_endpoint' });
       const html = renderPaigaamPage(
         { slug: tpl.slug, category: tpl.category, config: tpl.config },
         { customer_data: body.customer_data || {}, slug: null },

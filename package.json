@@ -6,9 +6,18 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "node --watch server.js"
+    "dev": "node --watch server.js",
+    "build": "node scripts/prepare-ganapati.js",
+    "postinstall": "node scripts/prepare-ganapati.js",
+    "test": "node scripts/test-ganapati.js"
   },
   "engines": {
     "node": ">=22.5.0 <25"
+  },
+  "dependencies": {
+    "sharp": "0.35.4"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.58.2"
   }
 }
