@@ -10,6 +10,7 @@ const path = require('node:path');
 const { q } = require('./db');
 const { TEMPLATES, getTemplateConfig, displayNames, displayDate } = require('./templates/registry');
 const { renderPaigaamPage, shareTitle } = require('./lib/renderPaigaam');
+const { templateSampleView } = require('./lib/templateView');
 const { page, errorPage, esc } = require('./lib/layout');
 const { home } = require('./pages/home');
 const { gallery } = require('./pages/gallery');
@@ -183,6 +184,13 @@ const server = http.createServer(async (req, res) => {
       const tpl = q.templateBySlug(m[1]);
       if (!tpl || tpl.status !== 'published') return send(res, 404, errorPage('404', 'This Paigaam seems to have wandered away.', "Let's take you back to the collection."));
       return send(res, 200, templateDetail(tpl));
+    }
+    // Bare, sample-data render of a template — powers live-scrolling card thumbnails.
+    m = p.match(/^\/template-view\/([a-z0-9-]+)$/);
+    if (method === 'GET' && m) {
+      const tpl = q.templateBySlug(m[1]);
+      if (!tpl || tpl.status !== 'published') return send(res, 404, errorPage('404', 'Nothing to show here.', 'This template view has wandered away.'));
+      return send(res, 200, templateSampleView(tpl, BASE_URL), 'text/html; charset=utf-8', { 'Cache-Control': 'public, max-age=86400', 'X-Content-Type-Options': 'nosniff' });
     }
     m = p.match(/^\/create\/([a-z0-9-]+)$/);
     if (method === 'GET' && m) {

@@ -191,6 +191,22 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
   background: var(--bg-deep);
   aspect-ratio: 4 / 5;
 }
+/* Live miniature of the template itself (iframe) + slow auto-scroll.
+   Fallback (motif + name) sits underneath; the iframe fades in over it when ready. */
+.tcard__live {
+  position: absolute; top: 0; left: 0; z-index: 2;
+  width: 100%; height: 100%; border: 0; display: block;
+  opacity: 0; transition: opacity 0.6s ease 0.15s;
+  pointer-events: none;
+}
+.tcard__live.is-ready { opacity: 1; }
+.tcard__frame.no-live .tcard__live { display: none; }
+.tcard__fallback {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+  padding: 26px; text-align: center;
+}
+@media (prefers-reduced-motion: reduce) { .tcard__live { transition: none; } }
 .tcard__art {
   position: absolute; inset: 0;
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;

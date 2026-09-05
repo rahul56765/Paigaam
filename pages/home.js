@@ -24,14 +24,16 @@ function templateCard(t) {
   const cfg = t.config || {};
   const theme = cfg.theme || {};
   const accent = theme.accent || '#8F1018';
+  const custom = cfg.custom || t.custom;
+  // Live thumbnail: the template itself, in miniature (custom webapps iframe their app;
+  // native templates iframe a sample-data render). Falls back to static art if JS is off.
+  const frameSrc = custom ? (cfg.appPath || t.appPath || '/') : `/template-view/${esc(t.slug)}`;
   return `<a class="tcard reveal" href="/templates/${esc(t.slug)}" aria-label="View the ${esc(t.name)} Paigaam">
   <div class="tcard__frame" style="background:${esc(theme.bg || '#F4EADD')}">
-    <div class="tcard__art"${t.slug === 'ganapati-aagman' ? ' style="background:linear-gradient(0deg,rgba(30,20,10,.7),transparent 55%),url(/ganapati/media/formation-end.jpg) center 38%/cover;position:relative"' : ''}>
-      ${t.slug === 'ganapati-aagman' ? '<span style="position:absolute;bottom:20px;left:16px;right:16px;color:white;font-family:var(--serif);font-size:24px;text-align:center">Ganapati Aagman<br><small style="font:10px var(--sans);letter-spacing:.14em">A BLESSING UNFOLDS</small></span>' : ''}
-      <span class="tcard__motif"${t.slug === 'ganapati-aagman' ? ' style="visibility:hidden"' : ''}>${motifSVG(theme.motif, accent)}</span>
-      <span class="tcard__name" style="${t.slug === 'ganapati-aagman' ? 'visibility:hidden;' : ''}color:${esc(accent)}">${esc(t.name.toUpperCase())}</span>
-      <span class="tcard__cat"${t.slug === 'ganapati-aagman' ? ' style="visibility:hidden"' : ''}>${esc(t.category)}</span>
-    </div>
+    <iframe class="tcard__live" src="${esc(frameSrc)}" title="Preview of the ${esc(t.name)} Paigaam" loading="lazy" scrolling="no" tabindex="-1" aria-hidden="true" sandbox="allow-same-origin allow-scripts"></iframe>
+    <span class="tcard__fallback"${custom ? ' style="display:none"' : ''} aria-hidden="true">${motifSVG(theme.motif, accent)}</span>
+    <span class="tcard__name" style="color:${esc(accent)}">${esc(t.name.toUpperCase())}</span>
+    <span class="tcard__cat">${esc(t.category)}</span>
   </div>
   <div class="tcard__meta">
     <span class="tcard__title">${esc(t.name)}</span>
@@ -43,11 +45,11 @@ function templateCard(t) {
 
 function home(templates) {
   const featured = templates.slice(0, 3);
-  return page('Beautiful greetings, made personal', `
+  return page('Because some things deserve more', `
 <main>
   <section class="hero">
     <div class="hero__logo reveal in">${logoFull(340, 'Paigaam')}</div>
-    <p class="hero__tag">Beautiful greetings,<br>made personal.</p>
+    <p class="hero__tag">Because some things<br>deserve more.</p>
     <p class="hero__sub">Create a beautiful digital Paigaam for the people and moments that matter.</p>
     <div class="hero__ctas">
       <a class="btn btn--primary" href="/templates">Explore Paigaams</a>
