@@ -21,6 +21,7 @@ const { fixedPage } = require('./pages/fixed');
 const admin = require('./pages/admin');
 const { qrSVG } = require('./lib/qrcode');
 const { ensureBrandAssets } = require('./lib/brand-assets');
+const { ensureGanapatiMedia } = require('./lib/ganapatiMedia');
 const ganapati = require('./lib/ganapatiRoutes');
 const { streamFile } = require('./lib/streamFile');
 
@@ -491,6 +492,8 @@ function buildTemplateFromForm(form) {
 q.sessionsPrune();
 const healed = ensureBrandAssets();
 if (healed.length) console.log('[brand] restored corrupted/missing brand assets:', healed.join(', '));
+const mediaHealed = ensureGanapatiMedia();
+if (mediaHealed.length) console.log('[ganapati] restored missing media files:', mediaHealed.join(', '));
 seed();
 const HOST = process.env.HOST || '0.0.0.0';
 server.listen(PORT, HOST, () => {
