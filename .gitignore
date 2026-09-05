@@ -5,3 +5,5 @@ cookies.txt
 .DS_Store
 .env
 .env.local
+public/ganapati/media/
+test-output/

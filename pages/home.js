@@ -26,10 +26,11 @@ function templateCard(t) {
   const accent = theme.accent || '#8F1018';
   return `<a class="tcard reveal" href="/templates/${esc(t.slug)}" aria-label="View the ${esc(t.name)} Paigaam">
   <div class="tcard__frame" style="background:${esc(theme.bg || '#F4EADD')}">
-    <div class="tcard__art">
-      <span class="tcard__motif">${motifSVG(theme.motif, accent)}</span>
-      <span class="tcard__name" style="color:${esc(accent)}">${esc(t.name.toUpperCase())}</span>
-      <span class="tcard__cat">${esc(t.category)}</span>
+    <div class="tcard__art"${t.slug === 'ganapati-aagman' ? ' style="background:linear-gradient(0deg,rgba(30,20,10,.7),transparent 55%),url(/ganapati/media/formation-end.jpg) center 38%/cover;position:relative"' : ''}>
+      ${t.slug === 'ganapati-aagman' ? '<span style="position:absolute;bottom:20px;left:16px;right:16px;color:white;font-family:var(--serif);font-size:24px;text-align:center">Ganapati Aagman<br><small style="font:10px var(--sans);letter-spacing:.14em">A BLESSING UNFOLDS</small></span>' : ''}
+      <span class="tcard__motif"${t.slug === 'ganapati-aagman' ? ' style="visibility:hidden"' : ''}>${motifSVG(theme.motif, accent)}</span>
+      <span class="tcard__name" style="${t.slug === 'ganapati-aagman' ? 'visibility:hidden;' : ''}color:${esc(accent)}">${esc(t.name.toUpperCase())}</span>
+      <span class="tcard__cat"${t.slug === 'ganapati-aagman' ? ' style="visibility:hidden"' : ''}>${esc(t.category)}</span>
     </div>
   </div>
   <div class="tcard__meta">
