@@ -1,7 +1,7 @@
 {
   "name": "paigaam",
   "version": "0.1.0",
-  "description": "Paigaam — beautiful greetings, made personal.",
+  "description": "Paigaam \u2014 beautiful greetings, made personal.",
   "type": "commonjs",
   "main": "server.js",
   "scripts": {
@@ -9,7 +9,9 @@
     "dev": "node --watch server.js",
     "build": "node scripts/prepare-ganapati.js",
     "postinstall": "node scripts/prepare-ganapati.js",
-    "test": "node scripts/test-ganapati.js"
+    "test": "node scripts/test-ganapati.js && node scripts/test-saalgirah.js",
+    "test:saalgirah": "node scripts/test-saalgirah.js",
+    "test:ganapati": "node scripts/test-ganapati.js"
   },
   "engines": {
     "node": ">=22.5.0 <25"

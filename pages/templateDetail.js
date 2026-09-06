@@ -30,6 +30,8 @@ function templateDetail(tpl) {
   let previewInner;
   if (tpl.slug === 'ganapati-aagman') {
     previewInner = '<iframe title="Ganapati Aagman live preview" src="/ganapati/demo" style="width:100%;height:100%;border:0" loading="lazy" allow="autoplay"></iframe>';
+  } else if (tpl.slug === 'saalgirah') {
+    previewInner = '<iframe title="Saalgirah live preview" src="/saalgirah/demo" style="width:100%;height:100%;border:0" loading="lazy" allow="autoplay"></iframe>';
   } else if (isCustom) {
     previewInner = `<iframe title="Preview of ${esc(tpl.name)}" src="${esc(appPath)}" style="width:100%;height:100%;border:0" loading="lazy" allow="autoplay"></iframe>`;
   } else {
@@ -70,6 +72,7 @@ function templateDetail(tpl) {
         <div class="detail__actions">
           ${cta}
           ${tpl.slug === 'ganapati-aagman' ? '<a class="btn btn--ghost" href="/ganapati/demo" target="_blank" rel="noopener">Experience full preview</a>' : ''}
+          ${tpl.slug === 'saalgirah' ? '<a class="btn btn--ghost" href="/saalgirah/demo" target="_blank" rel="noopener">Experience full preview</a>' : ''}
           <a class="btn btn--ghost" href="/templates">Back to templates</a>
         </div>
         <p class="detail__note">${note}</p>
