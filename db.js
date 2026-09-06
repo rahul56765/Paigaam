@@ -224,6 +224,14 @@ const q = {
       .run(id, email.toLowerCase().trim(), hash, salt, now());
     return id;
   },
+  adminUpdatePassword: (email, password) => {
+    const a = q.adminByEmail(email);
+    if (!a) return null;
+    const salt = crypto.randomBytes(16).toString('hex');
+    const hash = crypto.scryptSync(password, salt, 64).toString('hex');
+    db.prepare('UPDATE admins SET password_hash = ?, salt = ? WHERE id = ?').run(hash, salt, a.id);
+    return a.id;
+  },
   adminVerify: (email, password) => {
     const a = q.adminByEmail((email || '').toLowerCase().trim());
     if (!a) return null;

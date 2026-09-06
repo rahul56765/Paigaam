@@ -102,9 +102,15 @@ function publishPaigaam(pg) {
 
 /* ---------------- seed ---------------- */
 function seed() {
-  if (!q.adminByEmail(process.env.ADMIN_EMAIL || 'admin@paigaam.in')) {
-    q.adminCreate(process.env.ADMIN_EMAIL || 'admin@paigaam.in', process.env.ADMIN_PASSWORD || 'paigaam-admin');
-    console.log('[seed] admin created:', process.env.ADMIN_EMAIL || 'admin@paigaam.in');
+  const adminEmail = process.env.ADMIN_EMAIL || 'admin@paigaam.in';
+  const adminPassword = process.env.ADMIN_PASSWORD || 'paigaam-admin';
+  if (!q.adminByEmail(adminEmail)) {
+    q.adminCreate(adminEmail, adminPassword);
+    console.log('[seed] admin created:', adminEmail);
+  } else if (process.env.ADMIN_PASSWORD && !q.adminVerify(adminEmail, process.env.ADMIN_PASSWORD)) {
+    // keep the stored hash in sync with ADMIN_PASSWORD when it drifts (e.g. password rotation)
+    q.adminUpdatePassword(adminEmail, process.env.ADMIN_PASSWORD);
+    console.log('[seed] admin password updated from ADMIN_PASSWORD env for:', adminEmail);
   }
   q.settings();
   for (const t of TEMPLATES) {
