@@ -1,0 +1,821 @@
+/* ============================================================================
+   Saalgirah — a birthday Paigaam.
+
+   A port of the uploaded React/framer-motion experience to plain CSS. Every
+   duration, delay, easing, offset and colour below is carried over from the
+   original components; the scene state machine lives in /saalgirah/letter.js
+   and only toggles classes.
+
+   Scene enter/exit, and the inner beats of each scene, are driven by:
+     .sg-scene.is-active     scene is on stage
+     .sg-scene.is-leaving    scene is fading out (exit values)
+     .is-step1 … .is-step4   cumulative beats inside a scene
+     .is-wished              candles blown out
+     .is-signed              closing signature revealed
+   ========================================================================= */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  overscroll-behavior: none;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: #2a1f1a;
+}
+
+body.sg {
+  font-family: 'Quicksand', system-ui, sans-serif;
+  color: #4a3a2c;
+  touch-action: manipulation;
+}
+
+.sg-defs { position: absolute; width: 0; height: 0; overflow: hidden; }
+
+.sg-cursive { font-family: 'Dancing Script', cursive; }
+
+/* ------------------------------------------------------------------ stage */
+
+.sg-backdrop {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(120% 80% at 50% 0%, #3a2a22 0%, #261b16 60%, #1a1310 100%);
+}
+
+.sg-square {
+  position: relative;
+  width: min(100vw, 100vh);
+  height: min(100vw, 100vh);
+  width: min(100vw, 100dvh);
+  height: min(100vw, 100dvh);
+  max-width: 100vw;
+  max-height: 100dvh;
+}
+
+.sg-stage {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  border-radius: 28px;
+  box-shadow:
+    0 30px 80px -20px rgba(80, 40, 30, 0.55),
+    0 12px 30px -10px rgba(80, 40, 30, 0.35),
+    inset 0 0 0 1px rgba(255, 248, 235, 0.06);
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.sg-vignette::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(120% 100% at 50% 50%, transparent 55%, rgba(60, 30, 25, 0.28) 100%);
+  z-index: 30;
+}
+
+.sg-grain::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.04;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  z-index: 25;
+}
+
+/* Scene-tinted backgrounds, cross-fading between beats. */
+.sg-bg {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 1.2s ease-in-out;
+}
+.sg-bg.is-on { opacity: 1; animation: sg-bgbreathe 8s ease-in-out infinite; }
+.sg-bg[data-bg="envelope"] { background: radial-gradient(ellipse at 50% 50%, #FBF6EE 0%, #F5ECDD 50%, #E8DCC8 100%); }
+.sg-bg[data-bg="reveal"]   { background: radial-gradient(ellipse at 50% 50%, #FBF6EE 0%, #F5ECDD 50%, #EFE0CC 100%); }
+.sg-bg[data-bg="birthday"] { background: radial-gradient(ellipse at 50% 40%, #FBEDE0 0%, #F5E0CE 50%, #EFD5C0 100%); }
+.sg-bg[data-bg="love"]     { background: radial-gradient(ellipse at 50% 45%, #FCEEEC 0%, #F7E2DD 45%, #F0D0CA 100%); }
+
+@keyframes sg-bgbreathe { 0%, 100% { opacity: 0.9; } 50% { opacity: 1; } }
+
+/* ----------------------------------------------------------------- scenes */
+
+.sg-scenes { position: absolute; inset: 0; z-index: 2; }
+
+.sg-scene {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0 24px;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.sg-scene.is-active { opacity: 1; visibility: visible; pointer-events: auto; }
+
+/* Enter values (the "from" state) and per-scene transition durations. */
+.sg-scene--envelope { transition: opacity 1s ease-in-out, transform 1s ease-in-out, filter 1s ease-in-out; }
+.sg-scene--reveal   { padding: 0 32px; transform: scale(0.98); filter: blur(6px); transition: opacity 1.2s ease-in-out, transform 1.2s ease-in-out, filter 1.2s ease-in-out; }
+.sg-scene--birthday { transform: scale(0.96); filter: blur(8px); transition: opacity 1.3s ease-in-out, transform 1.3s ease-in-out, filter 1.3s ease-in-out; }
+.sg-scene--love     { transform: scale(0.95); filter: blur(10px); transition: opacity 1.6s ease-in-out, transform 1.6s ease-in-out, filter 1.6s ease-in-out; }
+
+.sg-scene--reveal.is-active,
+.sg-scene--birthday.is-active,
+.sg-scene--love.is-active { transform: scale(1); filter: blur(0px); }
+
+/* Exit values. */
+.sg-scene--envelope.is-leaving { opacity: 0; transform: scale(1.05); filter: blur(8px); }
+.sg-scene--reveal.is-leaving   { opacity: 0; transform: scale(1.02); filter: blur(6px); }
+.sg-scene--birthday.is-leaving { opacity: 0; transform: scale(1.04); filter: blur(8px); }
+.sg-scene--love.is-leaving     { opacity: 0; }
+
+/* -------------------------------------------------------------- soft glow */
+
+.sg-glow { position: absolute; pointer-events: none; }
+.sg-glow--envelope {
+  width: 70%; height: 70%;
+  background: radial-gradient(circle at 50% 50%, rgba(255, 230, 200, 0.45), transparent 65%);
+  filter: blur(20px);
+  animation: sg-glowpulse 6s ease-in-out infinite;
+}
+.sg-glow--reveal {
+  width: 80%; height: 60%;
+  background: radial-gradient(ellipse at 50% 50%, rgba(255, 230, 200, 0.35), transparent 70%);
+  filter: blur(30px);
+  animation: sg-glowpulse 8s ease-in-out infinite;
+}
+.sg-glow--birthday {
+  width: 85%; height: 70%;
+  background: radial-gradient(ellipse at 50% 45%, rgba(255, 220, 170, 0.55), rgba(247, 200, 180, 0.25) 45%, transparent 70%);
+  filter: blur(25px);
+  animation: sg-glowpulse-warm 5s ease-in-out infinite;
+}
+.sg-glow--love {
+  width: 90%; height: 75%;
+  background: radial-gradient(ellipse at 50% 50%, rgba(255, 220, 200, 0.55), rgba(247, 200, 180, 0.3) 40%, transparent 75%);
+  filter: blur(30px);
+  animation: sg-glowpulse-love 6s ease-in-out infinite;
+}
+
+@keyframes sg-glowpulse { 0%, 100% { opacity: 0.4; transform: scale(1); } 50% { opacity: 0.7; transform: scale(1.05); } }
+@keyframes sg-glowpulse-warm { 0%, 100% { opacity: 0.5; transform: scale(1); } 50% { opacity: 0.85; transform: scale(1.05); } }
+@keyframes sg-glowpulse-love { 0%, 100% { opacity: 0.5; transform: scale(1); } 50% { opacity: 0.85; transform: scale(1.06); } }
+
+/* ------------------------------------------------------------------- bear */
+
+.sg-bear { position: relative; animation: sg-bob 3.6s ease-in-out infinite; }
+.sg-bear--celebrating { animation: sg-hop 1.4s ease-in-out infinite; }
+.sg-bear--holding-heart { animation: sg-lovefloat 4.5s ease-in-out infinite; }
+.sg-bear svg { display: block; }
+
+.sg-bear__held {
+  position: absolute;
+  left: 50%; top: 62%;
+  width: 26px; height: 26px;
+  transform: translate(-50%, -50%);
+  animation: sg-heartpulse 1.6s ease-in-out infinite;
+}
+.sg-bear__held .sg-heart, .sg-bear__gloss { position: absolute; inset: 0; }
+.sg-bear__hat {
+  position: absolute;
+  left: 50%; top: 8%;
+  width: 30px; height: 30px;
+  transform: translate(-50%, 0) rotate(-12deg);
+}
+
+.sg-blink { animation: sg-blink 5s ease-in-out infinite; transform-origin: center; transform-box: fill-box; }
+.sg-wave { animation: sg-wave 1.4s ease-in-out infinite; transform-origin: 82px 70px; }
+
+@keyframes sg-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(1px); } }
+@keyframes sg-hop { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+@keyframes sg-lovefloat {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  25% { transform: translateY(-4px) rotate(1deg); }
+  75% { transform: translateY(-2px) rotate(-1deg); }
+}
+@keyframes sg-blink { 0%, 92%, 100% { transform: scaleY(1); } 95%, 98% { transform: scaleY(0.1); } }
+@keyframes sg-wave { 0%, 100% { transform: rotate(0deg); } 25% { transform: rotate(-12deg); } 75% { transform: rotate(12deg); } }
+@keyframes sg-heartpulse { 0%, 100% { transform: translate(-50%, -50%) scale(1); } 50% { transform: translate(-50%, -50%) scale(1.12); } }
+
+.sg-heart { display: inline-block; vertical-align: -2px; }
+.sg-heart--beat { animation: sg-beat 1.6s ease-in-out infinite; }
+@keyframes sg-beat { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.2); } }
+
+/* --------------------------------------------------------- scene 1 · envelope */
+
+.sg-env {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  width: 78%;
+  max-width: 360px;
+}
+
+.sg-env__bear {
+  position: absolute;
+  left: -8px;
+  bottom: 0;
+  z-index: 20;
+  opacity: 0;
+  animation: sg-fadeup 1s ease-out 0.4s both;
+}
+
+.sg-env__paper {
+  position: relative;
+  width: 100%;
+  max-width: 320px;
+  aspect-ratio: 5 / 3.4;
+  animation: sg-envin 1.1s ease-out both;
+}
+
+.sg-env__svg { display: block; width: 100%; height: 100%; }
+
+.sg-env__flap {
+  transform-origin: 160px 60px;
+  transition: transform 1.3s cubic-bezier(0.5, 0, 0.3, 1);
+}
+.sg-env__flap--under { opacity: 0; transition: transform 1.3s cubic-bezier(0.5, 0, 0.3, 1), opacity 0.3s ease; }
+.sg-scene--envelope.is-opening .sg-env__flap { transform: rotate(-180deg); }
+.sg-scene--envelope.is-opening .sg-env__flap--under { opacity: 1; }
+
+.sg-env__addressee {
+  position: absolute;
+  left: 0; right: 0; top: 30%;
+  margin: 0;
+  text-align: center;
+  font-family: 'Dancing Script', cursive;
+  font-size: clamp(0.95rem, 3.6vw, 1.2rem);
+  font-weight: 600;
+  color: #8a6a55;
+  letter-spacing: 0.01em;
+  pointer-events: none;
+}
+.sg-env__for {
+  display: block;
+  font-family: 'Quicksand', system-ui, sans-serif;
+  font-size: 0.55rem;
+  font-weight: 500;
+  letter-spacing: 0.34em;
+  text-transform: uppercase;
+  color: rgba(122, 102, 85, 0.55);
+  margin-bottom: 2px;
+}
+
+.sg-env__burst {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  opacity: 0;
+}
+.sg-scene--envelope.is-opening .sg-env__burst { opacity: 1; transition: opacity 0.5s ease 0.4s; }
+.sg-env__burst span {
+  width: 70%; height: 70%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 240, 200, 0.95) 0%, rgba(255, 210, 170, 0.6) 40%, transparent 75%);
+  filter: blur(8px);
+  opacity: 0;
+}
+.sg-scene--envelope.is-opening .sg-env__burst span { animation: sg-burst 1.3s ease-out 0.4s forwards; }
+
+.sg-env__headline {
+  margin: 40px 0 0;
+  text-align: center;
+  font-family: 'Dancing Script', cursive;
+  font-size: clamp(2rem, 7vw, 2.8rem);
+  color: #7a4538;
+  line-height: 1.1;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  animation: sg-fadeup 0.8s ease-out 0.6s both;
+  transition: opacity 0.8s ease, transform 0.8s ease;
+}
+
+.sg-open {
+  margin-top: 24px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  animation: sg-fadeup 0.7s ease-out 0.9s both;
+  transition: opacity 0.7s ease, transform 0.7s ease;
+}
+.sg-open__inner {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 32px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #FBF6EE 0%, #F7E2DD 100%);
+  color: #9C3B3B;
+  border: 1px solid rgba(191, 137, 128, 0.35);
+  box-shadow: 0 6px 20px -6px rgba(120, 70, 55, 0.25), inset 0 0 0 1px rgba(255, 250, 240, 0.6);
+  font-family: 'Quicksand', system-ui, sans-serif;
+  font-size: 0.95rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-weight: 500;
+  transition: box-shadow 0.5s ease, transform 0.5s ease;
+}
+.sg-open:hover .sg-open__inner { box-shadow: 0 10px 26px -8px rgba(120, 70, 55, 0.32), inset 0 0 0 1px rgba(255, 250, 240, 0.7); transform: translateY(-1px); }
+.sg-open:focus-visible .sg-open__inner { outline: 2px solid #9C3B3B; outline-offset: 3px; }
+
+.sg-hint {
+  position: absolute;
+  bottom: 20px;
+  left: 0; right: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  opacity: 0;
+  animation: sg-fadein-soft 1.4s ease-out 1.4s both;
+}
+.sg-hint__dots { display: flex; gap: 6px; animation: sg-dotpulse 2s ease-in-out 1.4s infinite; }
+.sg-hint__dots span { display: block; width: 4px; height: 4px; border-radius: 50%; background: #Bf8980; }
+.sg-hint__label {
+  font-size: 0.6rem;
+  color: rgba(122, 102, 85, 0.5);
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  animation: sg-labelpulse 2.4s ease-in-out 1.4s infinite;
+}
+
+/* Everything but the envelope itself steps aside once it is opening. */
+.sg-scene--envelope.is-opening .sg-env__headline { opacity: 0; transform: translateY(-8px); }
+.sg-scene--envelope.is-opening .sg-open { opacity: 0; transform: translateY(6px); pointer-events: none; }
+.sg-scene--envelope.is-opening .sg-hint { opacity: 0; animation: none; transition: opacity 0.6s ease; }
+.sg-scene--envelope.is-opening .sg-env__bear { animation: sg-bearjump 0.8s ease-out both; }
+
+@keyframes sg-fadeup { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes sg-envin { from { opacity: 0; transform: translateY(20px) scale(0.92); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@keyframes sg-fadein-soft { from { opacity: 0; } to { opacity: 0.6; } }
+@keyframes sg-dotpulse { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
+@keyframes sg-labelpulse { 0%, 100% { opacity: 0.4; } 50% { opacity: 0.7; } }
+@keyframes sg-burst {
+  0% { transform: scale(0.5); opacity: 0; }
+  50% { transform: scale(1.4); opacity: 1; }
+  100% { transform: scale(1.8); opacity: 0; }
+}
+@keyframes sg-bearjump {
+  0% { opacity: 1; transform: translateY(0) rotate(0deg); }
+  50% { opacity: 1; transform: translateY(-8px) rotate(4deg); }
+  100% { opacity: 1; transform: translateY(0) rotate(0deg); }
+}
+
+/* ----------------------------------------------------------- scene 2 · reveal */
+
+.sg-reveal__bear {
+  position: absolute;
+  right: -10%;
+  bottom: 10%;
+  z-index: 10;
+  opacity: 0;
+  transform: rotate(-8deg) translateX(60px);
+  animation: sg-peekin 1.4s ease-out 0.6s both;
+}
+@keyframes sg-peekin {
+  from { opacity: 0; transform: rotate(-8deg) translateX(60px); }
+  to { opacity: 1; transform: rotate(-8deg) translateX(0); }
+}
+
+.sg-lines {
+  position: relative;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 28px;
+  max-width: 88%;
+}
+
+.sg-line {
+  margin: 0;
+  font-family: 'Dancing Script', cursive;
+  letter-spacing: 0.01em;
+  opacity: 0;
+  transform: translateY(14px);
+  filter: blur(6px);
+}
+.sg-line--1 { font-size: clamp(1.4rem, 5vw, 1.9rem); color: #8a6a55; line-height: 1.35; font-weight: 500; transition: opacity 1.4s ease-out, transform 1.4s ease-out, filter 1.4s ease-out; }
+.sg-line--2 { font-size: clamp(1.4rem, 5vw, 1.9rem); color: #7a4538; line-height: 1.35; font-weight: 500; transition: opacity 1.5s ease-out, transform 1.5s ease-out, filter 1.5s ease-out; }
+.sg-line--3 { font-size: clamp(1.7rem, 6vw, 2.3rem); color: #9C3B3B; line-height: 1.3; font-weight: 600; transform: translateY(18px) scale(0.96); filter: blur(8px); transition: opacity 1.6s ease-out, transform 1.6s ease-out, filter 1.6s ease-out; }
+
+.sg-scene--reveal.is-step1 .sg-line--1,
+.sg-scene--reveal.is-step2 .sg-line--2 { opacity: 1; transform: translateY(0); filter: blur(0px); }
+.sg-scene--reveal.is-step3 .sg-line--3 { opacity: 1; transform: translateY(0) scale(1); filter: blur(0px); }
+
+.sg-keepgoing {
+  position: absolute;
+  bottom: 24px;
+  left: 0; right: 0;
+  display: flex;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 1.5s ease 2.5s;
+}
+.sg-scene--reveal.is-step3 .sg-keepgoing { opacity: 0.5; }
+.sg-keepgoing span {
+  font-size: 0.65rem;
+  color: #7a6655;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  animation: sg-nudge 2s ease-in-out infinite;
+}
+@keyframes sg-nudge { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(4px); } }
+
+/* --------------------------------------------------------- scene 3 · birthday */
+
+.sg-cake {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  margin-bottom: 24px;
+  width: 70%;
+  max-width: 280px;
+  opacity: 0;
+  transform: translateY(30px) scale(0.85);
+  transition: opacity 1.3s ease-out, transform 1.3s ease-out;
+}
+.sg-scene--birthday.is-step1 .sg-cake { opacity: 1; transform: translateY(0) scale(1); }
+
+.sg-cake__bear { position: absolute; left: -8px; bottom: 0; z-index: 20; animation: sg-bob 3.4s ease-in-out infinite; }
+.sg-cake__bear--wished { display: none; }
+.sg-scene--birthday.is-wished .sg-cake__bear { display: none; }
+.sg-scene--birthday.is-wished .sg-cake__bear--wished { display: block; animation: sg-cheer 0.7s ease-out 3; }
+@keyframes sg-cheer {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  33% { transform: translateY(-10px) rotate(-6deg); }
+  66% { transform: translateY(-4px) rotate(6deg); }
+}
+
+.sg-cake__art {
+  position: relative;
+  width: 100%;
+  max-width: 200px;
+  aspect-ratio: 1 / 1;
+  cursor: pointer;
+}
+.sg-scene--birthday.is-wished .sg-cake__art { cursor: default; }
+.sg-cake__art:focus-visible { outline: 2px solid #9C3B3B; outline-offset: 6px; border-radius: 12px; }
+
+.sg-cake__flame { transition: opacity 0.3s ease, transform 0.3s ease; transform-origin: center bottom; }
+.sg-scene--birthday.is-wished .sg-cake__flame { opacity: 0; transform: scale(0) translateY(-10px); }
+.sg-flicker { animation: sg-flicker 0.5s ease-in-out infinite; }
+@keyframes sg-flicker {
+  0%, 100% { transform: scale(1) rotate(-1deg); opacity: 0.95; }
+  25% { transform: scale(1.08) rotate(1deg); opacity: 1; }
+  50% { transform: scale(0.96) rotate(-0.5deg); opacity: 0.88; }
+  75% { transform: scale(1.05) rotate(0.5deg); opacity: 1; }
+}
+
+.sg-confetti { position: absolute; inset: 0; pointer-events: none; }
+.sg-confetti i {
+  position: absolute;
+  left: 50%;
+  top: 40%;
+  width: var(--size, 12px);
+  height: var(--size, 12px);
+  opacity: 0;
+  animation: sg-confetti var(--dur, 2s) ease-out both;
+}
+.sg-confetti i svg { display: block; width: 100%; height: 100%; }
+@keyframes sg-confetti {
+  0% { opacity: 0; transform: translate(0, 0) scale(0) rotate(0deg); }
+  35% { opacity: 1; transform: translate(calc(var(--dx) * 0.5), calc(var(--dy) * 0.5)) scale(1) rotate(calc(var(--rot) * 0.5)); }
+  100% { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(0.6) rotate(var(--rot)); }
+}
+
+.sg-birthday__copy {
+  position: relative;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 16px;
+  margin-top: 8px;
+}
+
+.sg-attention {
+  margin: 0;
+  font-family: 'Dancing Script', cursive;
+  font-size: clamp(1.15rem, 4.2vw, 1.5rem);
+  color: #8a6a55;
+  line-height: 1.3;
+  font-weight: 500;
+  opacity: 0;
+  transform: translateY(10px);
+  filter: blur(4px);
+  transition: opacity 1.1s ease-out, transform 1.1s ease-out, filter 1.1s ease-out;
+}
+.sg-scene--birthday.is-step2 .sg-attention { opacity: 1; transform: translateY(0); filter: blur(0px); }
+/* The line steps aside the moment the wish lands. */
+.sg-scene--birthday.is-step3 .sg-attention { opacity: 0; transform: translateY(-6px); filter: blur(4px); }
+
+.sg-wish {
+  margin: 0;
+  font-family: 'Dancing Script', cursive;
+  font-size: clamp(2rem, 8vw, 3rem);
+  color: #9C3B3B;
+  line-height: 1.05;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  opacity: 0;
+  transform: scale(0.85);
+  filter: blur(8px);
+  transition: opacity 1.2s ease-out, transform 1.2s ease-out, filter 1.2s ease-out;
+}
+.sg-scene--birthday.is-step3 .sg-wish { opacity: 1; transform: scale(1); filter: blur(0px); }
+
+.sg-makewish {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 1s ease-out, transform 1s ease-out;
+}
+.sg-scene--birthday.is-step4 .sg-makewish { opacity: 1; transform: translateY(0); }
+.sg-scene--birthday.is-wished .sg-makewish { opacity: 0; transform: translateY(8px); }
+.sg-makewish__title {
+  margin: 0;
+  font-family: 'Dancing Script', cursive;
+  font-size: clamp(1.3rem, 5vw, 1.7rem);
+  color: #8a6a55;
+  font-weight: 500;
+}
+.sg-makewish__hint {
+  margin: 4px 0 0;
+  font-size: 0.7rem;
+  color: rgba(122, 102, 85, 0.65);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  animation: sg-labelpulse 2.2s ease-in-out infinite;
+}
+
+.sg-cametrue {
+  margin: 0;
+  font-family: 'Dancing Script', cursive;
+  font-size: clamp(1.2rem, 4.5vw, 1.6rem);
+  color: #9C3B3B;
+  font-weight: 500;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 1s ease 0.4s, transform 1s ease 0.4s;
+}
+.sg-scene--birthday.is-wished .sg-cametrue { opacity: 1; transform: translateY(0); }
+
+/* ------------------------------------------------------------ scene 4 · love */
+
+.sg-love__bear {
+  position: relative;
+  z-index: 20;
+  margin-bottom: 32px;
+  animation: sg-lovein 1.5s ease-out both;
+}
+@keyframes sg-lovein { from { opacity: 0; transform: translateY(24px) scale(0.85); } to { opacity: 1; transform: translateY(0) scale(1); } }
+
+.sg-love {
+  position: relative;
+  z-index: 20;
+  margin: 0;
+  text-align: center;
+  font-family: 'Dancing Script', cursive;
+  font-size: clamp(2.2rem, 9vw, 3.2rem);
+  color: #9C3B3B;
+  line-height: 1.05;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  animation: sg-lovetext 1.6s ease-out 0.4s both;
+}
+@keyframes sg-lovetext { from { opacity: 0; transform: translateY(18px); filter: blur(8px); } to { opacity: 1; transform: translateY(0); filter: blur(0px); } }
+
+.sg-note {
+  position: relative;
+  z-index: 20;
+  max-width: 78%;
+  margin: 14px 0 0;
+  text-align: center;
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-style: italic;
+  font-size: clamp(0.98rem, 3.4vw, 1.2rem);
+  line-height: 1.5;
+  color: #8a6a55;
+  animation: sg-fadein 1.6s ease-out 1.4s both;
+}
+@keyframes sg-fadein { from { opacity: 0; } to { opacity: 1; } }
+
+.sg-signature {
+  position: absolute;
+  bottom: 40px;
+  left: 0; right: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 2s ease-out, transform 2s ease-out;
+}
+.sg-scene--love.is-signed .sg-signature { opacity: 1; transform: translateY(0); }
+.sg-signature__from {
+  margin: 0 0 6px;
+  font-family: 'Dancing Script', cursive;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #7a4538;
+}
+.sg-signature__mark {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  animation: sg-signpulse 4s ease-in-out infinite;
+}
+.sg-signature__mark h3 {
+  margin: 0;
+  font-family: 'Dancing Script', cursive;
+  font-size: clamp(1.6rem, 6vw, 2.1rem);
+  color: #7a4538;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+.sg-signature__dot { font-size: 0.7rem; color: rgba(122, 102, 85, 0.5); letter-spacing: 0.4em; }
+.sg-signature__line {
+  margin: 8px 0 0;
+  font-size: 0.7rem;
+  color: rgba(122, 102, 85, 0.55);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+@keyframes sg-signpulse { 0%, 100% { opacity: 0.85; } 50% { opacity: 1; } }
+
+/* -------------------------------------------------------------- particles */
+
+.sg-particles { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 1; }
+
+.sg-sweep {
+  position: absolute;
+  top: 0; bottom: 0;
+  left: -33.33%;
+  width: 50%;
+  background: linear-gradient(90deg, transparent 0%, rgba(255, 240, 220, 0.08) 50%, transparent 100%);
+  animation: sg-sweep 14s ease-in-out 2s infinite;
+}
+@keyframes sg-sweep {
+  0% { transform: translateX(-30%) rotate(8deg); opacity: 0; }
+  50% { opacity: 0.5; }
+  100% { transform: translateX(130%) rotate(8deg); opacity: 0; }
+}
+
+.sg-particles i {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  width: var(--size);
+  height: var(--size);
+  opacity: var(--op);
+}
+.sg-particles i svg { display: block; width: 100%; height: 100%; }
+
+.sg-p--bokeh {
+  border-radius: 50%;
+  filter: blur(2px);
+  background: radial-gradient(circle at 40% 40%, rgba(255, 235, 210, 0.55), transparent 70%);
+  animation: sg-bokeh var(--dur) ease-in-out var(--delay) infinite;
+}
+/* The love-scene bokeh/dust/heart colours are set inline by letter.js, which
+   rebuilds the field whenever the palette changes. */
+@keyframes sg-bokeh {
+  0%, 100% { transform: translate(0, 0); opacity: var(--op); }
+  50% { transform: translate(calc(var(--drift) * 0.3), -16px); opacity: calc(var(--op) * 1.6); }
+}
+
+.sg-p--dust {
+  border-radius: 50%;
+  background: #F8E8D0;
+  box-shadow: 0 0 4px rgba(255, 220, 180, 0.6);
+  animation: sg-dust var(--dur) ease-out var(--delay) infinite;
+}
+@keyframes sg-dust {
+  0% { transform: translate(0, 0); opacity: 0; }
+  50% { opacity: var(--op); }
+  100% { transform: translate(var(--drift), -120px); opacity: 0; }
+}
+
+.sg-p--star { animation: sg-twinkle var(--dur) ease-in-out var(--delay) infinite; }
+@keyframes sg-twinkle {
+  0% { transform: scale(0.6) rotate(0deg); opacity: 0.15; }
+  50% { transform: scale(1.2) rotate(45deg); opacity: var(--op); }
+  100% { transform: scale(0.6) rotate(90deg); opacity: 0.15; }
+}
+
+.sg-p--heart { animation: sg-heartfloat var(--dur) ease-out var(--delay) infinite; }
+@keyframes sg-heartfloat {
+  0% { transform: translate(0, 0) scale(0.6); opacity: 0; }
+  50% { opacity: var(--op); transform: translate(calc(var(--drift) * 0.5), -70px) scale(1); }
+  100% { transform: translate(var(--drift), -140px) scale(0.7); opacity: 0; }
+}
+
+/* ------------------------------------------------------------ music toggle */
+
+.sg-music {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border-radius: 50%;
+  background: rgba(251, 246, 238, 0.85);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(191, 137, 128, 0.3);
+  box-shadow: 0 4px 14px -4px rgba(80, 40, 30, 0.3);
+  color: #9C3B3B;
+  cursor: pointer;
+  opacity: 0;
+  transform: scale(0.6);
+  transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+}
+.sg-music.is-shown { opacity: 1; transform: scale(1); }
+.sg-music__note { font-size: 1.1rem; font-weight: 500; line-height: 1; transition: opacity 0.3s ease; }
+.sg-music__ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 1px solid rgba(191, 137, 128, 0.4);
+  pointer-events: none;
+  animation: sg-ring 2s ease-out infinite;
+}
+.sg-music__slash { position: absolute; display: none; }
+.sg-music.is-muted .sg-music__note { opacity: 0.4; }
+.sg-music.is-muted .sg-music__ring { display: none; }
+.sg-music.is-muted .sg-music__slash { display: block; }
+@keyframes sg-ring { 0% { transform: scale(1); opacity: 0.6; } 100% { transform: scale(1.3); opacity: 0; } }
+
+.sg-previewbadge {
+  position: fixed;
+  top: 16px;
+  left: 16px;
+  z-index: 50;
+  padding: 7px 14px;
+  border-radius: 999px;
+  background: rgba(156, 59, 59, 0.92);
+  color: #FBF6EE;
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+}
+
+/* --------------------------------------------------------- reduced motion */
+
+@media (prefers-reduced-motion: reduce) {
+  .sg-bg.is-on, .sg-glow, .sg-bear, .sg-blink, .sg-wave, .sg-flicker, .sg-sweep,
+  .sg-particles i, .sg-heart--beat, .sg-bear__held, .sg-hint__dots, .sg-hint__label,
+  .sg-makewish__hint, .sg-signature__mark, .sg-keepgoing span, .sg-music__ring,
+  .sg-env__bear, .sg-env__paper, .sg-env__headline, .sg-open, .sg-hint,
+  .sg-reveal__bear, .sg-love__bear, .sg-love, .sg-note, .sg-confetti i {
+    animation: none !important;
+  }
+  /* Beats still arrive, they simply stop travelling. */
+  .sg-scene, .sg-line, .sg-cake, .sg-attention, .sg-wish, .sg-makewish,
+  .sg-cametrue, .sg-signature, .sg-env__flap, .sg-env__flap--under,
+  .sg-cake__flame, .sg-keepgoing, .sg-bg {
+    transition-property: opacity !important;
+    transition-duration: 0.4s !important;
+    transition-delay: 0s !important;
+    transform: none !important;
+    filter: none !important;
+  }
+  .sg-env__bear, .sg-env__paper, .sg-env__headline, .sg-open, .sg-reveal__bear,
+  .sg-love__bear, .sg-love, .sg-note { opacity: 1; }
+  .sg-hint { opacity: 0.6; }
+  .sg-scene--envelope.is-opening .sg-env__flap { transform: none !important; }
+  .sg-particles i { opacity: var(--op); }
+}

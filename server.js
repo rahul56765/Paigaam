@@ -24,6 +24,7 @@ const { qrSVG } = require('./lib/qrcode');
 const { ensureBrandAssets } = require('./lib/brand-assets');
 const { ensureGanapatiMedia } = require('./lib/ganapatiMedia');
 const ganapati = require('./lib/ganapatiRoutes');
+const saalgirah = require('./lib/saalgirahRoutes');
 const { streamFile } = require('./lib/streamFile');
 
 const PORT = Number(process.env.PORT || 3000);
@@ -155,6 +156,7 @@ const server = http.createServer(async (req, res) => {
     const method = req.method;
 
     if (await ganapati.handle(req, res, u, { baseUrl: BASE_URL, isAdmin: !!getAdmin(req) })) return;
+    if (await saalgirah.handle(req, res, u, { baseUrl: BASE_URL, isAdmin: !!getAdmin(req) })) return;
     if (['GET', 'HEAD'].includes(method) && serveStatic(req, res, p)) return;
 
     /* ---------- health (checks storage persistence) ---------- */
@@ -214,6 +216,10 @@ const server = http.createServer(async (req, res) => {
         if (!getAdmin(req) && !ganapati.owned(req, pg.id)) return json(res, 403, { error: 'forbidden' });
         return redirect(res, '/ganapati/preview/' + pg.id);
       }
+      if (pg.template_slug === saalgirah.SLUG) {
+        if (!getAdmin(req) && !saalgirah.owned(req, pg.id)) return json(res, 403, { error: 'forbidden' });
+        return redirect(res, '/saalgirah/preview/' + pg.id);
+      }
       return send(res, 200, previewPage(pg, q.settings(), { baseUrl: BASE_URL }));
     }
     m = p.match(/^\/p\/([a-z0-9-]+)$/);
@@ -234,7 +240,7 @@ const server = http.createServer(async (req, res) => {
     if (method === 'GET' && m) {
       const pg = q.paigaamById(m[1]);
       if (!pg) return send(res, 404, errorPage('404', 'This Paigaam seems to have wandered away.', "Let's take you back home."));
-      if (pg.template_slug === ganapati.SLUG) return json(res, 403, { error: 'use_template_endpoint' });
+      if ([ganapati.SLUG, saalgirah.SLUG].includes(pg.template_slug)) return json(res, 403, { error: 'use_template_endpoint' });
       const settings = q.settings();
       const num = (settings.whatsapp_number || '').replace(/\D/g, '');
       const d = pg.customer_data || {};
@@ -272,7 +278,7 @@ const server = http.createServer(async (req, res) => {
       const body = JSON.parse(await readBody(req) || '{}');
       const pg = q.paigaamById(body.id);
       if (!pg) return json(res, 404, { error: 'not_found' });
-      if (pg.template_slug === ganapati.SLUG) return json(res, 403, { error: 'use_template_endpoint' });
+      if ([ganapati.SLUG, saalgirah.SLUG].includes(pg.template_slug)) return json(res, 403, { error: 'use_template_endpoint' });
       if (Number(pg.template_price) > 0) return json(res, 403, { error: 'not_free' });
       const pub = publishPaigaam(pg);
       return json(res, 200, { slug: pub.slug, url: `${BASE_URL}/p/${pub.slug}` });
@@ -281,7 +287,7 @@ const server = http.createServer(async (req, res) => {
       const body = JSON.parse(await readBody(req) || '{}');
       const tpl = q.templateBySlug(body.template);
       if (!tpl) return json(res, 404, { error: 'template_not_found' });
-      if (tpl.slug === ganapati.SLUG || (body.id && q.paigaamById(body.id)?.template_slug === ganapati.SLUG)) return json(res, 403, { error: 'use_template_endpoint' });
+      if ([ganapati.SLUG, saalgirah.SLUG].includes(tpl.slug) || [ganapati.SLUG, saalgirah.SLUG].includes(q.paigaamById(body.id)?.template_slug)) return json(res, 403, { error: 'use_template_endpoint' });
       const data = body.customer_data && typeof body.customer_data === 'object' ? body.customer_data : {};
       const isCustom = !!(tpl.config && tpl.config.custom);
       // For fixed templates, the sender's name is the display name; for native
@@ -303,7 +309,7 @@ const server = http.createServer(async (req, res) => {
       const body = JSON.parse(await readBody(req) || '{}');
       const tpl = q.templateBySlug(body.template);
       if (!tpl) return json(res, 404, { error: 'template_not_found' });
-      if (tpl.slug === ganapati.SLUG) return json(res, 403, { error: 'use_template_endpoint' });
+      if ([ganapati.SLUG, saalgirah.SLUG].includes(tpl.slug)) return json(res, 403, { error: 'use_template_endpoint' });
       const html = renderPaigaamPage(
         { slug: tpl.slug, category: tpl.category, config: tpl.config },
         { customer_data: body.customer_data || {}, slug: null },

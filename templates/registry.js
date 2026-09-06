@@ -48,6 +48,7 @@ const GROUPS = [
 ];
 
 const TEMPLATES = [
+  require('./saalgirah/config'),
   require('./ganapati-aagman/config'),
   {
     slug: 'noor',
@@ -126,6 +127,7 @@ function fieldGroups(template) {
 function displayNames(tplSlug, data) {
   const d = data || {};
   if (tplSlug === 'ganapati-aagman') return [d.familyName || 'Your family'];
+  if (tplSlug === 'saalgirah') return [d.recipientName || 'You'];
   if (tplSlug === 'noor')  return [d.brideName || 'The Bride', d.groomName || 'The Groom'];
   if (tplSlug === 'meher') return [d.personName || 'Someone lovely'];
   if (tplSlug === 'aashi') return [d.partnerOne || 'You', d.partnerTwo || 'Yours'];
