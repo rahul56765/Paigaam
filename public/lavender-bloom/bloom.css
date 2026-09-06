@@ -238,7 +238,10 @@ body.lb {
 
 /* ------------------------------------------------------------- stage 2 · game */
 
-.lb-stage--game { justify-content: center; gap: clamp(14px, 4vmin, 26px); }
+/* The topline joins the flow here so it can never collide with the subtitle. */
+.lb-stage--game .lb-topline { position: static; margin: 0; }
+
+.lb-stage--game { justify-content: center; gap: clamp(10px, 3vmin, 20px); }
 
 .lb-subtitle {
   margin: 0;
@@ -433,6 +436,7 @@ body.lb {
   z-index: 6;
   text-align: center;
   max-width: 82%;
+  margin-top: clamp(120px, 30vmin, 210px);
   opacity: 0;
   transform: translateY(16px);
   transition: opacity 0.9s ease, transform 0.9s ease;
