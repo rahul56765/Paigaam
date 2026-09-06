@@ -26,6 +26,7 @@ const { ensureGanapatiMedia } = require('./lib/ganapatiMedia');
 const { ensureCourtyardMedia } = require('./lib/courtyardMedia');
 const ganapati = require('./lib/ganapatiRoutes');
 const saalgirah = require('./lib/saalgirahRoutes');
+const lavender = require('./lib/lavenderRoutes');
 const courtyard = require('./lib/courtyardRoutes');
 const { streamFile } = require('./lib/streamFile');
 
@@ -165,6 +166,7 @@ const server = http.createServer(async (req, res) => {
 
     if (await ganapati.handle(req, res, u, { baseUrl: BASE_URL, isAdmin: !!getAdmin(req) })) return;
     if (await saalgirah.handle(req, res, u, { baseUrl: BASE_URL, isAdmin: !!getAdmin(req) })) return;
+    if (await lavender.handle(req, res, u, { baseUrl: BASE_URL, isAdmin: !!getAdmin(req) })) return;
     if (await courtyard.handle(req, res, u, { baseUrl: BASE_URL, isAdmin: !!getAdmin(req) })) return;
     if (['GET', 'HEAD'].includes(method) && serveStatic(req, res, p)) return;
 
@@ -229,6 +231,10 @@ const server = http.createServer(async (req, res) => {
         if (!getAdmin(req) && !saalgirah.owned(req, pg.id)) return json(res, 403, { error: 'forbidden' });
         return redirect(res, '/saalgirah/preview/' + pg.id);
       }
+      if (pg.template_slug === lavender.SLUG) {
+        if (!getAdmin(req) && !lavender.owned(req, pg.id)) return json(res, 403, { error: 'forbidden' });
+        return redirect(res, '/lavender-bloom/preview/' + pg.id);
+      }
       if (pg.template_slug === courtyard.SLUG) {
         if (!getAdmin(req) && !courtyard.owned(req, pg.id)) return json(res, 403, { error: 'forbidden' });
         return redirect(res, '/ganpati-courtyard/preview/' + pg.id);
@@ -291,7 +297,7 @@ const server = http.createServer(async (req, res) => {
       const body = JSON.parse(await readBody(req) || '{}');
       const pg = q.paigaamById(body.id);
       if (!pg) return json(res, 404, { error: 'not_found' });
-      if ([ganapati.SLUG, saalgirah.SLUG, courtyard.SLUG].includes(pg.template_slug)) return json(res, 403, { error: 'use_template_endpoint' });
+      if ([ganapati.SLUG, saalgirah.SLUG, courtyard.SLUG, lavender.SLUG].includes(pg.template_slug)) return json(res, 403, { error: 'use_template_endpoint' });
       if (Number(pg.template_price) > 0) return json(res, 403, { error: 'not_free' });
       const pub = publishPaigaam(pg);
       return json(res, 200, { slug: pub.slug, url: `${BASE_URL}/p/${pub.slug}` });
@@ -300,7 +306,7 @@ const server = http.createServer(async (req, res) => {
       const body = JSON.parse(await readBody(req) || '{}');
       const tpl = q.templateBySlug(body.template);
       if (!tpl) return json(res, 404, { error: 'template_not_found' });
-      if ([ganapati.SLUG, saalgirah.SLUG, courtyard.SLUG].includes(tpl.slug) || [ganapati.SLUG, saalgirah.SLUG, courtyard.SLUG].includes(q.paigaamById(body.id)?.template_slug)) return json(res, 403, { error: 'use_template_endpoint' });
+      if ([ganapati.SLUG, saalgirah.SLUG, courtyard.SLUG, lavender.SLUG].includes(tpl.slug) || [ganapati.SLUG, saalgirah.SLUG, courtyard.SLUG, lavender.SLUG].includes(q.paigaamById(body.id)?.template_slug)) return json(res, 403, { error: 'use_template_endpoint' });
       const data = body.customer_data && typeof body.customer_data === 'object' ? body.customer_data : {};
       const isCustom = !!(tpl.config && tpl.config.custom);
       // For fixed templates, the sender's name is the display name; for native
@@ -322,7 +328,7 @@ const server = http.createServer(async (req, res) => {
       const body = JSON.parse(await readBody(req) || '{}');
       const tpl = q.templateBySlug(body.template);
       if (!tpl) return json(res, 404, { error: 'template_not_found' });
-      if ([ganapati.SLUG, saalgirah.SLUG, courtyard.SLUG].includes(tpl.slug)) return json(res, 403, { error: 'use_template_endpoint' });
+      if ([ganapati.SLUG, saalgirah.SLUG, courtyard.SLUG, lavender.SLUG].includes(tpl.slug)) return json(res, 403, { error: 'use_template_endpoint' });
       const html = renderPaigaamPage(
         { slug: tpl.slug, category: tpl.category, config: tpl.config },
         { customer_data: body.customer_data || {}, slug: null },
