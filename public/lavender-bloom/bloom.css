@@ -253,7 +253,7 @@ body.lb {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: clamp(8px, 2.4vmin, 14px);
-  width: min(68vmin, 300px);
+  width: min(62vmin, 290px);
   aspect-ratio: 1;
   padding: clamp(10px, 3vmin, 16px);
   background: #C2DCF9;
@@ -386,13 +386,15 @@ body.lb {
 .lb-flower {
   position: absolute;
   left: 50%;
-  bottom: 30%;
-  width: min(46vmin, 200px);
+  bottom: 40%;
+  width: min(42vmin, 180px);
   aspect-ratio: 200 / 220;
   transform: translateX(-50%);
   pointer-events: none;
 }
 .lb-flower__art { position: absolute; inset: 0; }
+/* Keep the copy clear of the bloom on short squares. */
+.lb-flower__svg { transform: translateY(-6%); }
 
 .lb-flower__stem {
   transform-origin: 100px 212px;
@@ -484,6 +486,10 @@ body.lb {
   .lb-stage, .lb-stage.is-active, .lb-stage.is-leaving { transition: opacity 0.2s ease; transform: none; }
   .lb-gift__art, .lb-gift__label, .lb-hint__dot, .lb-finale__hearts .lb-heart { animation: none; }
   .lb-env__flap, .lb-flower__stem, .lb-flower__head { transition-duration: 0.2s; }
+  #lbWinLine { stroke-dasharray: none; stroke-dashoffset: 0; }
+  .lb-sparkles { display: none; }
+}
+flower__head { transition-duration: 0.2s; }
   #lbWinLine { stroke-dasharray: none; stroke-dashoffset: 0; }
   .lb-sparkles { display: none; }
 }
