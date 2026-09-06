@@ -89,8 +89,14 @@ test('validate: rejects oversized, non-string and control-char input', () => {
 test('assets decode to the checksummed originals', () => {
   const manifest = JSON.parse(fs.readFileSync(path.join(__dirname, '../assets/ganpati-courtyard/manifest.json'), 'utf8'));
   const { createHash } = require('node:crypto');
+  const dir = path.join(__dirname, '../assets/ganpati-courtyard/');
   for (const [name, expected] of Object.entries(manifest)) {
-    const bytes = Buffer.from(fs.readFileSync(path.join(__dirname, '../assets/ganpati-courtyard/', name + '.b64'), 'utf8').trim(), 'base64');
+    // Large assets may be split across .partN files (git-transfer size limits).
+    const parts = fs.readdirSync(dir).filter((f) => f.startsWith(name + '.b64.part')).sort();
+    const b64 = parts.length
+      ? parts.map((p) => fs.readFileSync(path.join(dir, p), 'utf8').trim()).join('')
+      : fs.readFileSync(path.join(dir, name + '.b64'), 'utf8').trim();
+    const bytes = Buffer.from(b64, 'base64');
     assert.equal(createHash('sha256').update(bytes).digest('hex'), expected, name + ' round-trips');
   }
   assert.ok(manifest['courtyard.mp4'], 'the source video is shipped');
