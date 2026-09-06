@@ -6,4 +6,5 @@ cookies.txt
 .env
 .env.local
 public/ganapati/media/
+public/ganpati-courtyard/media/
 test-output/

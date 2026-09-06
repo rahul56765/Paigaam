@@ -48,6 +48,7 @@ const GROUPS = [
 ];
 
 const TEMPLATES = [
+  require('./ganpati-courtyard/config'),
   require('./saalgirah/config'),
   require('./ganapati-aagman/config'),
   {
@@ -126,6 +127,7 @@ function fieldGroups(template) {
 /** Display helpers used across renderers. */
 function displayNames(tplSlug, data) {
   const d = data || {};
+  if (tplSlug === 'ganpati-courtyard') return [d.familyName || 'Your family'];
   if (tplSlug === 'ganapati-aagman') return [d.familyName || 'Your family'];
   if (tplSlug === 'saalgirah') return [d.recipientName || 'You'];
   if (tplSlug === 'noor')  return [d.brideName || 'The Bride', d.groomName || 'The Groom'];

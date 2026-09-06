@@ -1,6 +1,8 @@
 # Paigaam needs Node 22.5+ for node:sqlite. Pin Node 24.
+# ffmpeg (nixpkgs build includes libass + fontconfig) renders the
+# Ganpati Courtyard MP4 exports at /api/ganpati-courtyard/export.
 [phases.setup]
-nixPkgs = ["nodejs_24"]
+nixPkgs = ["nodejs_24", "ffmpeg"]
 
 [start]
 cmd = "node server.js"
