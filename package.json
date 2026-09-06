@@ -9,9 +9,10 @@
     "dev": "node --watch server.js",
     "build": "node scripts/prepare-ganapati.js",
     "postinstall": "node scripts/prepare-ganapati.js",
-    "test": "node scripts/test-ganapati.js && node scripts/test-saalgirah.js",
+    "test": "node scripts/test-ganapati.js && node scripts/test-saalgirah.js && node scripts/test-courtyard.js",
     "test:saalgirah": "node scripts/test-saalgirah.js",
-    "test:ganapati": "node scripts/test-ganapati.js"
+    "test:ganapati": "node scripts/test-ganapati.js",
+    "test:courtyard": "node scripts/test-courtyard.js"
   },
   "engines": {
     "node": ">=22.5.0 <25"
