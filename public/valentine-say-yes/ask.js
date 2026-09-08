@@ -62,8 +62,8 @@
       // still refusing to be ignored.
       var scale = (BASE_FONT + FONT_GROWTH_PER_CLICK * noClickCount) / BASE_FONT;
       yesButton.style.setProperty('--vy-scale', scale.toFixed(3));
-      yesButton.style.height = Math.min(buttonHeight, 160) + 'px';
-      yesButton.style.width = Math.min(buttonWidth, 240) + 'px';
+      yesButton.style.height = Math.min(buttonHeight, 140) + 'px';
+      yesButton.style.width = Math.min(buttonWidth, 210) + 'px';
     }
 
     if (noButton) noButton.textContent = CFG.pleas[Math.min(noClickCount, CFG.pleas.length - 1)];

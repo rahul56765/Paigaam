@@ -150,9 +150,9 @@ test('DOM: the Yes button grows by 35px/25px per No, and caps at the card edge',
     heights.push(Number((byId.vyYes.style.height || '48px').replace('px', '')));
   }
   // 48 + 35*5 = 223 requested; the cap keeps the card usable, so growth is
-  // monotonic non-decreasing and the last steps clamp to 160/240.
-  assert.deepEqual(heights, [83, 118, 153, 160, 160], '35px per click, capped at 160px');
-  assert.equal(Number((byId.vyYes.style.width || '80px').replace('px', '')), 240, 'width capped at 240px');
+  // monotonic non-decreasing and the last steps clamp to 140/210.
+  assert.deepEqual(heights, [83, 118, 140, 140, 140], '35px per click, capped at 140px');
+  assert.equal(Number((byId.vyYes.style.width || '80px').replace('px', '')), 210, 'width capped at 210px');
   assert.equal(byId.vyYes.style.props['--vy-scale'], '7.250', 'font scale matches the original 25px/click ladder');
 });
 

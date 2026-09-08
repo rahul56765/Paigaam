@@ -118,7 +118,7 @@ body.vy {
   gap: clamp(14px, 4vmin, 24px);
   padding-top: 6px;
   min-height: 76px;
-  flex-wrap: nowrap;
+  flex-wrap: wrap; /* late-ladder Yes is huge — give it its own row, never clip */
 }
 
 .vy-btn {
@@ -139,6 +139,7 @@ body.vy {
 .vy-btn--yes {
   min-width: 75px;
   min-height: 48px;
+  max-width: 100%;
   padding: 8px 18px;
   font-size: calc(20px * var(--vy-scale, 1));
   border-radius: calc(12px * min(var(--vy-scale, 1), 1.5));
