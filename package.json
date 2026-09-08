@@ -9,11 +9,12 @@
     "dev": "node --watch server.js",
     "build": "node scripts/prepare-ganapati.js",
     "postinstall": "node scripts/prepare-ganapati.js",
-    "test": "node scripts/test-ganapati.js && node scripts/test-saalgirah.js && node scripts/test-courtyard.js && node scripts/test-lavender.js",
+    "test": "node scripts/test-ganapati.js && node scripts/test-saalgirah.js && node scripts/test-courtyard.js && node scripts/test-lavender.js && node scripts/test-valentine.js",
     "test:saalgirah": "node scripts/test-saalgirah.js",
     "test:ganapati": "node scripts/test-ganapati.js",
     "test:courtyard": "node scripts/test-courtyard.js",
-    "test:lavender": "node scripts/test-lavender.js"
+    "test:lavender": "node scripts/test-lavender.js",
+    "test:valentine": "node scripts/test-valentine.js"
   },
   "engines": {
     "node": ">=22.5.0 <25"
