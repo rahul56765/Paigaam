@@ -43,7 +43,7 @@ function safeImage(value) {
   if (typeof value !== 'string' || /[\u0000-\u0020\\]/.test(value)) return '';
   if (/^\/love-album\/uploads\/[a-f0-9]{48}\.(?:webp|jpg|png)$/.test(value)) return value;
   // Demo placeholder photos (served from DATA_DIR, validated by the demo-media route).
-  if (/^\/love-album\/demo-media\/demo-[1-6]\.jpg$/.test(value)) return value;
+  if (/^\/love-album\/demo-media\/demo-[1-6]\.png$/.test(value)) return value;
   return '';
 }
 
