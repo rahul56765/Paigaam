@@ -71,16 +71,21 @@ function renderValentine(paigaam = {}, opts = {}) {
     ? `A little question for ${who}, from ${sender}. The Yes button is waiting.`
     : `A little question for ${who}. The Yes button is waiting.`;
 
-  /** The plea ladder, personalised — [0] is the resting label of the No button. */
+  /**
+   * The plea ladder, personalised — [0] is the resting label of the No button.
+   * JSON inside a <script> block needs only the </script> break-out neutralised
+   * (<\u002f...); HTML-escaping the whole string would corrupt it, because the
+   * browser decodes entities before the script reads textContent.
+   */
   const pleas = [noLabel, ...PLEAS.slice(1)];
-  const payload = escape(JSON.stringify({
+  const payload = JSON.stringify({
     images: IMAGES,
     alts: ALT_TEXTS,
     pleas,
     yesLabel,
     question,
     celebration,
-  })).replace(/</g, '\\u003c');
+  }).replace(/</g, '\\u003c');
 
   return `<!DOCTYPE html>
 <html lang="en">

@@ -218,3 +218,22 @@ test('Render: the untouched form produces the designed question', async () => {
   assert.match(own.text, /Will you be my Valentine\?/);
   assert.match(own.text, /Yayyy!! :3/);
 });
+
+test('Payload: the inline JSON block parses as served (entity-escape regression)', async () => {
+  const a = await draft(baseData({ recipientName: 'Asha <b>x</b>' }));
+  const own = await request(a.previewUrl, { cookie: a.cookie });
+  assert.equal(own.status, 200);
+  const marker = '<script type="application/json" id="vyPayload">';
+  const start = own.text.indexOf(marker);
+  assert.ok(start !== -1, 'payload block present');
+  const end = own.text.indexOf('</script>', start);
+  // JSON.parse throws if the server ever HTML-escapes this block again —
+  // browsers read textContent raw and &quot; is not valid JSON.
+  const cfg = JSON.parse(own.text.slice(start + marker.length, end));
+  assert.equal(cfg.images.length, 7);
+  assert.ok(cfg.images.every(src => src.startsWith('/valentine-say-yes/media/valentine-')));
+  assert.ok(cfg.pleas.length >= 6);
+  assert.equal(cfg.question, 'Will you be my Valentine?');
+  // The surrounding HTML keeps its own escaping.
+  assert.doesNotMatch(own.text, /<b>x<\/b>/);
+});
