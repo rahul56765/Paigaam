@@ -1,0 +1,214 @@
+/* ============================================================================
+   Valentine "Say Yes" — the question that cannot be refused.
+
+   One card on a pink gradient. The scene state lives in
+   /valentine-say-yes/ask.js and only toggles classes:
+
+     .vy.is-asking        the question is on stage (the resting state)
+     .vy.is-celebrating   Yes was clicked: photo swaps, confetti falls
+     .vy-btn--yes.is-huge inline size growth driven by --vy-scale
+   ========================================================================= */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  overscroll-behavior: none;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: #ffe8f2;
+}
+
+body.vy {
+  font-family: 'Quicksand', system-ui, sans-serif;
+  color: #3b2430;
+  touch-action: manipulation;
+}
+
+.vy-previewbadge {
+  position: fixed;
+  top: 14px;
+  right: 16px;
+  z-index: 60;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: rgba(189, 30, 89, 0.12);
+  border: 1px solid rgba(189, 30, 89, 0.35);
+  color: #bd1e59;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+}
+
+/* ------------------------------------------------------------------ stage */
+
+.vy-backdrop {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(14px, 4vmin, 36px);
+  background: linear-gradient(180deg, #ffd0e5 0%, #ffe8f2 36%, #ffffff 100%);
+}
+
+.vy-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(10px, 2.6vmin, 18px);
+  width: min(100%, 420px);
+  max-height: 100%;
+  padding: clamp(20px, 5vmin, 40px);
+  border-radius: 28px;
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow:
+    0 30px 70px -28px rgba(189, 30, 89, 0.45),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.75);
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  overflow: hidden;
+}
+
+.vy-topline {
+  margin: 0;
+  font-family: 'Caveat', cursive;
+  font-size: clamp(1.25rem, 5vmin, 1.6rem);
+  color: #8f4a63;
+  text-align: center;
+}
+.vy-topline b { color: #bd1e59; font-weight: 700; }
+.vy-heartglyph { display: inline-block; vertical-align: -0.12em; }
+
+.vy-photo {
+  position: relative;
+  width: min(62vmin, 300px);
+  aspect-ratio: 1;
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 18px 40px -18px rgba(189, 30, 89, 0.5);
+  background: #ffe8f2;
+}
+.vy-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.vy-question {
+  margin: 0;
+  font-size: clamp(1.5rem, 6.4vmin, 2.3rem);
+  font-weight: 700;
+  font-style: italic;
+  line-height: 1.15;
+  text-align: center;
+  color: #bd1e59;
+}
+
+.vy-buttons {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(14px, 4vmin, 24px);
+  padding-top: 6px;
+  min-height: 76px;
+  flex-wrap: nowrap;
+}
+
+.vy-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  border: 0;
+  border-radius: 12px;
+  font-family: inherit;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.18s ease, box-shadow 0.18s ease;
+}
+.vy-btn:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(189, 30, 89, 0.45); }
+
+/* The Yes button: grows with every No (size driven by --vy-scale from ask.js). */
+.vy-btn--yes {
+  min-width: 75px;
+  min-height: 48px;
+  padding: 8px 18px;
+  font-size: calc(20px * var(--vy-scale, 1));
+  border-radius: calc(12px * min(var(--vy-scale, 1), 1.5));
+  color: #ffffff;
+  background: #22c55e;
+  animation: vy-bounce 2s ease infinite;
+  flex-shrink: 1;
+}
+.vy-btn--yes:hover { background: #4ade80; }
+
+/* The No button: fixed size, shrinking courage. */
+.vy-btn--no {
+  min-width: 75px;
+  height: 48px;
+  padding: 8px 18px;
+  font-size: 20px;
+  color: #ffffff;
+  background: #ef4444;
+  flex-shrink: 0;
+}
+.vy-btn--no:hover { background: #dc2626; }
+
+@keyframes vy-bounce {
+  0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+  40% { transform: translateY(-14px); }
+  60% { transform: translateY(-7px); }
+}
+
+.vy-signature {
+  margin: 0;
+  min-height: 1.3em;
+  font-family: 'Caveat', cursive;
+  font-size: clamp(1.05rem, 4vmin, 1.3rem);
+  color: #8f4a63;
+}
+
+/* ------------------------------------------------------------- celebrating */
+
+.vy-confetti {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 40;
+}
+
+body.vy.is-celebrating .vy-photo img { animation: vy-pop 0.7s cubic-bezier(0.34, 1.56, 0.64, 1); }
+body.vy.is-celebrating .vy-question { animation: vy-pop 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) 0.08s backwards; }
+
+@keyframes vy-pop {
+  0% { transform: scale(0.86); opacity: 0.4; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.vy-noscript {
+  display: none;
+  margin: 18px auto;
+  padding: 12px 18px;
+  border-radius: 14px;
+  background: #ffffff;
+  color: #bd1e59;
+  max-width: 420px;
+  text-align: center;
+}
+
+/* ------------------------------------------------------------ reduced motion */
+
+@media (prefers-reduced-motion: reduce) {
+  .vy-btn--yes { animation: none; }
+  body.vy.is-celebrating .vy-photo img,
+  body.vy.is-celebrating .vy-question { animation: none; }
+}
