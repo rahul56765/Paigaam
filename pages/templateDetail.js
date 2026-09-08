@@ -36,6 +36,8 @@ function templateDetail(tpl) {
     previewInner = '<iframe title="Lavender Bloom live preview" src="/lavender-bloom/demo" style="width:100%;height:100%;border:0" loading="lazy" allow="autoplay"></iframe>';
   } else if (tpl.slug === 'ganpati-courtyard') {
     previewInner = '<iframe title="Ganpati Courtyard live preview" src="/ganpati-courtyard/demo" style="width:100%;height:100%;border:0" loading="lazy" allow="autoplay"></iframe>';
+  } else if (tpl.slug === 'love-album') {
+    previewInner = '<iframe title="Love Album live preview" src="/love-album/demo" style="width:100%;height:100%;border:0" loading="lazy" allow="autoplay"></iframe>';
   } else if (tpl.slug === 'valentine-say-yes') {
     previewInner = '<iframe title="Valentine Say Yes live preview" src="/valentine-say-yes/demo" style="width:100%;height:100%;border:0" loading="lazy" allow="autoplay"></iframe>';
   } else if (isCustom) {
@@ -82,6 +84,7 @@ function templateDetail(tpl) {
           ${tpl.slug === 'lavender-tic-tac-toe-bloom' ? '<a class="btn btn--ghost" href="/lavender-bloom/demo" target="_blank" rel="noopener">Experience full preview</a>' : ''}
           ${tpl.slug === 'ganpati-courtyard' ? '<a class="btn btn--ghost" href="/ganpati-courtyard/demo" target="_blank" rel="noopener">Experience full preview</a>' : ''}
           ${tpl.slug === 'valentine-say-yes' ? '<a class="btn btn--ghost" href="/valentine-say-yes/demo" target="_blank" rel="noopener">Experience full preview</a>' : ''}
+          ${tpl.slug === 'love-album' ? '<a class="btn btn--ghost" href="/love-album/demo" target="_blank" rel="noopener">Experience full preview</a>' : ''}
           <a class="btn btn--ghost" href="/templates">Back to templates</a>
         </div>
         <p class="detail__note">${note}</p>
