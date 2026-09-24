@@ -165,7 +165,7 @@ ${preview ? '<div class="law-previewbadge">Preview</div>' : ''}
       <button type="button" id="lawYes" class="law-btn law-btn--yes">${escape(yesLabel)}</button>
       <button type="button" id="lawNo" class="law-btn law-btn--no">${escape(noLabel)}</button>
     </div>
-    <p class="law-signature">${sender ? `— ${escape(sender)} ${who ? `, for ${escape(who)}` : ''}` : ''}</p>
+    <p class="law-signature">${sender ? `— ${escape(sender)}${who ? `, for ${escape(who)}` : ''}` : ''}</p>
   </section>
 </main>
 
