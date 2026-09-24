@@ -42,6 +42,7 @@ function lavenderCreatePage() {
 <link rel="icon" href="/brand/favicon-512.png" type="image/png">
 <link rel="stylesheet" href="/lavender-bloom/create.css">
 <script src="/lavender-bloom/create.js" defer></script>
+<script src="/js/qr-card.js" defer></script>
 </head>
 <body>
 <header class="masthead"><a href="/" aria-label="Paigaam">${logoFull(128)}</a><a class="text-link" href="/templates">All templates</a></header>

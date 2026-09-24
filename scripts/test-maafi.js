@@ -29,7 +29,7 @@ const root = path.join(__dirname, '..');
 
   try {
     await start();
-    const test = spawn(process.execPath, ['--test', 'tests/maafi-api.test.js', 'tests/maafi-dom.test.js'], {
+    const test = spawn(process.execPath, ['--test', 'tests/maafi-api.test.js', 'tests/maafi-dom.test.js', 'tests/qr-card.test.js'], {
       cwd: root, env: { ...process.env, MAAFI_BASE_URL: base }, stdio: 'inherit',
     });
     const [code] = await once(test, 'exit');

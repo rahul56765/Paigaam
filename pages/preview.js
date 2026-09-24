@@ -68,7 +68,8 @@ function previewPage(paigaam, settings, opts = {}) {
     <p style="margin-top:34px;color:var(--taupe);font-style:italic;font-family:var(--serif);font-size:16px">${sub}</p>
   </div>
 </main>
-${isFree ? `<script>
+${isFree ? `<script src="/js/qr-card.js" defer></script>
+<script>
 (function () {
   var btn = document.getElementById('publishFree');
   btn.addEventListener('click', function () {
@@ -94,6 +95,15 @@ ${isFree ? `<script>
         });
       });
       document.getElementById('freeQRdl').addEventListener('click', function () {
+        var b = this;
+        if (window.PaigaamQrCard && window.PaigaamQrCard.download) {
+          b.disabled = true; b.textContent = 'Preparing…';
+          window.PaigaamQrCard.download(url).then(function () {
+            b.textContent = 'Downloaded ✓';
+            setTimeout(function () { b.textContent = 'Download QR'; b.disabled = false; }, 1800);
+          }).catch(function () { b.disabled = false; b.textContent = 'Download QR'; });
+          return;
+        }
         var svg = document.querySelector('#freeQR svg'); if (!svg) return;
         var card = document.createElement('canvas'); card.width = 1080; card.height = 1350;
         var c2 = card.getContext('2d');
