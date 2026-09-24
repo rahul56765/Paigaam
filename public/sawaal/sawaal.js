@@ -222,7 +222,7 @@
       record('day', { choice: 'date', date: value.date });
       return transitionTo(renderQuizIntro);
     }
-    if (currentQuestion === 8) {
+    if (currentQuestion === 8 || currentQuestion === 9) {
       record('kiss', { choice: value });
       transitionTo(function () { renderOutcome(value); });
     }
