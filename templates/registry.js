@@ -48,6 +48,7 @@ const GROUPS = [
 ];
 
 const TEMPLATES = [
+  require('./sau-wajah/config'),
   require('./love-awaits/config'),
   require('./maafi/config'),
   require('./love-album/config'),
@@ -140,6 +141,7 @@ function displayNames(tplSlug, data) {
   if (tplSlug === 'valentine-say-yes') return [d.recipientName || 'You'];
   if (tplSlug === 'lavender-tic-tac-toe-bloom') return [d.recipientName || 'You'];
   if (tplSlug === 'saalgirah') return [d.recipientName || 'You'];
+  if (tplSlug === 'sau-wajah') return [d.recipientName || 'You'];
   if (tplSlug === 'noor')  return [d.brideName || 'The Bride', d.groomName || 'The Groom'];
   if (tplSlug === 'meher') return [d.personName || 'Someone lovely'];
   if (tplSlug === 'aashi') return [d.partnerOne || 'You', d.partnerTwo || 'Yours'];
