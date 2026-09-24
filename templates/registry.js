@@ -48,6 +48,7 @@ const GROUPS = [
 ];
 
 const TEMPLATES = [
+  require('./maafi/config'),
   require('./love-album/config'),
   require('./valentine-say-yes/config'),
   require('./lavender-bloom/config'),
@@ -132,6 +133,7 @@ function displayNames(tplSlug, data) {
   const d = data || {};
   if (tplSlug === 'ganpati-courtyard') return [d.familyName || 'Your family'];
   if (tplSlug === 'ganapati-aagman') return [d.familyName || 'Your family'];
+  if (tplSlug === 'maafi') return [d.recipientName || 'You'];
   if (tplSlug === 'love-album') return [d.recipientName || 'You'];
   if (tplSlug === 'valentine-say-yes') return [d.recipientName || 'You'];
   if (tplSlug === 'lavender-tic-tac-toe-bloom') return [d.recipientName || 'You'];

@@ -1,0 +1,249 @@
+/* Maafi — the apology that refuses to be refused.
+   Ported 1:1 from ThisWasAryan/interactive-apology-page: the flowing gradient,
+   the floating background hearts, the dodging No button, the heart rain.
+   (No 'use strict' here — a leading bare string in CSS kills the next rule.) */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body.mm {
+    font-family: 'Comic Sans MS', 'Comic Sans', cursive;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: linear-gradient(-45deg, #ee7752, #e73c7e, #ff69b4, #ff1493, #ff69b4, #e73c7e);
+    background-size: 400% 400%;
+    animation: mmGradient 8s ease infinite;
+    overflow: hidden;
+    position: relative;
+}
+
+@keyframes mmGradient {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+.mm-bgheart {
+    position: fixed;
+    font-size: 2em;
+    opacity: 0.15;
+    animation: mmFloatAround 15s ease-in-out infinite;
+    pointer-events: none;
+    color: #fff;
+}
+
+@keyframes mmFloatAround {
+    0%, 100% { transform: translate(0, 0) rotate(0deg); }
+    25% { transform: translate(100px, -100px) rotate(90deg); }
+    50% { transform: translate(200px, 50px) rotate(180deg); }
+    75% { transform: translate(-50px, -50px) rotate(270deg); }
+}
+
+.mm-backdrop {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 20px;
+}
+
+.mm-card {
+    text-align: center;
+    padding: 50px 40px;
+    background: rgba(255, 255, 255, 0.98);
+    border-radius: 35px;
+    box-shadow: 0 25px 70px rgba(255, 105, 180, 0.5);
+    max-width: 650px;
+    width: 90%;
+    animation: mmFloatIn 1s ease-out;
+    border: 3px solid rgba(255, 105, 180, 0.3);
+    position: relative;
+    z-index: 10;
+}
+
+@keyframes mmFloatIn {
+    from { opacity: 0; transform: translateY(-50px) scale(0.9); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.mm-topline {
+    font-size: 1.05em;
+    color: #b8577e;
+    margin-bottom: 18px;
+    opacity: 0.85;
+}
+
+#mmText {
+    font-size: 2.8em;
+    color: #e73c7e;
+    margin-bottom: 50px;
+    font-weight: bold;
+    text-shadow: 3px 3px 6px rgba(255, 105, 180, 0.3);
+    animation: mmPulse 2s ease-in-out infinite;
+    line-height: 1.5;
+}
+
+@media (max-width: 768px) {
+    #mmText { font-size: 2em; }
+}
+
+@keyframes mmPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.08); }
+}
+
+.mm-buttons {
+    display: flex;
+    gap: 25px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+    min-height: 200px;
+    align-items: center;
+    position: relative;
+    padding: 20px;
+}
+
+@media (max-width: 768px) {
+    .mm-buttons { min-height: 350px; flex-direction: column; }
+}
+
+.mm-btn {
+    font-family: 'Comic Sans MS', 'Comic Sans', cursive;
+    font-size: 1.4em;
+    padding: 20px 40px;
+    border: none;
+    border-radius: 50px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: all 0.3s ease;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+    position: relative;
+}
+
+@media (max-width: 768px) {
+    .mm-btn { font-size: 1.2em; padding: 16px 30px; }
+}
+
+#mmYes {
+    background: linear-gradient(135deg, #ff69b4, #ff1493);
+    color: white;
+    position: relative;
+    z-index: 5;
+}
+
+#mmYes:hover {
+    transform: translateY(-8px) scale(1.1);
+    box-shadow: 0 15px 40px rgba(255, 20, 147, 0.5);
+}
+
+#mmNo {
+    background: linear-gradient(135deg, #ffb6c1, #ff69b4);
+    color: #fff;
+    position: absolute;
+    transition: all 0.15s ease-out;
+    z-index: 10;
+}
+
+#mmNo:hover { transform: scale(1.05); }
+
+.mm-btn:active { transform: translateY(-2px) scale(1.02); }
+
+#mmEmoji {
+    font-size: 3.5em;
+    margin-top: 30px;
+    animation: mmBounce 1s ease infinite;
+    letter-spacing: 10px;
+}
+
+@media (max-width: 768px) {
+    #mmEmoji { font-size: 2.5em; letter-spacing: 5px; }
+}
+
+@keyframes mmBounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-25px); }
+}
+
+.hidden { display: none; }
+
+.mm-heart {
+    position: fixed;
+    font-size: 2.5em;
+    animation: mmFloatUp 4s ease-in-out;
+    pointer-events: none;
+    z-index: 1000;
+}
+
+@keyframes mmFloatUp {
+    0% { opacity: 1; transform: translateY(0) rotate(0deg); }
+    100% { opacity: 0; transform: translateY(-1000px) rotate(360deg); }
+}
+
+.mm-shake { animation: mmShake 0.5s; }
+
+@keyframes mmShake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-10px) rotate(-5deg); }
+    75% { transform: translateX(10px) rotate(5deg); }
+}
+
+#mmCount {
+    margin-top: 20px;
+    font-size: 1.1em;
+    color: #e73c7e;
+    font-weight: bold;
+    min-height: 30px;
+}
+
+@media (max-width: 768px) {
+    #mmCount { font-size: 1em; }
+}
+
+.mm-sparkle {
+    position: fixed;
+    width: 10px;
+    height: 10px;
+    background: white;
+    border-radius: 50%;
+    pointer-events: none;
+    animation: mmSparkle 1s ease-out forwards;
+    z-index: 999;
+}
+
+@keyframes mmSparkle {
+    0% { opacity: 1; transform: scale(0); }
+    50% { opacity: 1; transform: scale(1); }
+    100% { opacity: 0; transform: scale(0); }
+}
+
+.mm-signature {
+    margin-top: 18px;
+    font-size: 1em;
+    color: #b8577e;
+    min-height: 1.2em;
+}
+
+.mm-previewbadge {
+    position: fixed;
+    top: 14px;
+    right: 14px;
+    z-index: 2000;
+    background: rgba(231, 60, 126, 0.92);
+    color: #fff;
+    font: 700 0.72rem/1 'Comic Sans MS', 'Comic Sans', cursive;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    padding: 8px 14px;
+    border-radius: 999px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    body.mm, .mm-bgheart, #mmText, #mmEmoji, .mm-card { animation: none !important; }
+}
