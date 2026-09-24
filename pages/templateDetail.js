@@ -36,6 +36,10 @@ function templateDetail(tpl) {
     previewInner = '<iframe title="Lavender Bloom live preview" src="/lavender-bloom/demo" style="width:100%;height:100%;border:0" loading="lazy" allow="autoplay"></iframe>';
   } else if (tpl.slug === 'ganpati-courtyard') {
     previewInner = '<iframe title="Ganpati Courtyard live preview" src="/ganpati-courtyard/demo" style="width:100%;height:100%;border:0" loading="lazy" allow="autoplay"></iframe>';
+  } else if (tpl.slug === 'maafi') {
+    previewInner = '<iframe title="Maafi live preview" src="/maafi/demo" style="width:100%;height:100%;border:0" loading="lazy" allow="autoplay"></iframe>';
+  } else if (tpl.slug === 'love-awaits') {
+    previewInner = '<iframe title="Love Awaits live preview" src="/love-awaits/demo" style="width:100%;height:100%;border:0" loading="lazy" allow="autoplay"></iframe>';
   } else if (tpl.slug === 'love-album') {
     previewInner = '<iframe title="Love Album live preview" src="/love-album/demo" style="width:100%;height:100%;border:0" loading="lazy" allow="autoplay"></iframe>';
   } else if (tpl.slug === 'valentine-say-yes') {
