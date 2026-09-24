@@ -88,7 +88,7 @@ function renderMaafi(paigaam = {}, opts = {}) {
    */
   const payload = JSON.stringify({
     headline,
-    ladder: LADDER,
+    ladder: LADDER.filter(Boolean),
     yesLabel,
     noLabel,
     celebration,
