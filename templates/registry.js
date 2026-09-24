@@ -48,7 +48,7 @@ const GROUPS = [
 ];
 
 const TEMPLATES = [
-  require('./love-awaits/config'),
+  require('./sau-wajah/config'),
   require('./maafi/config'),
   require('./love-album/config'),
   require('./valentine-say-yes/config'),
@@ -134,12 +134,12 @@ function displayNames(tplSlug, data) {
   const d = data || {};
   if (tplSlug === 'ganpati-courtyard') return [d.familyName || 'Your family'];
   if (tplSlug === 'ganapati-aagman') return [d.familyName || 'Your family'];
-  if (tplSlug === 'love-awaits') return [d.recipientName || 'You'];
   if (tplSlug === 'maafi') return [d.recipientName || 'You'];
   if (tplSlug === 'love-album') return [d.recipientName || 'You'];
   if (tplSlug === 'valentine-say-yes') return [d.recipientName || 'You'];
   if (tplSlug === 'lavender-tic-tac-toe-bloom') return [d.recipientName || 'You'];
   if (tplSlug === 'saalgirah') return [d.recipientName || 'You'];
+  if (tplSlug === 'sau-wajah') return [d.recipientName || 'You'];
   if (tplSlug === 'noor')  return [d.brideName || 'The Bride', d.groomName || 'The Groom'];
   if (tplSlug === 'meher') return [d.personName || 'Someone lovely'];
   if (tplSlug === 'aashi') return [d.partnerOne || 'You', d.partnerTwo || 'Yours'];
