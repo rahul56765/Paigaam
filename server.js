@@ -22,6 +22,8 @@ const { fixedPage } = require('./pages/fixed');
 const admin = require('./pages/admin');
 const { qrSVG } = require('./lib/qrcode');
 const maafi = require('./lib/maafiRoutes');
+const love = require('./lib/loveRoutes');
+const sawaal = require('./lib/sawaalRoutes');
 const { ensureBrandAssets } = require('./lib/brand-assets');
 const { ensureGanapatiMedia } = require('./lib/ganapatiMedia');
 const { ensureCourtyardMedia } = require('./lib/courtyardMedia');
@@ -30,10 +32,10 @@ const saalgirah = require('./lib/saalgirahRoutes');
 const lavender = require('./lib/lavenderRoutes');
 const courtyard = require('./lib/courtyardRoutes');
 const valentine = require('./lib/valentineRoutes');
-const love = require('./lib/loveRoutes');
 const sauwajah = require('./lib/sauwajahRoutes');
 const loveAwaits = require('./lib/loveAwaitsRoutes');
 const { streamFile } = require('./lib/streamFile');
+const { ensureSawaalMedia } = require('./lib/sawaalMedia');
 
 const PORT = Number(process.env.PORT || 3000);
 const BASE_URL = (process.env.BASE_URL || `http://localhost:${PORT}`).replace(/\/$/, '');
@@ -178,6 +180,7 @@ const server = http.createServer(async (req, res) => {
     if (await love.handle(req, res, u, { baseUrl: BASE_URL, isAdmin: !!getAdmin(req) })) return;
     if (await sauwajah.handle(req, res, u, { baseUrl: BASE_URL, isAdmin: !!getAdmin(req) })) return;
     if (await loveAwaits.handle(req, res, u, { baseUrl: BASE_URL, isAdmin: !!getAdmin(req) })) return;
+    if (await sawaal.handle(req, res, u, { baseUrl: BASE_URL, isAdmin: !!getAdmin(req) })) return;
     if (['GET', 'HEAD'].includes(method) && serveStatic(req, res, p)) return;
 
     /* ---------- health (checks storage persistence) ---------- */
@@ -269,6 +272,10 @@ const server = http.createServer(async (req, res) => {
         if (!getAdmin(req) && !loveAwaits.owned(req, pg.id)) return json(res, 403, { error: 'forbidden' });
         return redirect(res, '/love-awaits/preview/' + pg.id);
       }
+      if (pg.template_slug === sawaal.SLUG) {
+        if (!getAdmin(req) && !sawaal.owned(req, pg.id)) return json(res, 403, { error: 'forbidden' });
+        return redirect(res, '/sawaal/preview/' + pg.id);
+      }
       return send(res, 200, previewPage(pg, q.settings(), { baseUrl: BASE_URL }));
     }
     m = p.match(/^\/p\/([a-z0-9-]+)$/);
@@ -290,7 +297,7 @@ const server = http.createServer(async (req, res) => {
       const pg = q.paigaamById(m[1]);
       if (!pg) return send(res, 404, errorPage('404', 'This Paigaam seems to have wandered away.', "Let's take you back home."));
       if ([ganapati.SLUG, saalgirah.SLUG, courtyard.SLUG].includes(pg.template_slug)) return json(res, 403, { error: 'use_template_endpoint' });
-      if (pg.template_slug === valentine.SLUG || pg.template_slug === love.SLUG || pg.template_slug === maafi.SLUG || pg.template_slug === sauwajah.SLUG || pg.template_slug === loveAwaits.SLUG) return json(res, 403, { error: 'use_template_endpoint' });
+      if (pg.template_slug === valentine.SLUG || pg.template_slug === love.SLUG || pg.template_slug === maafi.SLUG || pg.template_slug === sauwajah.SLUG || pg.template_slug === loveAwaits.SLUG || pg.template_slug === sawaal.SLUG) return json(res, 403, { error: 'use_template_endpoint' });
       const settings = q.settings();
       const num = (settings.whatsapp_number || '').replace(/\D/g, '');
       const d = pg.customer_data || {};
@@ -329,7 +336,7 @@ const server = http.createServer(async (req, res) => {
       const pg = q.paigaamById(body.id);
       if (!pg) return json(res, 404, { error: 'not_found' });
       if ([ganapati.SLUG, saalgirah.SLUG, courtyard.SLUG, lavender.SLUG].includes(pg.template_slug)) return json(res, 403, { error: 'use_template_endpoint' });
-      if (pg.template_slug === valentine.SLUG || pg.template_slug === love.SLUG || pg.template_slug === maafi.SLUG || pg.template_slug === sauwajah.SLUG || pg.template_slug === loveAwaits.SLUG) return json(res, 403, { error: 'use_template_endpoint' });
+      if (pg.template_slug === valentine.SLUG || pg.template_slug === love.SLUG || pg.template_slug === maafi.SLUG || pg.template_slug === sauwajah.SLUG || pg.template_slug === loveAwaits.SLUG || pg.template_slug === sawaal.SLUG) return json(res, 403, { error: 'use_template_endpoint' });
       if (Number(pg.template_price) > 0) return json(res, 403, { error: 'not_free' });
       const pub = publishPaigaam(pg);
       return json(res, 200, { slug: pub.slug, url: `${BASE_URL}/p/${pub.slug}` });
@@ -343,6 +350,7 @@ const server = http.createServer(async (req, res) => {
       if (tpl.slug === valentine.SLUG || existingForBody?.template_slug === valentine.SLUG || tpl.slug === love.SLUG || existingForBody?.template_slug === love.SLUG || tpl.slug === maafi.SLUG || existingForBody?.template_slug === maafi.SLUG) return json(res, 403, { error: 'use_template_endpoint' });
       if (tpl.slug === loveAwaits.SLUG || existingForBody?.template_slug === loveAwaits.SLUG) return json(res, 403, { error: 'use_template_endpoint' });
       if (tpl.slug === sauwajah.SLUG || existingForBody?.template_slug === sauwajah.SLUG) return json(res, 403, { error: 'use_template_endpoint' });
+      if (tpl.slug === sawaal.SLUG || existingForBody?.template_slug === sawaal.SLUG) return json(res, 403, { error: 'use_template_endpoint' });
       const data = body.customer_data && typeof body.customer_data === 'object' ? body.customer_data : {};
       const isCustom = !!(tpl.config && tpl.config.custom);
       // For fixed templates, the sender's name is the display name; for native
@@ -365,7 +373,7 @@ const server = http.createServer(async (req, res) => {
       const tpl = q.templateBySlug(body.template);
       if (!tpl) return json(res, 404, { error: 'template_not_found' });
       if ([ganapati.SLUG, saalgirah.SLUG, courtyard.SLUG, lavender.SLUG].includes(tpl.slug)) return json(res, 403, { error: 'use_template_endpoint' });
-      if (tpl.slug === valentine.SLUG || tpl.slug === love.SLUG || tpl.slug === maafi.SLUG || tpl.slug === sauwajah.SLUG || tpl.slug === loveAwaits.SLUG) return json(res, 403, { error: 'use_template_endpoint' });
+      if (tpl.slug === valentine.SLUG || tpl.slug === love.SLUG || tpl.slug === maafi.SLUG || tpl.slug === sauwajah.SLUG || tpl.slug === loveAwaits.SLUG || tpl.slug === sawaal.SLUG) return json(res, 403, { error: 'use_template_endpoint' });
       const html = renderPaigaamPage(
         { slug: tpl.slug, category: tpl.category, config: tpl.config },
         { customer_data: body.customer_data || {}, slug: null },
@@ -572,6 +580,8 @@ if (valentineHealed.length) console.log('[valentine-say-yes] restored missing me
 const { ensureLoveAwaitsMedia } = require('./lib/loveAwaitsMedia');
 const loveAwaitsHealed = ensureLoveAwaitsMedia();
 if (loveAwaitsHealed.length) console.log('[love-awaits] restored missing media files:', loveAwaitsHealed.join(', '));
+const sawaalHealed = ensureSawaalMedia();
+if (sawaalHealed.length) console.log('[sawaal] restored missing media files:', sawaalHealed.join(', '));
 seed();
 const HOST = process.env.HOST || '0.0.0.0';
 server.listen(PORT, HOST, () => {

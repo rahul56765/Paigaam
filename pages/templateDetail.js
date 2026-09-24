@@ -40,6 +40,8 @@ function templateDetail(tpl) {
     previewInner = '<iframe title="Maafi live preview" src="/maafi/demo" style="width:100%;height:100%;border:0" loading="lazy" allow="autoplay"></iframe>';
   } else if (tpl.slug === 'love-awaits') {
     previewInner = '<iframe title="Love Awaits live preview" src="/love-awaits/demo" style="width:100%;height:100%;border:0" loading="lazy" allow="autoplay"></iframe>';
+  } else if (tpl.slug === 'sawaal') {
+    previewInner = '<iframe title="Sawaal live preview" src="/sawaal/demo" style="width:100%;height:100%;border:0" loading="lazy" allow="autoplay"></iframe>';
   } else if (tpl.slug === 'love-album') {
     previewInner = '<iframe title="Love Album live preview" src="/love-album/demo" style="width:100%;height:100%;border:0" loading="lazy" allow="autoplay"></iframe>';
   } else if (tpl.slug === 'valentine-say-yes') {

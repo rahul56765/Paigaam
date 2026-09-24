@@ -9,7 +9,7 @@
     "dev": "node --watch server.js",
     "build": "node scripts/prepare-ganapati.js",
     "postinstall": "node scripts/prepare-ganapati.js",
-    "test": "node scripts/test-ganapati.js && node scripts/test-saalgirah.js && node scripts/test-courtyard.js && node scripts/test-lavender.js && node scripts/test-valentine.js && node scripts/test-love.js && node scripts/test-maafi.js && node --test tests/qr-card.test.js && node scripts/test-sauwajah.js",
+    "test": "node scripts/test-ganapati.js && node scripts/test-saalgirah.js && node scripts/test-courtyard.js && node scripts/test-lavender.js && node scripts/test-valentine.js && node scripts/test-love.js && node scripts/test-maafi.js && node --test tests/qr-card.test.js && node scripts/test-sauwajah.js && node scripts/test-sawaal.js",
     "test:saalgirah": "node scripts/test-saalgirah.js",
     "test:ganapati": "node scripts/test-ganapati.js",
     "test:courtyard": "node scripts/test-courtyard.js",
@@ -17,7 +17,8 @@
     "test:valentine": "node scripts/test-valentine.js",
     "test:love": "node scripts/test-love.js",
     "test:maafi": "node scripts/test-maafi.js",
-    "test:sauwajah": "node scripts/test-sauwajah.js"
+    "test:sauwajah": "node scripts/test-sauwajah.js",
+    "test:sawaal": "node scripts/test-sawaal.js"
   },
   "engines": {
     "node": ">=22.5.0 <25"
