@@ -32,6 +32,7 @@ const courtyard = require('./lib/courtyardRoutes');
 const valentine = require('./lib/valentineRoutes');
 const love = require('./lib/loveRoutes');
 const sauwajah = require('./lib/sauwajahRoutes');
+const loveAwaits = require('./lib/loveAwaitsRoutes');
 const { streamFile } = require('./lib/streamFile');
 
 const PORT = Number(process.env.PORT || 3000);
@@ -74,7 +75,7 @@ const send = (res, code, body, type = 'text/html; charset=utf-8', headers = {}) 
 const redirect = (res, to, headers = {}) => { res.writeHead(303, { Location: to, ...headers }); res.end(); };
 const json = (res, code, obj) => send(res, code, JSON.stringify(obj), 'application/json; charset=utf-8');
 
-const MIME = { '.mp4':'video/mp4', '.mp3':'audio/mpeg', '.css':'text/css; charset=utf-8', '.js':'text/javascript; charset=utf-8', '.mjs':'text/javascript', '.svg':'image/svg+xml', '.png':'image/png', '.jpg':'image/jpeg', '.jpeg':'image/jpeg', '.webp':'image/webp', '.ico':'image/x-icon', '.woff':'font/woff', '.woff2':'font/woff2', '.txt':'text/plain', '.json':'application/json', '.html':'text/html; charset=utf-8', '.map':'application/json' };
+const MIME = { '.mp4':'video/mp4', '.mp3':'audio/mpeg', '.css':'text/css; charset=utf-8', '.js':'text/javascript; charset=utf-8', '.mjs':'text/javascript', '.svg':'image/svg+xml', '.png':'image/png', '.jpg':'image/jpeg', '.jpeg':'image/jpeg', '.webp':'image/webp', '.gif':'image/gif', '.ico':'image/x-icon', '.woff':'font/woff', '.woff2':'font/woff2', '.txt':'text/plain', '.json':'application/json', '.html':'text/html; charset=utf-8', '.map':'application/json' };
 function serveStatic(req, res, urlPath) {
   let rel; try { rel = decodeURIComponent(urlPath).replace(/^\/+/, ''); } catch { return false; }
   if (rel.includes('\0') || rel.includes('\\')) return false;
@@ -176,6 +177,7 @@ const server = http.createServer(async (req, res) => {
     if (await maafi.handle(req, res, u, { baseUrl: BASE_URL, isAdmin: !!getAdmin(req) })) return;
     if (await love.handle(req, res, u, { baseUrl: BASE_URL, isAdmin: !!getAdmin(req) })) return;
     if (await sauwajah.handle(req, res, u, { baseUrl: BASE_URL, isAdmin: !!getAdmin(req) })) return;
+    if (await loveAwaits.handle(req, res, u, { baseUrl: BASE_URL, isAdmin: !!getAdmin(req) })) return;
     if (['GET', 'HEAD'].includes(method) && serveStatic(req, res, p)) return;
 
     /* ---------- health (checks storage persistence) ---------- */
@@ -263,6 +265,10 @@ const server = http.createServer(async (req, res) => {
         if (!getAdmin(req) && !sauwajah.owned(req, pg.id)) return json(res, 403, { error: 'forbidden' });
         return redirect(res, '/sau-wajah/preview/' + pg.id);
       }
+      if (pg.template_slug === loveAwaits.SLUG) {
+        if (!getAdmin(req) && !loveAwaits.owned(req, pg.id)) return json(res, 403, { error: 'forbidden' });
+        return redirect(res, '/love-awaits/preview/' + pg.id);
+      }
       return send(res, 200, previewPage(pg, q.settings(), { baseUrl: BASE_URL }));
     }
     m = p.match(/^\/p\/([a-z0-9-]+)$/);
@@ -284,7 +290,7 @@ const server = http.createServer(async (req, res) => {
       const pg = q.paigaamById(m[1]);
       if (!pg) return send(res, 404, errorPage('404', 'This Paigaam seems to have wandered away.', "Let's take you back home."));
       if ([ganapati.SLUG, saalgirah.SLUG, courtyard.SLUG].includes(pg.template_slug)) return json(res, 403, { error: 'use_template_endpoint' });
-      if (pg.template_slug === valentine.SLUG || pg.template_slug === love.SLUG || pg.template_slug === maafi.SLUG || pg.template_slug === sauwajah.SLUG) return json(res, 403, { error: 'use_template_endpoint' });
+      if (pg.template_slug === valentine.SLUG || pg.template_slug === love.SLUG || pg.template_slug === maafi.SLUG || pg.template_slug === sauwajah.SLUG || pg.template_slug === loveAwaits.SLUG) return json(res, 403, { error: 'use_template_endpoint' });
       const settings = q.settings();
       const num = (settings.whatsapp_number || '').replace(/\D/g, '');
       const d = pg.customer_data || {};
@@ -323,7 +329,7 @@ const server = http.createServer(async (req, res) => {
       const pg = q.paigaamById(body.id);
       if (!pg) return json(res, 404, { error: 'not_found' });
       if ([ganapati.SLUG, saalgirah.SLUG, courtyard.SLUG, lavender.SLUG].includes(pg.template_slug)) return json(res, 403, { error: 'use_template_endpoint' });
-      if (pg.template_slug === valentine.SLUG || pg.template_slug === love.SLUG || pg.template_slug === maafi.SLUG || pg.template_slug === sauwajah.SLUG) return json(res, 403, { error: 'use_template_endpoint' });
+      if (pg.template_slug === valentine.SLUG || pg.template_slug === love.SLUG || pg.template_slug === maafi.SLUG || pg.template_slug === sauwajah.SLUG || pg.template_slug === loveAwaits.SLUG) return json(res, 403, { error: 'use_template_endpoint' });
       if (Number(pg.template_price) > 0) return json(res, 403, { error: 'not_free' });
       const pub = publishPaigaam(pg);
       return json(res, 200, { slug: pub.slug, url: `${BASE_URL}/p/${pub.slug}` });
@@ -335,6 +341,7 @@ const server = http.createServer(async (req, res) => {
       const existingForBody = body.id ? q.paigaamById(body.id) : null;
       if ([ganapati.SLUG, saalgirah.SLUG, courtyard.SLUG, lavender.SLUG].includes(tpl.slug) || [ganapati.SLUG, saalgirah.SLUG, courtyard.SLUG, lavender.SLUG].includes(existingForBody?.template_slug)) return json(res, 403, { error: 'use_template_endpoint' });
       if (tpl.slug === valentine.SLUG || existingForBody?.template_slug === valentine.SLUG || tpl.slug === love.SLUG || existingForBody?.template_slug === love.SLUG || tpl.slug === maafi.SLUG || existingForBody?.template_slug === maafi.SLUG) return json(res, 403, { error: 'use_template_endpoint' });
+      if (tpl.slug === loveAwaits.SLUG || existingForBody?.template_slug === loveAwaits.SLUG) return json(res, 403, { error: 'use_template_endpoint' });
       if (tpl.slug === sauwajah.SLUG || existingForBody?.template_slug === sauwajah.SLUG) return json(res, 403, { error: 'use_template_endpoint' });
       const data = body.customer_data && typeof body.customer_data === 'object' ? body.customer_data : {};
       const isCustom = !!(tpl.config && tpl.config.custom);
@@ -358,7 +365,7 @@ const server = http.createServer(async (req, res) => {
       const tpl = q.templateBySlug(body.template);
       if (!tpl) return json(res, 404, { error: 'template_not_found' });
       if ([ganapati.SLUG, saalgirah.SLUG, courtyard.SLUG, lavender.SLUG].includes(tpl.slug)) return json(res, 403, { error: 'use_template_endpoint' });
-      if (tpl.slug === valentine.SLUG || tpl.slug === love.SLUG || tpl.slug === maafi.SLUG || tpl.slug === sauwajah.SLUG) return json(res, 403, { error: 'use_template_endpoint' });
+      if (tpl.slug === valentine.SLUG || tpl.slug === love.SLUG || tpl.slug === maafi.SLUG || tpl.slug === sauwajah.SLUG || tpl.slug === loveAwaits.SLUG) return json(res, 403, { error: 'use_template_endpoint' });
       const html = renderPaigaamPage(
         { slug: tpl.slug, category: tpl.category, config: tpl.config },
         { customer_data: body.customer_data || {}, slug: null },
@@ -562,6 +569,9 @@ if (courtyardHealed.length) console.log('[ganpati-courtyard] restored missing me
 const { ensureValentineMedia } = require('./lib/valentineMedia');
 const valentineHealed = ensureValentineMedia();
 if (valentineHealed.length) console.log('[valentine-say-yes] restored missing media files:', valentineHealed.join(', '));
+const { ensureLoveAwaitsMedia } = require('./lib/loveAwaitsMedia');
+const loveAwaitsHealed = ensureLoveAwaitsMedia();
+if (loveAwaitsHealed.length) console.log('[love-awaits] restored missing media files:', loveAwaitsHealed.join(', '));
 seed();
 const HOST = process.env.HOST || '0.0.0.0';
 server.listen(PORT, HOST, () => {

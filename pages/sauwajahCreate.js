@@ -42,6 +42,7 @@ function sauwajahCreatePage() {
 <link rel="icon" href="/brand/favicon-512.png" type="image/png">
 <link rel="stylesheet" href="/sau-wajah/create.css">
 <script src="/sau-wajah/create.js" defer></script>
+<script src="/js/qr-card.js" defer></script>
 </head>
 <body>
 <header class="masthead"><a href="/" aria-label="Paigaam">${logoFull(128)}</a><a class="text-link" href="/templates">All templates</a></header>
@@ -114,7 +115,7 @@ function sauwajahCreatePage() {
 
         <section data-step="4" class="step" hidden>
           <h2 tabindex="0">Ready to send</h2>
-          <p>Have one last look, then publish. You will get a link and a QR card you can send anywhere.</p>
+          <p>Publish straight away, or have one last look first — either way you will get a link and a QR card you can send anywhere.</p>
           <div id="review" class="review"></div>
           <div class="preview-callout">
             <span aria-hidden="true">✦</span>
@@ -122,8 +123,8 @@ function sauwajahCreatePage() {
             <button type="button" id="savePreview" class="button primary">Save &amp; preview</button>
           </div>
           <p id="previewState" class="hint" aria-live="polite"></p>
-          <button type="button" id="publish" class="button publish" disabled>Publish this Paigaam</button>
-          <p class="hint">Free. The link stays live; only you can edit it before publishing.</p>
+          <button type="button" id="publish" class="button publish">Publish this Paigaam</button>
+          <p class="hint">Free, and previewing is optional — publishing saves everything as it is. The link stays live; only you can edit it before publishing.</p>
         </section>
 
         <div id="formError" class="error" role="alert" hidden></div>

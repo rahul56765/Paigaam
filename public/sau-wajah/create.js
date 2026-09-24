@@ -35,6 +35,7 @@
   var draftId = null;
   var previewUrl = null;
   var saving = false;
+  var publishing = false;
   var photos = []; // { blob, localUrl, url, error }
   var busy = false;
 
@@ -255,9 +256,10 @@
 
   function gatePublish() {
     if (!publishBtn) return;
-    var ready = !!draftId && photos.every(function (p) { return p.url; });
-    if (publishBtn.disabled && ready && previewState) previewState.textContent = 'Ready to publish.';
-    publishBtn.disabled = !ready;
+    // Publishing re-saves and re-uploads on its own, so the button is only
+    // locked while a publish is already in flight — preview is optional.
+    if (publishBtn.disabled && !publishing && previewState) previewState.textContent = 'Ready to publish.';
+    publishBtn.disabled = publishing;
   }
 
   form.addEventListener('submit', function (event) {
@@ -279,18 +281,7 @@
       previewBtn.disabled = true;
       busy = true;
       saveDraft().then(function () {
-        var pending = photos.filter(function (p) { return !p.url; });
-        var uploadChain = Promise.resolve();
-        pending.forEach(function (photo) {
-          uploadChain = uploadChain.then(function () {
-            return request('/api/sau-wajah/upload?id=' + encodeURIComponent(draftId), null, photo.blob, 'image/jpeg').then(function (result) {
-              photo.url = result.url;
-              renderPhotos();
-              return saveDraft();
-            });
-          });
-        });
-        return uploadChain;
+        return uploadPending();
       }).then(function () {
         busy = false;
         if (previewState) previewState.textContent = 'Saved. Your Paigaam is ready to send.';
@@ -302,6 +293,22 @@
         setError(MESSAGES[err.code] || 'That didn’t save. Check your connection and try again.');
       }).then(function () { previewBtn.disabled = false; });
     });
+  }
+
+  /** Upload any photos that are still local, then re-save so the draft references them. */
+  function uploadPending() {
+    var pending = photos.filter(function (p) { return !p.url; });
+    var uploadChain = Promise.resolve();
+    pending.forEach(function (photo) {
+      uploadChain = uploadChain.then(function () {
+        return request('/api/sau-wajah/upload?id=' + encodeURIComponent(draftId), null, photo.blob, 'image/jpeg').then(function (result) {
+          photo.url = result.url;
+          renderPhotos();
+          return saveDraft();
+        });
+      });
+    });
+    return uploadChain;
   }
 
   function openPreview() {
@@ -333,12 +340,25 @@
 
   if (publishBtn) {
     publishBtn.addEventListener('click', function () {
-      if (!draftId) { setError('Save a preview first.'); return; }
+      if (publishing) return;
+      if (!value('recipientName')) { setError('Their name is still missing — step 02.'); show(1); return; }
+      // Preview is optional: publishing saves the draft and uploads the
+      // photos itself, so "Save & preview" is never a required stop.
+      publishing = true;
       publishBtn.disabled = true;
       say('Publishing…');
-      request('/api/sau-wajah/publish', { id: draftId })
+      var ensureSaved = draftId ? Promise.resolve() : saveDraft().then(function () { return uploadPending(); });
+      ensureSaved
+        .then(function () {
+          if (photos.length && photos.some(function (p) { return !p.url; })) return uploadPending();
+          if (!draftId) return saveDraft().then(function () { return uploadPending(); });
+        })
+        .then(function () {
+          return request('/api/sau-wajah/publish', { id: draftId });
+        })
         .then(function (body) { showResult(body.url); })
         .catch(function (err) {
+          publishing = false;
           publishBtn.disabled = false;
           say('');
           setError(MESSAGES[err.code] || 'Publishing didn’t work. Try again in a moment.');
@@ -380,14 +400,14 @@
     });
   }
 
-  // Typing invalidates the saved preview, so publishing is gated on a re-save.
+  // Typing invalidates the saved preview, so publishing re-saves from scratch.
   FIELDS.forEach(function (name) {
     var node = el(name);
     if (!node) return;
     node.addEventListener('input', function () {
       if (publishBtn && !publishBtn.disabled) {
         publishBtn.disabled = true;
-        if (previewState) previewState.textContent = 'You changed something — save a preview again before sending.';
+        if (previewState) previewState.textContent = 'You changed something — the next publish saves the latest words.';
       }
     });
   });

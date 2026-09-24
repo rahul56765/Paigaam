@@ -38,6 +38,8 @@ function templateDetail(tpl) {
     previewInner = '<iframe title="Ganpati Courtyard live preview" src="/ganpati-courtyard/demo" style="width:100%;height:100%;border:0" loading="lazy" allow="autoplay"></iframe>';
   } else if (tpl.slug === 'maafi') {
     previewInner = '<iframe title="Maafi live preview" src="/maafi/demo" style="width:100%;height:100%;border:0" loading="lazy" allow="autoplay"></iframe>';
+  } else if (tpl.slug === 'love-awaits') {
+    previewInner = '<iframe title="Love Awaits live preview" src="/love-awaits/demo" style="width:100%;height:100%;border:0" loading="lazy" allow="autoplay"></iframe>';
   } else if (tpl.slug === 'love-album') {
     previewInner = '<iframe title="Love Album live preview" src="/love-album/demo" style="width:100%;height:100%;border:0" loading="lazy" allow="autoplay"></iframe>';
   } else if (tpl.slug === 'valentine-say-yes') {
@@ -90,6 +92,7 @@ function templateDetail(tpl) {
           ${tpl.slug === 'valentine-say-yes' ? '<a class="btn btn--ghost" href="/valentine-say-yes/demo" target="_blank" rel="noopener">Experience full preview</a>' : ''}
           ${tpl.slug === 'love-album' ? '<a class="btn btn--ghost" href="/love-album/demo" target="_blank" rel="noopener">Experience full preview</a>' : ''}
           ${tpl.slug === 'sau-wajah' ? '<a class="btn btn--ghost" href="/sau-wajah/demo" target="_blank" rel="noopener">Experience full preview</a>' : ''}
+          ${tpl.slug === 'love-awaits' ? '<a class="btn btn--ghost" href="/love-awaits/demo" target="_blank" rel="noopener">Experience full preview</a>' : ''}
           <a class="btn btn--ghost" href="/templates">Back to templates</a>
         </div>
         <p class="detail__note">${note}</p>

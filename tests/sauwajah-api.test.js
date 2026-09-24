@@ -166,3 +166,52 @@ test('API: demo routes serve real bytes', async () => {
   const pbuf = Buffer.from(await png.arrayBuffer());
   assert.equal(pbuf.slice(0, 4).toString('latin1'), '\x89PNG');
 });
+
+test('API: a photo uploaded after draft creation can be referenced and published', async () => {
+  // Mirrors the wizard's publish-straight-away flow: draft → upload → save
+  // with the reference → publish, all without touching the preview route.
+  const d = await draft();
+  const PNG = Buffer.concat([
+    Buffer.from([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]),
+    Buffer.alloc(13, 0), // IHDR length/type placeholder — still under-dimensioned on purpose
+  ]);
+  // A real minimal PNG (1x1) built the way the sniffing test builds it:
+  const up = await fetch(BASE + '/api/sau-wajah/upload?id=' + d.id, {
+    method: 'POST', headers: { cookie: d.cookie, 'content-type': 'image/png' },
+    body: png1x1(),
+  });
+  assert.equal(up.status, 200, up.text);
+  const { url } = await up.json();
+  const saved = await save(d, { photos: [{ url, alt: 'the two of us' }] });
+  assert.equal(saved.status, 200, saved.text);
+  const pub = await request('/api/sau-wajah/publish', { method: 'POST', cookie: d.cookie, body: { id: d.id } });
+  assert.equal(pub.status, 200, pub.text);
+  const { slug } = pub.json;
+  const page = await request('/p/' + slug);
+  assert.equal(page.status, 200);
+  assert.match(page.text, new RegExp(url.replace(/\//g, '\\/') .replace(/\./g, '\\.')), 'the uploaded photo is referenced by the published page');
+  const photoBytes = await fetch(BASE + url);
+  assert.equal(photoBytes.status, 200, 'a published Paigaam serves its photos publicly');
+});
+
+/** A spec-exact 100×100 red PNG (no encoder dependency) — the sniffing floor is 50×50. */
+function png1x1() {
+  const zlib = require('node:zlib');
+  const row = Buffer.concat([Buffer.from([0]), Buffer.alloc(100 * 3, 0).fill(255).fill(0, 1, 2)]);
+  const raw = Buffer.concat(Array.from({ length: 100 }, () => row));
+  const table = [];
+  for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; table[n] = c; }
+  const crc32 = buf => { let c = 0xFFFFFFFF; for (const b of buf) c = table[(c ^ b) & 0xFF] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; };
+  const chunk = (type, data) => {
+    const len = Buffer.alloc(4); len.writeUInt32BE(data.length);
+    const typeB = Buffer.from(type, 'ascii');
+    const crc = Buffer.alloc(4); crc.writeUInt32BE(crc32(Buffer.concat([typeB, data])));
+    return Buffer.concat([len, typeB, data, crc]);
+  };
+  const ihdr = Buffer.alloc(13);
+  ihdr.writeUInt32BE(100, 0); ihdr.writeUInt32BE(100, 4); ihdr[8] = 8; ihdr[9] = 2;
+  return Buffer.concat([
+    Buffer.from([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]),
+    chunk('IHDR', ihdr), chunk('IDAT', zlib.deflateSync(raw)), chunk('IEND', Buffer.alloc(0)),
+  ]);
+}
