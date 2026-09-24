@@ -120,8 +120,19 @@
   }
 
   function choiceMarkup(value, label, primary) {
+    // The label goes through textContent below — but the static markup path
+    // (this string) must carry it safely too: labels are plain template text.
     return '<button type="button" data-choice="' + value + '"' + (primary ? '' : ' class="secondary"') +
       '><span></span><span class="button-arrow" aria-hidden="true">' + (primary ? '↗' : '→') + '</span></button>';
+  }
+
+  /** Fill a choices block's labels via textContent — never interpolated markup. */
+  function labelChoices(choices, labels) {
+    var buttons = choices.querySelectorAll('button[data-choice]');
+    for (var i = 0; i < buttons.length && i < labels.length; i++) {
+      var span = buttons[i].querySelector('span');
+      if (span) span.textContent = labels[i];
+    }
   }
 
   function renderScene(o) {
@@ -169,6 +180,7 @@
       number: 1, eyebrow: 'Your invitation', title: CFG.inviteTitle, intro: CFG.inviteIntro,
       image: 'invite.png', imageAlt: 'Illustration for the date invitation', body: wrap,
     });
+    labelChoices(choices, ['Yes', 'Yes, of course']);
     bindChoices(choices, message);
   }
 
@@ -235,6 +247,7 @@
       image: showNegative ? 'like-no.png' : 'like.png',
       imageAlt: showNegative ? 'The sad illustration' : 'Illustration for the little question', body: wrap,
     });
+    labelChoices(choices, ['Sure!', 'Not really.']);
     bindChoices(choices, message);
   }
 
@@ -264,6 +277,7 @@
       number: 3, eyebrow: 'Your turn', title: CFG.vibeTitle,
       intro: 'I guess your opinion matters...', image: 'vibe.png', imageAlt: 'Illustration for the vibe question', body: wrap,
     });
+    labelChoices(choices, options);
     bindChoices(choices, message);
     form.addEventListener('submit', function (event) {
       event.preventDefault();
@@ -512,6 +526,7 @@
       number: 8, eyebrow: 'The final question', title: CFG.kissTitle, intro: CFG.kissIntro,
       image: 'kiss.png', imageAlt: 'Illustration for the final question', body: wrap,
     });
+    labelChoices(choices, ['I might kiss back!', 'Sure but only on cheek 😭', 'He’ll get his kiss but later.']);
     bindChoices(choices, message);
   }
 
