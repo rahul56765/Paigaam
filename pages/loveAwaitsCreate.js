@@ -85,6 +85,7 @@ function loveAwaitsCreatePage() {
         <section data-step="2" class="step" hidden>
           <h2 tabindex="0">The words</h2>
           <p>Leave them as they are if they already sound like you.</p>
+          ${field({ id: 'introTitle', label: 'The opening title', max: 40, placeholder: 'Love Awaits', hint: 'The big script heading on the tap-to-begin gate.' })}
           ${field({ id: 'question', label: 'The big question', max: 60, placeholder: 'Will You Be My Forever?' })}
           ${field({ id: 'questionNote', label: 'The line beneath it', max: 240, type: 'textarea', rows: 3, placeholder: 'In a universe of billions, my heart chose you…' })}
           ${field({ id: 'yesLabel', label: 'The yes button says', max: 24, placeholder: 'Yes, Forever' })}
