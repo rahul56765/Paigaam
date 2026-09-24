@@ -1,0 +1,356 @@
+/* ============================================================================
+   Love Awaits — the proposal that refuses to take no for an answer.
+
+   Three server-rendered stages on a field of stardust. The scene state lives
+   in /love-awaits/awaits.js and only unhides stages and toggles classes:
+
+     body.law.is-begun     the gate has been tapped
+     body.law.is-asking    the question is on stage
+     body.law.is-success   Yes was clicked: finale card + confetti
+   ========================================================================= */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  overscroll-behavior: none;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: #020202;
+}
+
+body.law {
+  font-family: 'Outfit', system-ui, sans-serif;
+  color: #fff;
+  touch-action: manipulation;
+}
+
+#lawHeart, #lawConfetti {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+#lawHeart { z-index: 0; }
+#lawConfetti { z-index: 90; display: none; }
+body.is-success #lawConfetti { display: block; }
+
+.law-previewbadge {
+  position: fixed;
+  top: 14px;
+  right: 16px;
+  z-index: 60;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: rgba(255, 0, 96, 0.14);
+  border: 1px solid rgba(255, 0, 96, 0.4);
+  color: #ff6b9d;
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+}
+
+/* ------------------------------------------------------------------ stages */
+
+.law-stage {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(14px, 4vmin, 36px);
+  text-align: center;
+}
+.law-stage[hidden] { display: none; }
+
+/* ---------------------------------------------------------------- the gate */
+
+#lawGate { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+
+.law-title {
+  margin: 0;
+  font-family: 'Dancing Script', cursive;
+  font-size: clamp(3.2rem, 12vmin, 8rem);
+  line-height: 1.05;
+  color: #ff4d94;
+  text-shadow: 0 0 20px rgba(255, 105, 180, 0.5), 0 0 40px rgba(255, 20, 147, 0.3);
+  animation: lawPulse 2.2s ease-in-out infinite;
+}
+
+.law-gate-hint {
+  margin: clamp(18px, 5vmin, 40px) 0 0;
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  letter-spacing: 0.4em;
+  text-transform: uppercase;
+  font-size: clamp(0.62rem, 1.8vmin, 0.85rem);
+  color: rgba(255, 255, 255, 0.6);
+}
+
+@keyframes lawPulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.04); opacity: 0.88; }
+}
+
+/* ---------------------------------------------------------------- the card */
+
+.law-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(10px, 2.4vmin, 18px);
+  width: min(100%, 680px);
+  max-height: 100%;
+  max-height: 100dvh;
+  overflow-y: auto;
+  padding: clamp(20px, 5vmin, 52px);
+  border-radius: 40px;
+  background: rgba(20, 10, 10, 0.45);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 40px 80px rgba(0, 0, 0, 0.8), inset 0 0 40px rgba(255, 20, 80, 0.05);
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.law-question {
+  margin: 0;
+  font-family: 'Dancing Script', cursive;
+  font-size: clamp(1.9rem, 6.5vmin, 4.2rem);
+  line-height: 1.15;
+  color: #ff80ab;
+  text-shadow: 0 0 20px rgba(255, 105, 180, 0.5), 0 0 40px rgba(255, 20, 147, 0.3);
+  overflow-wrap: anywhere;
+}
+
+.law-note {
+  margin: 0;
+  min-height: 3.2em;
+  max-width: 34em;
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  font-size: clamp(0.95rem, 2.6vmin, 1.25rem);
+  line-height: 1.55;
+  color: rgba(255, 235, 242, 0.9);
+}
+
+.law-photo {
+  position: relative;
+  width: clamp(180px, 34vmin, 320px);
+  aspect-ratio: 1;
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transform: rotate(-1deg);
+  transition: transform 0.5s ease;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+}
+.law-photo:hover { transform: rotate(0deg) scale(1.02); }
+
+.law-tape {
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  transform: translateX(-50%) rotate(-1.5deg);
+  width: 100px;
+  height: 24px;
+  background: rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(5px);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  z-index: 2;
+}
+
+.law-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: rgba(0, 0, 0, 0.4);
+}
+
+/* ----------------------------------------------------------------- buttons */
+
+.law-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: clamp(12px, 3vmin, 20px);
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 100%;
+}
+
+.law-btn {
+  font-family: inherit;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, color 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.law-btn--yes {
+  position: relative;
+  overflow: hidden;
+  padding: clamp(14px, 2.6vmin, 20px) clamp(28px, 6vmin, 56px);
+  border: 0;
+  border-radius: 6px;
+  background: linear-gradient(90deg, #e6006e, #ff5a7a);
+  color: #fff;
+  font-weight: 700;
+  font-size: clamp(1rem, 2.6vmin, 1.3rem);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  box-shadow: 0 14px 40px -10px rgba(255, 0, 96, 0.6);
+}
+.law-btn--yes:hover { transform: translateY(-2px); box-shadow: 0 18px 48px -10px rgba(255, 0, 96, 0.8); }
+.law-btn--yes::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(to right, transparent 0%, rgba(255, 255, 255, 0.4) 50%, transparent 100%);
+  transform: skewX(-25deg);
+  animation: lawShine 3s infinite;
+}
+@keyframes lawShine {
+  0% { left: -100%; }
+  20%, 100% { left: 200%; }
+}
+
+.law-btn--no {
+  padding: clamp(14px, 2.6vmin, 20px) clamp(28px, 5.4vmin, 48px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.6);
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  font-size: clamp(0.95rem, 2.4vmin, 1.15rem);
+}
+.law-btn--no:hover {
+  color: #fff;
+  border-color: #fff;
+  background: rgba(255, 255, 255, 0.05);
+}
+/* At the last rung the button dodges — awaits.js sets the transform. */
+.law-btn--no.is-dodging { transition: transform 0.3s ease; }
+
+.law-signature {
+  margin: 0;
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  font-size: clamp(0.8rem, 2vmin, 0.95rem);
+  color: rgba(255, 255, 255, 0.45);
+}
+
+/* -------------------------------------------------------------- the finale */
+
+.law-card--finale { max-width: min(100%, 560px); }
+
+.law-finale-title {
+  margin: 0;
+  font-family: 'Dancing Script', cursive;
+  font-size: clamp(2.4rem, 8vmin, 5.4rem);
+  line-height: 1.1;
+  color: #ff80ab;
+  text-shadow: 0 0 20px rgba(255, 105, 180, 0.5), 0 0 40px rgba(255, 20, 147, 0.3);
+}
+
+.law-photo--polaroid { transform: rotate(2deg); }
+.law-photo--polaroid:hover { transform: rotate(0deg); }
+
+.law-finale-line {
+  margin: 0;
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  font-size: clamp(1rem, 2.8vmin, 1.4rem);
+  line-height: 1.55;
+  color: #ffd7e4;
+}
+
+.law-replay {
+  margin-top: clamp(6px, 2vmin, 14px);
+  padding: 12px 28px;
+  border: 1px solid rgba(255, 0, 96, 0.3);
+  border-radius: 999px;
+  background: transparent;
+  color: #ff8fb3;
+  font-family: inherit;
+  font-size: 0.7rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.law-replay:hover { color: #fff; background: rgba(255, 0, 96, 0.2); }
+
+/* ------------------------------------------------------- floating decor */
+
+.law-float {
+  position: fixed;
+  pointer-events: none;
+  z-index: 1;
+  animation: lawFloat linear infinite;
+  opacity: 0.6;
+  filter: drop-shadow(0 0 5px rgba(255, 105, 180, 0.5));
+  will-change: transform;
+}
+@keyframes lawFloat {
+  0% { transform: translateY(110vh) rotate(0deg) scale(0.8); opacity: 0; }
+  10%, 90% { opacity: 0.6; }
+  100% { transform: translateY(-10vh) rotate(360deg) scale(1.2); opacity: 0; }
+}
+
+/* ------------------------------------------------------------- mute toggle */
+
+.law-mute {
+  position: fixed;
+  right: 14px;
+  bottom: 14px;
+  z-index: 70;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(20, 10, 10, 0.5);
+  backdrop-filter: blur(8px);
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.law-mute:hover { color: #fff; border-color: #fff; }
+
+.law-noscript {
+  display: none;
+  position: fixed;
+  inset: auto 16px 16px;
+  z-index: 80;
+  margin: 0;
+  padding: 12px 18px;
+  border-radius: 12px;
+  background: rgba(20, 10, 10, 0.85);
+  color: #ffd7e4;
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+/* --------------------------------------------------------- reduced motion */
+
+@media (prefers-reduced-motion: reduce) {
+  .law-title { animation: none; }
+  .law-btn--yes::after { animation: none; }
+  .law-float { animation-duration: 60s; }
+  .law-btn, .law-photo { transition: none; }
+}
