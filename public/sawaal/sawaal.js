@@ -294,8 +294,13 @@
 
   function renderDay() {
     currentQuestion = 4;
-    var wrap = document.createElement('div');
     var days = CFG.availableDays || [];
+    // No availability configured → the picker would be a dead end; skip it.
+    if (!days.length) {
+      record('day', { choice: 'date', date: null });
+      return transitionTo(renderQuizIntro);
+    }
+    var wrap = document.createElement('div');
     var message = document.createElement('p');
     message.className = 'form-message';
     message.setAttribute('aria-live', 'polite');
