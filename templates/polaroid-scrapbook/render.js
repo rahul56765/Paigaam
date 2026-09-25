@@ -18,6 +18,7 @@
 const config = require('./config');
 const schema = require('./schema');
 const { resolve } = require('../../lib/bfday/fields');
+const { bgmMarkup, bgmScript } = require('../../lib/bfday/bgm');
 const { escape, jsonPayload, head, previewBadge } = require('../../lib/bfday/page');
 
 const TILTS   = [-4, 3, -4, 3, -4, 3, -4, 3];
@@ -54,6 +55,7 @@ function renderPolaroid(photo, idx) {
  */
 function render(paigaam = {}, opts = {}) {
   const d = resolve(config, paigaam && paigaam.customer_data, schema);
+  const bgm = d.bgmSong || '';
   const preview = !!opts.isPreview;
 
   const title = 'Our Little Scrapbook · Paigaam';
@@ -77,6 +79,8 @@ function render(paigaam = {}, opts = {}) {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 ${head({ paigaam, opts, title, description, themeColor: '#FFFDF8', image: ogPhoto })}
+<link rel="stylesheet" href="/bfday/bgm.css">
+<style>:root { --bgm-accent: #B85C48; }</style>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
@@ -131,6 +135,8 @@ ${d.photos.map((photo, idx) => renderPolaroid(photo, idx)).join('\n')}
     </div>
   </div>
 
+${bgmMarkup(bgm, 'our song')}
+${bgmScript(bgm)}
 </body>
 </html>`;
 }

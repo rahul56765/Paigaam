@@ -17,6 +17,7 @@
 const config = require('./config');
 const schema = require('./schema');
 const { resolve } = require('../../lib/bfday/fields');
+const { bgmMarkup, bgmScript } = require('../../lib/bfday/bgm');
 const { escape, jsonPayload, head, previewBadge } = require('../../lib/bfday/page');
 
 /* Ordinal words for question labels (matching the original design). */
@@ -29,6 +30,7 @@ function ordinal(n) { return ORDINALS[n] || String(n); }
  */
 function render(paigaam = {}, opts = {}) {
   const d = resolve(config, paigaam && paigaam.customer_data, schema);
+  const bgm = d.bgmSong || '';
   const preview = !!opts.isPreview;
 
   const sender = d.senderName || 'your favourite person';
@@ -74,6 +76,8 @@ function render(paigaam = {}, opts = {}) {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 ${head({ paigaam, opts, title, description, themeColor: '#FFFDF8' })}
+<link rel="stylesheet" href="/bfday/bgm.css">
+<style>:root { --bgm-accent: #B85C48; }</style>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,600&family=Caveat:wght@500;700&display=swap" rel="stylesheet">
@@ -156,6 +160,8 @@ ${frames}
   </div>
   <p class="page-foot">made with love · <a href="/">Paigaam</a></p>
 </main>
+${bgmMarkup(bgm, 'our song')}
+${bgmScript(bgm)}
 </body>
 </html>`;
 }

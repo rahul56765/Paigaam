@@ -63,8 +63,9 @@ function scalarField(f) {
   const common = `id="${id}" name="${escape(f.id)}" data-field="${escape(f.id)}"${f.required ? ' required aria-required="true"' : ''}${f.hint ? ` aria-describedby="${id}-hint"` : ''}`;
   const ph = f.placeholder ? ` placeholder="${escape(f.placeholder)}"` : '';
   let control;
-  if (f.type === 'text') control = `<input type="text" ${common} maxlength="${f.maxLength}"${ph} autocomplete="off">`;
+  if (f.type === 'text' || f.type === 'bgm') control = `<input type="text" ${common} maxlength="${f.maxLength}"${ph} autocomplete="off">`;
   else if (f.type === 'url') control = `<input type="url" ${common} maxlength="${f.maxLength}"${ph} inputmode="url" autocomplete="off">`;
+  else if (f.type === 'date') control = `<input type="date" ${common} min="1900-01-01" max="2200-12-31">`;
   else if (f.type === 'number') control = `<input type="number" ${common} min="${f.min}" max="${f.max}" step="1" inputmode="numeric"${ph}>`;
   else if (f.type === 'textarea') control = `<textarea ${common} maxlength="${f.maxLength}" rows="${f.rows}"${ph}></textarea>`;
   else if (f.type === 'select') {
@@ -78,6 +79,15 @@ function scalarField(f) {
   ${f.maxLength && f.type !== 'number' ? `<p class="count" data-count-for="${id}" aria-hidden="true"></p>` : ''}
   ${f.hint ? `<p class="hint" id="${id}-hint">${escape(f.hint)}</p>` : ''}
 </div>`;
+}
+
+/** The shared background-song field: "no song" toggle + the link/id input. */
+function bgmFieldHTML(f) {
+  const base = scalarField(f);
+  return `<div class="field field--bgm" data-type="bgm">
+  <label class="bgm-none"><input type="checkbox" id="f-bgmSong-none" data-bgm-none> <span>no song — keep it quiet</span></label>
+</div>
+${base}`;
 }
 
 function fieldHTML(f) {
@@ -96,7 +106,7 @@ function fieldHTML(f) {
   <button type="button" class="button secondary bf-add" data-add="${escape(f.id)}">${escape(f.addLabel)}</button>
 </div>`;
   }
-  return scalarField(f);
+  return f.id === 'bgmSong' ? bgmFieldHTML(f) : scalarField(f);
 }
 
 /** @param t a family entry: { slug, config, fields } */

@@ -16,6 +16,7 @@
 const config = require('./config');
 const schema = require('./schema');
 const { resolve } = require('../../lib/bfday/fields');
+const { bgmMarkup, bgmScript } = require('../../lib/bfday/bgm');
 const { escape, multiline, head, previewBadge } = require('../../lib/bfday/page');
 
 /** YouTube watch/share/shorts URL → embeddable id, or ''. */
@@ -76,6 +77,7 @@ function renderNoteCard(item, idx) {
  */
 function render(paigaam = {}, opts = {}) {
   const d = resolve(config, paigaam && paigaam.customer_data, schema);
+  const bgm = d.bgmSong || '';
   const preview = !!opts.isPreview;
 
   const who = d.recipientName || 'you';
@@ -96,6 +98,8 @@ function render(paigaam = {}, opts = {}) {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 ${head({ paigaam, opts, title, description, themeColor: '#CFE6F6', image: ogImage })}
+<link rel="stylesheet" href="/bfday/bgm.css">
+<style>:root { --bgm-accent: #D63D6C; }</style>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Caveat:wght@500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
@@ -199,6 +203,8 @@ ${d.bouquetNotes.map((item, idx) => renderNoteCard(item, idx)).join('\n')}
     </section>
 
   </main>
+${bgmMarkup(bgm, 'our song')}
+${bgmScript(bgm)}
 </body>
 </html>`;
 }

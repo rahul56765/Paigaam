@@ -206,6 +206,12 @@ dialog#previewDialog::backdrop { background: color-mix(in srgb, var(--ink) 60%, 
 #frameHost { position: relative; }
 #frameHost iframe { display: block; width: 100%; height: min(72vh, 740px); border: 1px solid var(--line); border-radius: 16px; background: var(--bg); }
 
+/* The shared background-song field: the "no song" toggle sits above the input */
+.field--bgm { margin-bottom: 4px; }
+.field--bgm .bgm-none { display: flex; align-items: center; gap: 9px; font-size: 0.85rem; color: var(--muted); cursor: pointer; padding: 6px 0; }
+.field--bgm .bgm-none input { width: 18px; height: 18px; accent-color: var(--accent); cursor: pointer; }
+.field input:disabled { opacity: .45; cursor: not-allowed; }
+
 @media (prefers-reduced-motion: reduce) {
   .button:not(:disabled):hover { transform: none; }
   * { transition: none !important; }

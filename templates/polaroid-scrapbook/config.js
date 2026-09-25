@@ -143,6 +143,7 @@ module.exports = {
 
   /** /polaroid-scrapbook/demo, the gallery thumbnail and the detail page. */
   demo: {
+    bgmSong: 'gJLVTKhTnog',
     senderName: 'Rahul',
     scrapbookTitle: 'our little scrapbook',
     scrapbookSub: 'a keepsake, just for you',

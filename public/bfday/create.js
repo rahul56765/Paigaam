@@ -361,6 +361,22 @@
     if (!input) return;
     input.addEventListener('input', changed);
     input.addEventListener('change', changed);
+    if (f.id === 'bgmSong') {
+      // The shared background-song field: the "no song" checkbox wins over
+      // whatever is typed, and unchecking restores the input.
+      var none = el('f-bgmSong-none');
+      var saved = '';
+      if (none) none.addEventListener('change', function () {
+        if (none.checked) { saved = input.value; input.value = ''; input.disabled = true; }
+        else { input.disabled = false; input.value = saved; }
+        changed();
+      });
+      controls[f.id] = {
+        get: function () { return (none && none.checked) ? 'none' : input.value.trim(); },
+        focus: function () { (none && none.checked ? none : input).focus(); },
+      };
+      return;
+    }
     var note = form.querySelector('[data-count-for="f-' + f.id + '"]');
     if (note && f.maxLength) {
       var update = function () { var n = input.value.length; note.textContent = n > f.maxLength * 0.75 ? n + ' / ' + f.maxLength : ''; };

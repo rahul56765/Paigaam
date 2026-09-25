@@ -17,6 +17,7 @@
 const config  = require('./config');
 const schema  = require('./schema');
 const { resolve }                         = require('../../lib/bfday/fields');
+const { bgmMarkup, bgmScript } = require('../../lib/bfday/bgm');
 const { escape, multiline, jsonPayload, head, previewBadge } = require('../../lib/bfday/page');
 
 /* Five inline-SVG spot illustrations (one per moment slot, cycled). */
@@ -137,6 +138,7 @@ function fmt(n) {
  */
 function render(paigaam = {}, opts = {}) {
   const d = resolve(config, paigaam && paigaam.customer_data, schema);
+  const bgm = d.bgmSong || '';
   const preview = !!opts.isPreview;
 
   const sender    = d.senderName    || 'me';
@@ -190,6 +192,8 @@ function render(paigaam = {}, opts = {}) {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 ${head({ paigaam, opts, title, description, themeColor: '#1D1B2E' })}
+<link rel="stylesheet" href="/bfday/bgm.css">
+<style>:root { --bgm-accent: #E8B4B8; }</style>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@900&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,400;1,9..144,500&family=Caveat:wght@500;600&display=swap" rel="stylesheet">
@@ -250,6 +254,8 @@ ${momentScreens}
   </section>
 
 </main>
+${bgmMarkup(bgm, 'our song')}
+${bgmScript(bgm)}
 </body>
 </html>`;
 }

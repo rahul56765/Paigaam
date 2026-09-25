@@ -78,6 +78,7 @@ module.exports = {
 
   /** /sealed-with-a-kiss/demo, the collection thumbnail and the detail page. */
   demo: {
+    bgmSong: 'kPa7bsKwL-c',
     senderName: 'Rahul',
     salutation: 'My dearest,',
     paragraphs: PARAGRAPHS,

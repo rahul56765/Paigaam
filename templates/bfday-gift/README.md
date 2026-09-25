@@ -39,6 +39,9 @@ Only `recipientName` and `senderName` are required. Everything else defaults to 
 | `bouquetNotes` | list of shape, exactly 3 | label 40, note 240 | the three designed notes |
 | `letterText` | textarea | 600 | the original letter |
 | `letterDate` | text | 40 | "october 3, always" |
+| `bgmSong` | bgm (shared) | 300 | "Until I Found You" — Stephen Sanchez (`GxldQ9eX2wo`) |
+
+`bgmSong` is the family-wide background-music field (lib/bfday/fields.BGM_FIELD): a YouTube link or a bare 11-char video id, or blank / "no song" for a quiet page. The engine normalises it to the bare id before render; the chip (bottom-right) loads nothing until the recipient taps — the tap swaps in a 1×1 youtube-nocookie iframe with autoplay=1, and the next tap pauses. No audio is ever hosted or bundled.
 
 Newlines in the letter and the bouquet notes are kept (`<br>`). All sender text is HTML-escaped server-side; the YouTube URL is validated as a URL by the field engine and then reduced to a bare video id before it is ever embedded.
 

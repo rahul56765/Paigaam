@@ -155,6 +155,7 @@ module.exports = {
 
   /** /unrejectable/demo, the gallery thumbnail and the detail page. */
   demo: {
+    bgmSong: 'zm4OWfvnP0M',
     senderName: 'Priya',
     question: 'Will you be my boyfriend, always?',
     yesLabel: 'Yes 💛',

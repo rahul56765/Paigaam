@@ -15,6 +15,7 @@
 const config = require('./config');
 const schema = require('./schema');
 const { resolve } = require('../../lib/bfday/fields');
+const { bgmMarkup, bgmScript } = require('../../lib/bfday/bgm');
 const { escape, multiline, jsonPayload, head, previewBadge } = require('../../lib/bfday/page');
 
 /* ---- SVG defs shared between both arches ---- */
@@ -70,6 +71,7 @@ function archInner(photo, alt, isCelebrate) {
  */
 function render(paigaam = {}, opts = {}) {
   const d = resolve(config, paigaam && paigaam.customer_data, schema);
+  const bgm = d.bgmSong || '';
   const preview = !!opts.isPreview;
 
   const photoAlt = d.senderName ? `Photo from ${d.senderName}` : 'Our photo';
@@ -87,6 +89,8 @@ function render(paigaam = {}, opts = {}) {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 ${head({ paigaam, opts, title, description, themeColor: '#FFFDF8', image: ogImage })}
+<link rel="stylesheet" href="/bfday/bgm.css">
+<style>:root { --bgm-accent: #B85C48; }</style>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,900&family=Caveat:wght@600;700&display=swap" rel="stylesheet">
@@ -134,6 +138,8 @@ ${jsonPayload('ucPayload', { giveUpCaption: d.giveUpCaption })}
 </main>
 
 <canvas id="ucConfetti" aria-hidden="true"></canvas>
+${bgmMarkup(bgm, 'our song')}
+${bgmScript(bgm)}
 </body>
 </html>`;
 }

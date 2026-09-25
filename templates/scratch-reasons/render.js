@@ -16,6 +16,7 @@
 const config  = require('./config');
 const schema  = require('./schema');
 const { resolve }                        = require('../../lib/bfday/fields');
+const { bgmMarkup, bgmScript } = require('../../lib/bfday/bgm');
 const { escape, multiline, head, previewBadge } = require('../../lib/bfday/page');
 
 /* Template-authored SVG decorations — not sender data, no escaping needed. */
@@ -37,6 +38,7 @@ const SPARKLE_SVG =
  */
 function render(paigaam = {}, opts = {}) {
   const d       = resolve(config, paigaam && paigaam.customer_data, schema);
+  const bgm = d.bgmSong || '';
   const preview = !!opts.isPreview;
   const count   = d.reasons.length;
 
@@ -65,6 +67,8 @@ function render(paigaam = {}, opts = {}) {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 ${head({ paigaam, opts, title, description, themeColor: '#FBF3E4' })}
+<link rel="stylesheet" href="/bfday/bgm.css">
+<style>:root { --bgm-accent: #B85C48; }</style>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@1,9..144,400;1,9..144,500;1,9..144,600&family=Inter:wght@400;500;600&family=Caveat:wght@500;600&display=swap" rel="stylesheet">
@@ -100,6 +104,8 @@ ${previewBadge(opts)}
   </section>
 </div>
 
+${bgmMarkup(bgm, 'our song')}
+${bgmScript(bgm)}
 </body>
 </html>`;
 }

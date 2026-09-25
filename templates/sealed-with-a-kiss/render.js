@@ -14,6 +14,7 @@
 const config = require('./config');
 const schema = require('./schema');
 const { resolve } = require('../../lib/bfday/fields');
+const { bgmMarkup, bgmScript } = require('../../lib/bfday/bgm');
 const { escape, multiline, head, previewBadge } = require('../../lib/bfday/page');
 
 /** First visible character(s) of the name, for the wax seal. */
@@ -28,6 +29,7 @@ function initialOf(name) {
  */
 function render(paigaam = {}, opts = {}) {
   const d = resolve(config, paigaam && paigaam.customer_data, schema);
+  const bgm = d.bgmSong || '';
   const preview = !!opts.isPreview;
 
   const sender = d.senderName || 'me';
@@ -46,6 +48,8 @@ function render(paigaam = {}, opts = {}) {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 ${head({ paigaam, opts, title, description, themeColor: '#FBF3E4' })}
+<link rel="stylesheet" href="/bfday/bgm.css">
+<style>:root { --bgm-accent: #B85C48; }</style>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..700&family=Caveat:wght@400..700&display=swap" rel="stylesheet">
@@ -103,6 +107,8 @@ ${lines.map((line, i) => `        <p style="--i:${i + 1}">${multiline(line)}</p>
       </div>
     </div>
   </article>
+${bgmMarkup(bgm, 'the letter’s song')}
+${bgmScript(bgm)}
 </body>
 </html>`;
 }

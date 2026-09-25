@@ -228,6 +228,7 @@ module.exports = {
 
   /** /bfday-gift/demo, the gallery thumbnail and the detail page. */
   demo: {
+    bgmSong: 'GxldQ9eX2wo',
     recipientName: 'Aarav',
     senderName: 'Meera',
     occasionLine: 'happy Boyfriend\u2019s Day',

@@ -1,0 +1,32 @@
+/*
+ * Boyfriend Day family — the shared background-music chip.
+ * One fixed round button, bottom-right; the page sets --bgm-accent from the
+ * template's theme accent. Nothing loads until the first tap (see bgm.js).
+ */
+.bgm { position: fixed; right: 14px; bottom: 14px; z-index: 60; }
+.bgm-btn {
+  width: 52px; height: 52px;
+  border-radius: 50%;
+  border: 0;
+  cursor: pointer;
+  background: var(--bgm-accent, #B85C48);
+  color: #FFFDF8;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, .22);
+  display: flex; align-items: center; justify-content: center;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform .2s ease;
+}
+.bgm-btn:active { transform: scale(.94); }
+.bgm-note { font-size: 1.35rem; line-height: 1; }
+.bgm-btn .bgm-note::after { content: ''; }
+.bgm:not(.on) .bgm-note { opacity: .92; }
+.bgm.on .bgm-btn { animation: bgm-pulse 2.2s ease-in-out infinite; }
+@keyframes bgm-pulse {
+  0%, 100% { box-shadow: 0 8px 20px rgba(0, 0, 0, .22); }
+  50% { box-shadow: 0 8px 26px rgba(0, 0, 0, .22), 0 0 0 10px rgba(255, 255, 255, .16); }
+}
+.bgm-host { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+.bgm-host iframe { width: 1px; height: 1px; border: 0; }
+@media (prefers-reduced-motion: reduce) {
+  .bgm.on .bgm-btn { animation: none; }
+}
