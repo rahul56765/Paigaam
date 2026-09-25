@@ -1,0 +1,536 @@
+/*
+ * Raaz — The Password Letter (Boyfriend Day family).
+ *
+ * Palette: near-black ink #0F0D0C · ivory paper #F3EDE2 · plum-black #231B1F
+ * · crimson accent #B3402F. Strictly no gold; crimson only as accent.
+ * Motion budget: nothing animates continuously — everything is triggered.
+ */
+:root {
+  --ink-black: #0F0D0C;
+  --ivory: #F3EDE2;
+  --plum: #231B1F;
+  --crimson: #B3402F;
+  --ivory-dim: rgba(243, 237, 226, 0.55);
+  --ease-chip: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body { height: 100%; }
+
+body {
+  background: var(--ink-black);
+  color: var(--ivory);
+  font-family: 'DM Sans', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+.rz { position: relative; min-height: 100vh; min-height: 100svh; }
+
+/* ---------- stages: one visible at a time ---------- */
+.rz-stage {
+  position: fixed;
+  inset: 0;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 24px;
+}
+
+.rz-stage.is-active { display: flex; }
+
+.rz-stage--letter { position: static; }
+
+/* ============================================================
+   ① LOCK
+   ============================================================ */
+.rz-stage--lock { background: var(--ink-black); }
+
+.rz-lock__inner {
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 26px;
+}
+
+.rz-lock__title {
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 500;
+  font-size: clamp(19px, 4.6vw, 24px);
+  letter-spacing: 0.02em;
+  color: var(--ivory);
+}
+
+.rz-lock__form { width: 100%; max-width: 320px; }
+
+.rz-lock__label {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ivory-dim);
+  margin-bottom: 14px;
+}
+
+.rz-lock__input {
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid rgba(243, 237, 226, 0.4);
+  border-radius: 0;
+  padding: 8px 2px 10px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 22px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-align: center;
+  color: var(--ivory);
+  caret-color: var(--crimson);
+  outline: none;
+  transition: border-color 0.25s ease;
+}
+
+.rz-lock__input:focus { border-bottom-color: var(--ivory); }
+
+/* wrong-answer shake: 400ms, translateX ±6px, ease-out */
+@keyframes rz-shake {
+  0%   { transform: translateX(0); }
+  15%  { transform: translateX(-6px); }
+  35%  { transform: translateX(6px); }
+  55%  { transform: translateX(-6px); }
+  75%  { transform: translateX(6px); }
+  100% { transform: translateX(0); }
+}
+
+.rz-lock__input.is-wrong {
+  animation: rz-shake 0.4s ease-out;
+  border-bottom-color: var(--crimson);
+}
+
+.rz-lock__hint {
+  min-height: 1.6em;
+  max-width: 320px;
+  font-size: 15px;
+  font-style: italic;
+  color: var(--crimson);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.rz-lock__hint.is-visible { opacity: 1; }
+
+.rz-lock__peek {
+  font-size: 13px;
+  color: var(--ivory-dim);
+  letter-spacing: 0.04em;
+}
+
+.rz-lock__peek b { color: var(--ivory); font-weight: 700; }
+
+/* ============================================================
+   ② UNLOCK — captcha card + notification chip
+   ============================================================ */
+.rz-stage--unlock { background: var(--ink-black); }
+
+.rz-captcha {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--ivory);
+  color: var(--ink-black);
+  border-radius: 10px;
+  padding: 16px 22px;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.55);
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.rz-captcha.is-in { opacity: 1; transform: translateY(0); }
+
+.rz-captcha__box {
+  width: 26px;
+  height: 26px;
+  flex: none;
+  border: 2px solid #6B6258;
+  border-radius: 4px;
+  display: grid;
+  place-items: center;
+  color: var(--crimson);
+}
+
+.rz-captcha__tick {
+  width: 18px;
+  height: 18px;
+}
+
+.rz-captcha__tick path {
+  stroke-dasharray: 24;
+  stroke-dashoffset: 24;
+}
+
+/* the tick draws itself over ~500ms */
+.rz-captcha.is-checked .rz-captcha__tick path {
+  animation: rz-tick 0.5s ease-out forwards;
+}
+
+@keyframes rz-tick { to { stroke-dashoffset: 0; } }
+
+.rz-captcha__text {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--ink-black);
+}
+
+/* notification chip, slides down from the top edge */
+.rz-chip {
+  position: fixed;
+  top: 14px;
+  left: 50%;
+  transform: translate(-50%, -140%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--ivory);
+  color: var(--ink-black);
+  border-radius: 999px;
+  padding: 10px 18px 10px 14px;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  max-width: calc(100vw - 32px);
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.5);
+  z-index: 20;
+}
+
+.rz-chip.is-down {
+  transform: translate(-50%, 0);
+  transition: transform 0.3s var(--ease-chip);
+}
+
+.rz-chip__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--crimson);
+  flex: none;
+}
+
+.rz-chip__label { overflow: hidden; text-overflow: ellipsis; }
+
+/* ============================================================
+   ③ ENVELOPE — seal cracks, flap opens, slide down-fade
+   ============================================================ */
+.rz-stage--envelope { background: var(--ink-black); }
+
+.rz-envelope {
+  position: relative;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  width: min(78vw, 380px);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.rz-envelope__img { display: block; width: 100%; height: auto; }
+
+.rz-seal {
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  width: 30%;
+  transform: translate(-50%, -50%);
+  transition: transform 0.2s ease-in, opacity 0.2s ease-in;
+}
+
+.rz-seal img { display: block; width: 100%; height: auto; }
+
+/* cracked: the seal rotates off and drops */
+.rz-seal.is-cracked {
+  transform: translate(-50%, -50%) rotate(28deg) translateY(46%);
+  opacity: 0;
+}
+
+.rz-envelope__to {
+  position: absolute;
+  left: 50%;
+  bottom: 12%;
+  transform: translateX(-50%);
+  font-family: 'Caveat', cursive;
+  font-size: clamp(20px, 5.4vw, 26px);
+  font-weight: 600;
+  color: var(--plum);
+  pointer-events: none;
+}
+
+/* flap "opens": the envelope tips back a touch, then the whole beat exits */
+.rz-envelope.is-open { animation: rz-flap 0.4s ease-out; }
+
+@keyframes rz-flap {
+  0%   { transform: rotateX(0); }
+  40%  { transform: rotateX(9deg) translateY(-1.5%); }
+  100% { transform: rotateX(0); }
+}
+
+.rz-stage--envelope.is-leaving .rz-envelope,
+.rz-stage--envelope.is-leaving .rz-tapline {
+  opacity: 0;
+  transform: translateY(60px);
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+
+.rz-tapline {
+  margin-top: 26px;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--ivory-dim);
+}
+
+/* ============================================================
+   ④ GIFT — closed → shake → open burst + confetti + headline
+   ============================================================ */
+.rz-stage--gift { background: var(--ink-black); }
+
+.rz-box {
+  position: relative;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  width: min(62vw, 300px);
+  -webkit-tap-highlight-color: transparent;
+  transform: scale(0.6);
+  opacity: 0;
+}
+
+/* scales in from 0.6 with a slight overshoot (back easing, 500ms) */
+.rz-stage--gift.is-active .rz-box {
+  animation: rz-box-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes rz-box-in {
+  from { transform: scale(0.6); opacity: 0; }
+  to   { transform: scale(1); opacity: 1; }
+}
+
+.rz-box__img { display: block; width: 100%; height: auto; }
+
+/* the rattle: three quick toggles over ~600ms */
+.rz-box.is-shaking { animation: rz-rattle 0.6s ease-in-out; }
+
+@keyframes rz-rattle {
+  0%   { transform: scale(1) rotate(0); }
+  18%  { transform: scale(1.02) rotate(-2.4deg); }
+  36%  { transform: scale(1) rotate(2.4deg); }
+  54%  { transform: scale(1.02) rotate(-2.4deg); }
+  72%  { transform: scale(1) rotate(2.4deg); }
+  100% { transform: scale(1) rotate(0); }
+}
+
+.rz-box.is-done { transform: scale(1); opacity: 1; animation: none; cursor: default; }
+
+/* confetti ring, composited OVER the open box (transparent center) */
+.rz-confetti {
+  position: absolute;
+  inset: -22%;
+  width: 144%;
+  height: auto;
+  pointer-events: none;
+  opacity: 0;
+  transform: scale(0.7);
+}
+
+.rz-confetti.is-burst {
+  animation: rz-burst 0.6s ease-out forwards;
+}
+
+@keyframes rz-burst {
+  0%   { opacity: 0; transform: scale(0.7); }
+  30%  { opacity: 1; }
+  100% { opacity: 1; transform: scale(1.12); }
+}
+
+.rz-gift {
+  margin-top: 30px;
+  font-family: 'Fraunces', serif;
+  font-weight: 900;
+  font-size: clamp(34px, 9.5vw, 56px);
+  line-height: 1.05;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--crimson);
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.rz-gift__ch, .rz-gift__sp { display: inline-block; }
+
+.rz-gift__ch {
+  opacity: 0;
+  transform: translateY(0.6em);
+}
+
+/* letters stagger up, 40ms apart, when the box pops */
+.rz-stage--gift.is-open .rz-gift__ch {
+  animation: rz-ch 0.45s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation-delay: calc(var(--i) * 40ms);
+}
+
+@keyframes rz-ch {
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ============================================================
+   ⑤ LETTER — ivory paper grain, Caveat, sign-off, song
+   ============================================================ */
+.rz-stage--letter {
+  background: var(--ink-black);
+  padding: 48px 20px 64px;
+}
+
+.rz-paper {
+  width: 100%;
+  max-width: 560px;
+  background: var(--ivory) url('/assets/raaz/grain.jpg') repeat;
+  background-size: 256px;
+  border-radius: 14px;
+  padding: clamp(30px, 7vw, 52px) clamp(24px, 6vw, 44px);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
+  color: var(--plum);
+  text-align: left;
+  opacity: 0;
+  transform: translateY(18px);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+.rz-stage--letter.is-active .rz-paper { opacity: 1; transform: translateY(0); }
+
+.rz-letter__to {
+  font-family: 'Caveat', cursive;
+  font-size: clamp(26px, 6.4vw, 32px);
+  font-weight: 600;
+  margin-bottom: 18px;
+  color: var(--plum);
+}
+
+.rz-letter p {
+  font-family: 'Caveat', cursive;
+  font-size: clamp(21px, 5.2vw, 25px);
+  font-weight: 500;
+  line-height: 1.45;
+  color: var(--plum);
+  margin-bottom: 14px;
+}
+
+.rz-letter__signoff {
+  margin-top: 26px;
+  font-style: italic;
+}
+
+.rz-letter__name {
+  font-size: clamp(24px, 6vw, 30px) !important;
+  font-weight: 600 !important;
+  margin-bottom: 0 !important;
+}
+
+/* song card under the letter — Naghma behaviour, Raaz palette */
+.rz-song {
+  margin-top: 34px;
+  padding-top: 26px;
+  border-top: 1px solid rgba(35, 27, 31, 0.18);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
+}
+
+.rz-song__label {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--crimson);
+}
+
+.rz-song__title {
+  font-family: 'Fraunces', serif;
+  font-weight: 900;
+  font-size: 19px;
+  color: var(--plum);
+}
+
+.rz-song__embed {
+  width: 100%;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 14px 34px rgba(15, 13, 12, 0.25);
+}
+
+.rz-song__embed iframe { display: block; width: 100%; aspect-ratio: 16 / 9; border: 0; }
+
+.rz-song__pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ivory);
+  background: var(--plum);
+  padding: 13px 26px;
+  border-radius: 999px;
+  text-decoration: none;
+  transition: transform 0.2s ease;
+}
+
+.rz-song__pill:hover { transform: scale(1.04); }
+
+.rz-song__pill--spotify { background: #1DB954; color: #0A1F14; }
+.rz-song__pill--apple { background: #FA243C; color: #FFFDF8; }
+
+.rz-svc-ic { width: 16px; height: 16px; border-radius: 50%; }
+
+.rz-foot {
+  margin-top: 34px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  text-align: center;
+  color: rgba(35, 27, 31, 0.5);
+}
+
+.rz-foot a { color: inherit; text-underline-offset: 3px; }
+
+/* ============================================================
+   reduced motion — every triggered animation collapses
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  .rz-lock__input.is-wrong { animation: none; border-bottom-color: var(--crimson); }
+  .rz-captcha, .rz-paper { transition: none; }
+  .rz-captcha.is-checked .rz-captcha__tick path { animation: none; stroke-dashoffset: 0; }
+  .rz-chip.is-down { transition: none; }
+  .rz-seal.is-cracked { transition: none; }
+  .rz-envelope.is-open { animation: none; }
+  .rz-stage--envelope.is-leaving .rz-envelope,
+  .rz-stage--envelope.is-leaving .rz-tapline { transition: none; }
+  .rz-stage--gift.is-active .rz-box { animation: none; transform: scale(1); opacity: 1; }
+  .rz-box.is-shaking { animation: none; }
+  .rz-confetti.is-burst { animation: none; opacity: 1; transform: scale(1); }
+  .rz-stage--gift.is-open .rz-gift__ch { animation: none; opacity: 1; transform: none; }
+}
