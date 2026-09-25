@@ -50,6 +50,9 @@ function darkThemeOverride(theme) {
 }
 :root { --accent-ondark: ${esc(onDark)}; }
 .intro .eyebrow, .journey .eyebrow, .journey li.is-current, .journey li .step-number, .livepane .eyebrow, footer { color: var(--accent-ondark); }
+/* the masthead "All templates" link sits directly on the dark page bg — --muted resolves too dark there */
+.masthead .text-link { color: var(--accent-ondark); }
+.masthead .text-link:hover { color: var(--accent); }
 /* secondary buttons mix --soft (a dark surface here) into their fill — force it light */
 .paper .button.secondary, dialog#previewDialog .button.secondary { background: #fff; }`;
 }
