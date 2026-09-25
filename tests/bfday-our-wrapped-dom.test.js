@@ -267,6 +267,7 @@ test('HTML: bfday wizard emits dark-theme contrast override for Naghma only', ()
   const dark = bfdayCreatePage(bySlug['our-wrapped']);
   assert.match(dark, /\.paper, dialog#previewDialog \{\s*--ink: #2B2118;/, 'paper text re-scoped dark');
   assert.match(dark, /--accent-ondark: #B4A9E0/, 'accent brightened for the dark page bg');
+  assert.match(dark, /\.paper \.button\.secondary[^{]*\{ background: #fff; \}/, 'secondary buttons forced off the dark --soft fill');
 
   for (const slug of ['sealed-with-a-kiss', 'polaroid-scrapbook', 'scratch-reasons', 'unrejectable', 'know-us-quiz']) {
     const html = bfdayCreatePage(bySlug[slug]);

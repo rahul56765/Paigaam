@@ -49,7 +49,9 @@ function darkThemeOverride(theme) {
   color: ${esc(paperInk)};
 }
 :root { --accent-ondark: ${esc(onDark)}; }
-.intro .eyebrow, .journey .eyebrow, .journey li.is-current, .journey li .step-number, .livepane .eyebrow, footer { color: var(--accent-ondark); }`;
+.intro .eyebrow, .journey .eyebrow, .journey li.is-current, .journey li .step-number, .livepane .eyebrow, footer { color: var(--accent-ondark); }
+/* secondary buttons mix --soft (a dark surface here) into their fill — force it light */
+.paper .button.secondary, dialog#previewDialog .button.secondary { background: #fff; }`;
 }
 
 function reqMark(f) {
