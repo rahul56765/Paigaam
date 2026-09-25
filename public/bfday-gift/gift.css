@@ -1,0 +1,606 @@
+/*
+ * Tohfa — Whole Website Gift (Boyfriend Day family).
+ * Candy Scrapbook design system: pale-blue/white candy stripes, slate ink,
+ * raspberry script, dusty-pink stars, white polaroids with pink washi tape,
+ * a blush final letter and the kawaii bunny throughout.
+ * Fonts (Pacifico, Caveat, Inter) are linked from the page head.
+ * Design media: /assets/bfday-gift/ (decoded at boot from assets/bfday-gift/).
+ */
+:root {
+  --stripes: #CFE6F6;
+  --paper: #FFFFFF;
+  --ink: #5A6B7A;
+  --ink-deep: #44515E;
+  --raspberry: #D63D6C;
+  --star: #E08A9B;
+  --blush: #F9DFE4;
+  --blush-deep: #F3C9D2;
+  --ease: cubic-bezier(.22, 1, .36, 1);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  color: var(--ink);
+  background-color: var(--stripes);
+  background-image: url('/assets/bfday-gift/stripe-tile.png');
+  background-repeat: repeat;
+  background-size: 192px 96px;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+img { max-width: 100%; }
+
+/* ================= SCENE 1 · THE COVER ================= */
+.cover {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--stripes);
+  background-image: url('/assets/bfday-gift/stripe-tile.png');
+  background-repeat: repeat;
+  background-size: 192px 96px;
+  transition: transform .75s var(--ease), opacity .75s var(--ease), visibility 0s .75s;
+  overflow: hidden;
+}
+
+.cover.away {
+  transform: translateY(-102%);
+  opacity: .35;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.cover-inner {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+  padding: 28px 20px 40px;
+  max-width: 560px;
+}
+
+.cover-headline {
+  font-family: 'Pacifico', cursive;
+  font-weight: 400;
+  font-size: clamp(2.3rem, 9vw, 4rem);
+  line-height: 1.25;
+  color: var(--raspberry);
+  text-shadow: 0 2px 0 rgba(255, 255, 255, .75);
+  margin-bottom: 10px;
+}
+
+.cover-name {
+  font-family: 'Caveat', cursive;
+  font-size: clamp(1.4rem, 5.5vw, 1.9rem);
+  color: var(--ink-deep);
+  margin-bottom: 26px;
+}
+
+.cover-name strong { color: var(--raspberry); font-weight: 700; }
+
+.cover-stars {
+  position: absolute;
+  width: min(46vw, 300px);
+  opacity: .55;
+  pointer-events: none;
+  z-index: 1;
+}
+.cover-stars.s1 { top: -30px; left: -40px; }
+.cover-stars.s2 { bottom: -40px; right: -50px; transform: scaleX(-1); }
+
+.bunny-btn {
+  position: relative;
+  display: inline-block;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  padding: 18px;
+  min-width: 96px;
+  min-height: 96px;
+  -webkit-tap-highlight-color: transparent;
+  animation: bunny-bob 2.6s ease-in-out infinite;
+}
+
+.bunny-btn img { width: clamp(150px, 42vw, 230px); display: block; filter: drop-shadow(0 10px 18px rgba(90, 107, 122, .25)); }
+
+@keyframes bunny-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-9px); }
+}
+
+.click-tag {
+  position: absolute;
+  top: 6px;
+  right: -14px;
+  font-family: 'Caveat', cursive;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--paper);
+  background: var(--raspberry);
+  padding: 4px 14px 6px;
+  border-radius: 999px 999px 999px 4px;
+  transform: rotate(6deg);
+  box-shadow: 0 4px 10px rgba(214, 61, 108, .35);
+  animation: tag-pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes tag-pulse {
+  0%, 100% { transform: rotate(6deg) scale(1); }
+  50% { transform: rotate(6deg) scale(1.08); }
+}
+
+.cover-hint {
+  margin-top: 22px;
+  font-size: .95rem;
+  letter-spacing: .04em;
+  color: var(--ink-deep);
+  opacity: .8;
+}
+
+/* ======================== the gift itself ======================== */
+.gift { display: none; }
+.gift.open { display: block; }
+
+.scene {
+  padding: 72px 20px;
+  max-width: 640px;
+  margin: 0 auto;
+  position: relative;
+}
+
+.scene-head {
+  font-family: 'Pacifico', cursive;
+  font-weight: 400;
+  font-size: clamp(1.7rem, 6.5vw, 2.4rem);
+  color: var(--raspberry);
+  text-align: center;
+  margin-bottom: 12px;
+  text-shadow: 0 2px 0 rgba(255, 255, 255, .7);
+}
+
+.scene-head.caps { letter-spacing: .02em; }
+
+.scene-sub {
+  text-align: center;
+  font-family: 'Caveat', cursive;
+  font-size: 1.2rem;
+  color: var(--ink-deep);
+  opacity: .85;
+  margin-bottom: 26px;
+}
+
+/* ================= SCENE 2 · THE WORD LIST ================= */
+.words-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 30px;
+  margin-top: 26px;
+}
+
+.polaroid {
+  position: relative;
+  background: var(--paper);
+  padding: 14px 14px 20px;
+  border-radius: 6px;
+  box-shadow: 0 12px 28px rgba(90, 107, 122, .22);
+  transform: rotate(-3deg);
+  width: min(300px, 78vw);
+}
+
+.polaroid img:not(.tape) {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: 3px;
+  background: var(--blush);
+}
+
+.polaroid img.ph-bunny { object-fit: contain; padding: 18px; }
+
+.tape {
+  position: absolute;
+  width: 118px;
+  top: -22px;
+  left: 50%;
+  transform: translateX(-50%) rotate(-4deg);
+  opacity: .95;
+  pointer-events: none;
+}
+
+.word-list {
+  list-style: none;
+  text-align: center;
+  min-height: 3em;
+}
+
+.word-line {
+  font-family: 'Caveat', cursive;
+  font-size: clamp(1.6rem, 6.5vw, 2.2rem);
+  font-weight: 500;
+  color: var(--ink-deep);
+  line-height: 1.55;
+  opacity: 0;
+  min-height: 1.55em;
+}
+
+.word-line.typing, .word-line.typed { opacity: 1; }
+.word-line.typing::after {
+  content: '▌';
+  color: var(--raspberry);
+  animation: caret 1s steps(1) infinite;
+}
+.word-line.typed::after { content: ''; }
+
+@keyframes caret { 50% { opacity: 0; } }
+
+/* ================= SCENE 3 · THE GALLERY ================= */
+.carousel {
+  display: flex;
+  gap: 22px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  padding: 34px 24px 26px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.carousel::-webkit-scrollbar { display: none; }
+
+.flip { flex: 0 0 min(260px, 72vw); scroll-snap-align: center; perspective: 900px; }
+
+.flip-btn {
+  display: block;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  min-height: 320px;
+  transform: rotate(var(--tilt, 0deg));
+  transition: transform .35s var(--ease);
+}
+.flip-btn:active { transform: rotate(var(--tilt, 0deg)) scale(.985); }
+
+.flip-inner {
+  position: relative;
+  display: block;
+  width: 100%;
+  transform-style: preserve-3d;
+  transition: transform .6s var(--ease);
+}
+
+.flip.flipped .flip-inner { transform: rotateY(180deg); }
+
+.face {
+  display: block;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  background: var(--paper);
+  border-radius: 6px;
+  box-shadow: 0 12px 26px rgba(90, 107, 122, .22);
+}
+
+.face.front { position: relative; padding: 12px 12px 16px; }
+
+.face.front img:not(.tape) {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: 3px;
+}
+
+.face.front .ph {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 3px;
+  background:
+    radial-gradient(120% 120% at 30% 20%, var(--blush) 0%, var(--blush-deep) 70%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ph-heart { font-size: 3rem; color: var(--raspberry); opacity: .7; }
+
+.face.front .cap {
+  display: block;
+  font-family: 'Caveat', cursive;
+  font-size: 1.25rem;
+  color: var(--ink-deep);
+  text-align: center;
+  margin-top: 12px;
+  min-height: 1.6em;
+}
+
+.face.back {
+  position: absolute;
+  inset: 0;
+  transform: rotateY(180deg);
+  padding: 26px 20px;
+  background: var(--blush);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+}
+
+.back-note {
+  font-family: 'Caveat', cursive;
+  font-size: 1.45rem;
+  line-height: 1.45;
+  color: var(--ink-deep);
+  text-align: center;
+}
+
+.back-star { color: var(--star); font-size: 1.2rem; }
+
+.dots { display: flex; justify-content: center; gap: 9px; margin-top: 4px; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--star); opacity: .35; transition: opacity .25s, transform .25s; }
+.dot.on { opacity: 1; transform: scale(1.25); }
+
+/* ================= SCENE 4 · THE SONG ================= */
+.yt-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 14px 30px rgba(90, 107, 122, .25);
+  margin-bottom: 22px;
+  background: #0e1520;
+}
+.yt-wrap iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+
+.song-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: var(--paper);
+  border-radius: 18px;
+  padding: 18px 16px;
+  box-shadow: 0 14px 30px rgba(90, 107, 122, .22);
+  border: 2px solid var(--blush-deep);
+}
+
+.disc {
+  flex: 0 0 62px;
+  width: 62px;
+  height: 62px;
+  border-radius: 50%;
+  background: conic-gradient(var(--raspberry), var(--star), var(--raspberry));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: spin 4.5s linear infinite;
+}
+
+.disc-heart {
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  background: var(--paper);
+  color: var(--raspberry);
+  display: flex; align-items: center; justify-content: center;
+  font-size: .85rem;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.song-meta { flex: 1 1 auto; min-width: 0; }
+.song-title { font-family: 'Caveat', cursive; font-size: 1.5rem; font-weight: 700; color: var(--ink-deep); line-height: 1.15; }
+.song-artist { font-size: .85rem; color: var(--ink); opacity: .85; margin: 2px 0 10px; }
+
+.bar {
+  height: 8px;
+  border-radius: 99px;
+  background: var(--blush);
+  overflow: hidden;
+}
+.bar-fill {
+  display: block;
+  height: 100%;
+  width: 0;
+  border-radius: 99px;
+  background: linear-gradient(90deg, var(--star), var(--raspberry));
+}
+.bar-times {
+  display: flex; justify-content: space-between;
+  font-size: .72rem; color: var(--ink); opacity: .7;
+  margin-top: 5px;
+  font-variant-numeric: tabular-nums;
+}
+
+.heart-btn {
+  flex: 0 0 52px;
+  width: 52px; height: 52px;
+  border-radius: 50%;
+  border: 2px solid var(--blush-deep);
+  background: var(--paper);
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform .2s var(--ease);
+}
+.heart-btn svg { width: 26px; height: 24px; fill: none; stroke: var(--raspberry); stroke-width: 2.4; transition: fill .25s; }
+.heart-btn.loved svg { fill: var(--raspberry); }
+.heart-btn.burst { animation: burst .45s var(--ease); }
+@keyframes burst { 35% { transform: scale(1.25); } }
+
+/* ================= SCENE 5 · THE BOUQUETS ================= */
+.bouquets {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  gap: clamp(8px, 3vw, 22px);
+  margin-top: 30px;
+}
+
+.bqt {
+  flex: 1 1 0;
+  max-width: 170px;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  padding: 12px 6px;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform .3s var(--ease);
+}
+.bqt img { display: block; width: 100%; filter: drop-shadow(0 10px 16px rgba(90, 107, 122, .22)); }
+.bqt:active { transform: scale(.96); }
+.bqt-label {
+  display: block;
+  font-family: 'Caveat', cursive;
+  font-size: 1.1rem;
+  color: var(--ink-deep);
+  margin-top: 8px;
+  text-align: center;
+}
+
+.bnotes { position: relative; margin-top: 26px; }
+
+.bnote {
+  position: relative;
+  background: var(--paper);
+  border-radius: 14px;
+  border: 2px dashed var(--star);
+  padding: 26px 22px 20px;
+  box-shadow: 0 14px 30px rgba(214, 61, 108, .18);
+  max-width: 420px;
+  margin: 0 auto;
+}
+.bnote.pop { animation: pop .4s var(--ease); }
+@keyframes pop { 0% { transform: scale(.7); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+
+.bnote-text {
+  font-family: 'Caveat', cursive;
+  font-size: 1.5rem;
+  line-height: 1.5;
+  color: var(--ink-deep);
+  text-align: center;
+}
+.bnote-from {
+  font-size: .8rem;
+  color: var(--ink);
+  opacity: .75;
+  text-align: center;
+  margin-top: 10px;
+}
+.bnote-close {
+  position: absolute;
+  top: 6px; right: 10px;
+  width: 40px; height: 40px;
+  border: 0;
+  background: transparent;
+  font-size: 1.5rem;
+  color: var(--raspberry);
+  cursor: pointer;
+}
+
+/* ================= SCENE 6 · THE FINAL LETTER ================= */
+.letter-scene {
+  background: var(--blush);
+  border-radius: 34px 34px 0 0;
+  max-width: none;
+  margin-top: 46px;
+  padding: 64px 20px 40px;
+  overflow: hidden;
+  position: relative;
+}
+
+.letter-scene > * { max-width: 560px; margin-left: auto; margin-right: auto; }
+
+.pair {
+  display: block;
+  width: min(320px, 74vw);
+  margin: 0 auto 26px;
+  filter: drop-shadow(0 10px 18px rgba(214, 61, 108, .18));
+}
+
+.letter-card {
+  position: relative;
+  background: var(--paper);
+  border-radius: 8px;
+  padding: 40px 26px 30px;
+  box-shadow: 0 16px 34px rgba(214, 61, 108, .16);
+  transform: rotate(-1.2deg);
+}
+
+.letter-card .tape { top: -20px; transform: translateX(-50%) rotate(3deg); }
+
+.letter-text {
+  font-family: 'Caveat', cursive;
+  font-size: clamp(1.35rem, 5vw, 1.6rem);
+  line-height: 1.6;
+  color: var(--ink-deep);
+}
+
+.letter-sign {
+  font-family: 'Pacifico', cursive;
+  font-size: 1.35rem;
+  color: var(--raspberry);
+  text-align: right;
+  margin-top: 18px;
+}
+
+.letter-date {
+  font-size: .85rem;
+  color: var(--ink);
+  opacity: .75;
+  text-align: right;
+  margin-top: 4px;
+}
+
+.float-hearts { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+
+.fh {
+  position: absolute;
+  bottom: -30px;
+  color: var(--raspberry);
+  opacity: 0;
+  font-size: var(--size, 16px);
+  animation: float-up var(--dur, 9s) linear infinite;
+  animation-delay: var(--delay, 0s);
+}
+
+@keyframes float-up {
+  0% { transform: translateY(0) rotate(-8deg); opacity: 0; }
+  12% { opacity: .55; }
+  85% { opacity: .4; }
+  100% { transform: translateY(-104vh) rotate(10deg); opacity: 0; }
+}
+
+.end-card {
+  margin-top: 46px;
+  text-align: center;
+  font-size: .9rem;
+  letter-spacing: .12em;
+  color: var(--ink-deep);
+  text-transform: lowercase;
+}
+.end-card a { color: var(--raspberry); text-decoration: none; border-bottom: 1px dotted var(--raspberry); }
+
+/* ======================== reduced motion ======================== */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .cover { transition: none; }
+  .bunny-btn, .click-tag, .disc, .fh { animation: none; }
+  .flip-inner { transition: none; }
+  .word-line { opacity: 1; }
+  .word-line.typing::after { content: ''; }
+}
+
+/* ======================== small screens ======================== */
+@media (min-width: 560px) {
+  .words-wrap { flex-direction: row; justify-content: center; }
+  .word-list { text-align: left; }
+}

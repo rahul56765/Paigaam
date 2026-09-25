@@ -210,7 +210,14 @@ for (const t of family.list) {
         if (isPreview) assert.match(html, /noindex/, label);
         else if (pg) assert.match(html, new RegExp(`og:url" content="https://paigaam\\.cc/p/${t.slug}-0123456789abcdef01"`), label);
         assert.doesNotMatch(html, /<script>alert|<img src=x|"><script>/, `${label}: unescaped sender markup`);
-        assert.doesNotMatch(html.replace(/https:\/\/paigaam\.cc\/[^"'\s]*/g, ''), /paigaam\.cc/i, `${label}: hardcoded paigaam.cc branding`);
+        const branding = html.replace(/https:\/\/paigaam\.cc\/[^"'\s]*/g, '');
+        if (t.slug === 'bfday-gift') {
+          // The designed end card literally reads "made with paigaam.cc".
+          assert.deepEqual(branding.match(/paigaam\.cc/gi), ['paigaam.cc'], `${label}: unexpected extra branding`);
+          assert.match(branding, /made with <a href="\/" rel="noopener">paigaam\.cc<\/a>/, `${label}: the end card`);
+        } else {
+          assert.doesNotMatch(branding, /paigaam\.cc/i, `${label}: hardcoded paigaam.cc branding`);
+        }
         assert.doesNotMatch(html, /__brokenImgHandler|ha-img-placeholder|close-fullscreen/, `${label}: hosting-sandbox leftovers`);
       }
     }
