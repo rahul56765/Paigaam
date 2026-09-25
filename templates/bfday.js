@@ -22,5 +22,5 @@ module.exports = [
   'aakhri-sawaal',
   'bfday-gift',
   'raaz',
-  'shubh-vivah',
+  'vivah',
 ];
