@@ -23,4 +23,5 @@ module.exports = [
   'bfday-gift',
   'raaz',
   'vivah',
+  'shubh-vivah',
 ];
