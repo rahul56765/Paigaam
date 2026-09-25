@@ -24,4 +24,5 @@ module.exports = [
   'raaz',
   'vivah',
   'shubh-vivah',
+  'inaam',
 ];
