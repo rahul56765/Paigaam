@@ -158,6 +158,10 @@ h1.title {
 .song-card {
   width: 100%;
   max-width: 340px;
+  max-height: 82vh;
+  max-height: 82svh;
+  overflow-y: auto;
+  scrollbar-width: none;
   background: rgba(255,253,248,0.06);
   border: 1px solid rgba(185,176,224,0.28);
   border-radius: 22px;
@@ -169,12 +173,17 @@ h1.title {
   backdrop-filter: blur(6px);
 }
 
+.song-card::-webkit-scrollbar { display: none; }
+
 .album-art {
   width: 180px; height: 180px;
   border-radius: 16px;
   display: block;
   box-shadow: 0 18px 44px rgba(0,0,0,0.5);
 }
+
+/* with the video on the card, the vinyl shrinks to a badge */
+.song-card:has(.song-embed) .album-art { width: 88px; height: 88px; }
 
 .song-meta { text-align: center; }
 
@@ -210,6 +219,25 @@ h1.title {
 }
 
 .play-link:hover { transform: scale(1.04); }
+
+.play-link .svc-ic {
+  display: inline-block; width: 16px; height: 16px;
+  margin-left: 8px; vertical-align: -2px; border-radius: 50%;
+}
+
+.play-link.svc-spotify { background: #1DB954; color: #0A1F14; }
+.play-link.svc-apple   { background: #FA243C; color: #FFFDF8; }
+
+.song-embed {
+  width: 100%;
+  flex-shrink: 0;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 18px 44px rgba(0,0,0,0.5);
+  border: 1px solid rgba(185,176,224,0.28);
+}
+
+.song-embed iframe { display: block; width: 100%; aspect-ratio: 16 / 9; border: 0; }
 
 /* ---------- closing ---------- */
 .closing-note {

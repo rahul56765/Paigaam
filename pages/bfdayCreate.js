@@ -15,6 +15,43 @@
 const { logoFull } = require('../lib/brand');
 const { escape, jsonPayload } = require('../lib/bfday/page');
 
+/** Relative luminance of a #rrggbb hex colour (0 = black, 1 = white). */
+function luminance(hex) {
+  const m = /^#?([0-9a-f]{6})$/i.exec(String(hex || '').trim());
+  if (!m) return 0;
+  const n = parseInt(m[1], 16);
+  const ch = v => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); };
+  return 0.2126 * ch((n >> 16) & 255) + 0.7152 * ch((n >> 8) & 255) + 0.0722 * ch(n & 255);
+}
+
+/**
+ * Dark-theme wizard override. The shared create.css assumes a light page with
+ * dark ink: body text is --ink, muted text is color-mix(--ink 62%) and the
+ * paper card is --paper cream. A dark theme (Naghma: ink #FFFDF8 on bg
+ * #1D1B2E) therefore paints cream text on the cream card and --ink-tinted
+ * surfaces (photo wells, list rows, error boxes) in dark ink.
+ *
+ * Fix: keep the page's dark shell, but re-scope --ink to a dark value on the
+ * paper card and the preview dialog so every derived text/surface colour
+ * inside them resolves correctly, and brighten --accent-ondark for the labels
+ * that sit directly on the dark page background.
+ */
+function darkThemeOverride(theme) {
+  if (luminance(theme.ink) <= 0.5) return '';
+  const paperInk = theme.paperInk     || '#2B2118';
+  const onDark   = theme.accentOnDark || theme.ink;
+  const esc = escape;
+  return `
+.paper, dialog#previewDialog {
+  --ink: ${esc(paperInk)};
+  --muted: color-mix(in srgb, ${esc(paperInk)} 62%, transparent);
+  --line: color-mix(in srgb, ${esc(paperInk)} 13%, transparent);
+  color: ${esc(paperInk)};
+}
+:root { --accent-ondark: ${esc(onDark)}; }
+.intro .eyebrow, .journey .eyebrow, .journey li.is-current, .journey li .step-number, .livepane .eyebrow, footer { color: var(--accent-ondark); }`;
+}
+
 function reqMark(f) {
   return f.required ? ' <span class="req" aria-hidden="true">*</span>' : ' <span class="opt">optional</span>';
 }
@@ -26,7 +63,6 @@ function scalarField(f) {
   let control;
   if (f.type === 'text') control = `<input type="text" ${common} maxlength="${f.maxLength}"${ph} autocomplete="off">`;
   else if (f.type === 'url') control = `<input type="url" ${common} maxlength="${f.maxLength}"${ph} inputmode="url" autocomplete="off">`;
-  else if (f.type === 'date') control = `<input type="date" ${common} min="1900-01-01" max="2200-12-31">`;
   else if (f.type === 'number') control = `<input type="number" ${common} min="${f.min}" max="${f.max}" step="1" inputmode="numeric"${ph}>`;
   else if (f.type === 'textarea') control = `<textarea ${common} maxlength="${f.maxLength}" rows="${f.rows}"${ph}></textarea>`;
   else if (f.type === 'select') {
@@ -96,7 +132,7 @@ function bfdayCreatePage(t) {
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/bfday/create.css">
-<style>:root { --bg: ${escape(theme.bg)}; --ink: ${escape(theme.ink)}; --accent: ${escape(theme.accent)}; --soft: ${escape(theme.soft)}; }</style>
+<style>:root { --bg: ${escape(theme.bg)}; --ink: ${escape(theme.ink)}; --accent: ${escape(theme.accent)}; --soft: ${escape(theme.soft)}; }${darkThemeOverride(theme)}</style>
 <script src="/bfday/create.js" defer></script>
 <script src="/js/qr-card.js" defer></script>
 </head>
@@ -115,7 +151,7 @@ ${jsonPayload('bfSpec', spec)}
     <aside class="journey">
       <p class="eyebrow">Your ${escape(spec.noun)}</p>
       <ol id="progress" aria-label="Progress">
-        ${steps.map((s, i) => `<li data-progress="${i}"><span class="step-number">${String(i + 1).padStart(2, '0')}</span><span>${escape(s.title)}</span></li>`).join('')}
+        ${steps.map((s, i) => `<li data-progress="${i}"><span class="step-number">0${i + 1}</span><span>${escape(s.title)}</span></li>`).join('')}
       </ol>
       <p class="aside-note">Nothing is public until you press send. The preview follows your typing — no saving needed.</p>
     </aside>

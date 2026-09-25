@@ -230,13 +230,48 @@ test('HTML: render emits required elements and valid data-count attributes', () 
   assert.doesNotMatch(html, /__brokenImgHandler/, 'no brokenImgHandler');
   assert.doesNotMatch(html, /close-fullscreen/, 'no close-fullscreen postMessage');
 
-  // Play link absent when songUrl is blank
-  assert.doesNotMatch(html, /class="play-link"/, 'no play-link when songUrl is empty');
+  // Play link/embed absent when songUrl is blank
+  const htmlBlank = render({ customer_data: { ...config.demo, songUrl: '' } }, {});
+  assert.doesNotMatch(htmlBlank, /play-link/, 'no play-link when songUrl is empty');
+  assert.doesNotMatch(htmlBlank, /song-embed/, 'no embed when songUrl is empty');
 
-  // Play link present when songUrl is set
+  // The shipped demo is a YouTube link → inline embed, no play link
+  const htmlYt = render({ customer_data: config.demo }, {});
+  assert.match(htmlYt, /class="song-embed"/, 'YouTube link renders the embed');
+  assert.match(htmlYt, /youtube-nocookie\.com\/embed\/hxMNYkLN7tI/, 'embed carries the video ID');
+  assert.doesNotMatch(htmlYt, /play-link/, 'no play-link alongside the embed');
+  assert.doesNotMatch(htmlYt, /autoplay=1|autoplay;/, 'embed never autoplays');
+
+  // youtu.be short links → embed too
+  const htmlShort = render({ customer_data: { ...config.demo, songUrl: 'https://youtu.be/hxMNYkLN7tI' } }, {});
+  assert.match(htmlShort, /youtube-nocookie\.com\/embed\/hxMNYkLN7tI/, 'youtu.be link renders the embed');
+
+  // Spotify link → branded play link
   const html2 = render({ customer_data: { ...config.demo, songUrl: 'https://open.spotify.com/track/abc' } }, {});
-  assert.match(html2, /class="play-link"/, 'play-link when songUrl is set');
+  assert.match(html2, /class="play-link svc-spotify"/, 'branded play-link when songUrl is a Spotify link');
   assert.match(html2, /open\.spotify\.com/, 'song URL in the link');
+  assert.match(html2, /Play in Spotify/, 'platform named on the button');
+  assert.doesNotMatch(html2, /song-embed/, 'no embed for Spotify links');
+
+  // Apple Music link → branded play link
+  const html3 = render({ customer_data: { ...config.demo, songUrl: 'https://music.apple.com/in/album/x/123' } }, {});
+  assert.match(html3, /class="play-link svc-apple"/, 'branded play-link for Apple Music');
+  assert.match(html3, /Play in Apple Music/, 'Apple Music named on the button');
+});
+
+test('HTML: bfday wizard emits dark-theme contrast override for Naghma only', () => {
+  const { bfdayCreatePage } = require('../pages/bfdayCreate');
+  const family = require('../lib/bfday/family');
+  const bySlug = Object.fromEntries(family.list.map(t => [t.slug, t]));
+
+  const dark = bfdayCreatePage(bySlug['our-wrapped']);
+  assert.match(dark, /\.paper, dialog#previewDialog \{\s*--ink: #2B2118;/, 'paper text re-scoped dark');
+  assert.match(dark, /--accent-ondark: #B4A9E0/, 'accent brightened for the dark page bg');
+
+  for (const slug of ['sealed-with-a-kiss', 'polaroid-scrapbook', 'scratch-reasons', 'unrejectable', 'know-us-quiz']) {
+    const html = bfdayCreatePage(bySlug[slug]);
+    assert.doesNotMatch(html, /accent-ondark/, slug + ' (light theme) gets no override');
+  }
 });
 
 test('HTML: names appear on the closing card', () => {

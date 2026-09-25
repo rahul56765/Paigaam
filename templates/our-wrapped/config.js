@@ -6,7 +6,8 @@
  * that ends on your song. Scroll-snap screens, night-mode palette, tabular-nums
  * count-up animations. The sender personalises who it is for, the year, the
  * days-together count, up to eight stat moments (count + unit + caption), a
- * song card with an optional play link, and a closing note.
+ * song card (YouTube links embed and play on the page; Spotify and other
+ * links get a branded play button), and a closing note.
  *
  * No media assets: all illustrations are inline SVG. Fonts: Inter + Fraunces +
  * Caveat (Google Fonts). Reduced motion: scroll-behaviour collapses to auto,
@@ -89,8 +90,8 @@ module.exports = {
       hint: 'Can be the artist name, or a short phrase about the song.',
     },
     {
-      id: 'songUrl', type: 'url', label: 'Link to the song (optional)',
-      hint: 'Paste a Spotify, YouTube or Apple Music URL to add a play button. Leave blank to show the card without a link.',
+      id: 'songUrl', type: 'url', label: 'Paste a Spotify or YouTube link',
+      hint: 'e.g. open.spotify.com/track/… or youtube.com/watch?v=… — YouTube links play right on the page, Spotify opens in a tap.',
     },
     {
       id: 'songCaption', type: 'text', label: 'Caption under the song card', maxLength: 120,
@@ -170,7 +171,7 @@ module.exports = {
     moments: DEFAULT_MOMENTS,
     songTitle: 'Tum Se Hi',
     songArtist: 'our forever soundtrack',
-    songUrl: '',
+    songUrl: 'https://www.youtube.com/watch?v=hxMNYkLN7tI',
     songCaption: 'the song that knows exactly where we are.',
     closingNote: 'thank you for being my favorite chapter, again and again.',
     startDate: '14 Feb 2023',
@@ -179,6 +180,7 @@ module.exports = {
   sections: ['title', 'moments', 'song', 'closing'],
   theme: {
     bg: '#1D1B2E', ink: '#FFFDF8', accent: '#5A4E8C', soft: '#2E2B48',
+    accentOnDark: '#B4A9E0',
     motif: 'heart', ampersand: false, serifCase: 'title', layout: 'cinematic',
   },
 };
