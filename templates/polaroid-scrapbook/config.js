@@ -25,6 +25,15 @@ const DEFAULT_PHOTOS = [
   { caption: 'us, being us',                            date: 'my favourite anyway' },
 ];
 
+/** The demo ships real sample photos (assets/bfday-demo/, written at boot). */
+const DEMO_PHOTOS = [
+  { photo: '/assets/bfday-demo/couple-1.jpg', caption: 'the day we walked nowhere in particular', date: 'one sunny afternoon' },
+  { photo: '/assets/bfday-demo/couple-7.jpg', caption: 'your terrible, perfect coffee order',     date: 'every single morning' },
+  { photo: '/assets/bfday-demo/couple-3.jpg', caption: 'movie night, all elbows & blankets',      date: 'that rainy friday' },
+  { photo: '/assets/bfday-demo/couple-9.jpg', caption: "the laugh i'd know anywhere",             date: 'mid-story, always' },
+  { photo: '/assets/bfday-demo/couple-2.jpg', caption: 'us, being us',                            date: 'my favourite anyway' },
+];
+
 module.exports = {
   slug: 'polaroid-scrapbook',
   family: 'bfday',
@@ -143,11 +152,10 @@ module.exports = {
 
   /** /polaroid-scrapbook/demo, the gallery thumbnail and the detail page. */
   demo: {
-    bgmSong: 'gJLVTKhTnog',
     senderName: 'Rahul',
     scrapbookTitle: 'our little scrapbook',
     scrapbookSub: 'a keepsake, just for you',
-    photos: DEFAULT_PHOTOS,
+    photos: DEMO_PHOTOS,
     noteText: 'happy boyfriend day, from Rahul',
     noteDate: 'always & then some',
   },

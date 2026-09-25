@@ -38,11 +38,11 @@ const TIMEZONES = [
 ];
 
 const DOORS = [
-  { kind: 'letter', heading: 'Day one', text: 'Seven days, seven doors. Every morning one more opens, and behind each one is a little piece of how much you mean to me. No peeking ahead — main dekh rahi hoon.', photo: '', link: '' },
-  { kind: 'photo', heading: 'This one', text: 'I look at this photo more often than I’ll ever admit.', photo: '', link: '' },
+  { kind: 'letter', heading: 'Day one', text: 'Seven days, seven doors. Every morning one more opens, and behind each one is a little piece of how much you mean to me. No peeking ahead — main dekh rahi hoon.', photo: '/assets/bfday-demo/couple-4.jpg', link: '' },
+  { kind: 'photo', heading: 'This one', text: 'I look at this photo more often than I’ll ever admit.', photo: '/assets/bfday-demo/couple-4.jpg', link: '' },
   { kind: 'voice', heading: 'A voice note', text: 'Hi, it’s me. I just wanted you to hear this in my voice: you’re doing so much better than you think. I’m proud of you. That’s it. That’s the voice note.', photo: '', link: '' },
   { kind: 'missyou', heading: 'Open when you miss me', text: 'Close your eyes. I’m holding your hand, I’m stealing your fries, I’m laughing at something only we find funny. See? Not that far away.', photo: '', link: '' },
-  { kind: 'song', heading: 'Today’s song', text: 'Put this on for the drive home. Every line of it is you.', photo: '', link: '' },
+  { kind: 'song', heading: 'Today’s song', text: 'Put this on for the drive home. Every line of it is you.', photo: '', link: 'https://www.youtube.com/watch?v=pezrS5OBBs4' },
   { kind: 'promise', heading: 'A promise', text: 'I will always save you the last bite.', photo: '', link: '' },
   { kind: 'reveal', heading: 'The big reveal', text: 'You opened every single door. So here’s the last thing, the biggest one.\n\nYou are the best part of my every day — the first person I want to tell things to, the one I want beside me for all of it. Seven doors could never hold all of that, but I hope they held enough for you to know.\n\nHappy Boyfriend Day. You have my whole heart.', photo: '', link: '' },
 ];

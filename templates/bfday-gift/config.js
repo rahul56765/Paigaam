@@ -228,22 +228,21 @@ module.exports = {
 
   /** /bfday-gift/demo, the gallery thumbnail and the detail page. */
   demo: {
-    bgmSong: 'GxldQ9eX2wo',
     recipientName: 'Aarav',
     senderName: 'Meera',
     occasionLine: 'happy Boyfriend\u2019s Day',
     wordsHeading: 'you\u2019re my\u2026',
     words: WORDS,
-    wordsPhoto: '',
+    wordsPhoto: '/assets/bfday-demo/couple-4.jpg',
     galleryHeading: 'a few of my favourites',
     photos: [
-      { caption: 'the first photo i ever saved of you', hidden: 'i still have it. obviously.' },
-      { caption: 'that trip we never planned', hidden: 'best wrong turn ever.' },
-      { caption: 'you, mid-laugh', hidden: 'my favourite sound, caught on camera.' },
+      { photo: '/assets/bfday-demo/couple-3.jpg', caption: 'the first photo i ever saved of you', hidden: 'i still have it. obviously.' },
+      { photo: '/assets/bfday-demo/couple-2.jpg', caption: 'that trip we never planned', hidden: 'best wrong turn ever.' },
+      { photo: '/assets/bfday-demo/couple-8.jpg', caption: 'you, mid-laugh', hidden: 'my favourite sound, caught on camera.' },
     ],
     songTitle: 'Tum Hi Ho',
-    songArtist: 'the one that always reminds me of you',
-    songUrl: '',
+    songArtist: 'Arijit Singh · the one that always reminds me of you',
+    songUrl: 'https://www.youtube.com/watch?v=WWZxDA81JFk',
     bouquetHeading: 'click on any bouquet to open',
     bouquetNotes: BOUQUETS,
     letterText: 'i could have sent you a text. but you are not a text kind of person to me — you are a whole website kind of person. thank you for being my calm, my chaos, and my favourite notification. happy boyfriend\u2019s day, my love.',

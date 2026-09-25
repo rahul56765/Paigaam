@@ -17,8 +17,7 @@
  */
 const config = require('./config');
 const schema = require('./schema');
-const { resolve } = require('../../lib/bfday/fields');
-const { bgmMarkup, bgmScript } = require('../../lib/bfday/bgm');
+const { resolve, DEMO_ASSET_URL } = require('../../lib/bfday/fields');
 const { escape, jsonPayload, head, previewBadge } = require('../../lib/bfday/page');
 
 const TILTS   = [-4, 3, -4, 3, -4, 3, -4, 3];
@@ -31,9 +30,10 @@ function renderPolaroid(photo, idx) {
   const margin = MARGINS[idx] !== undefined ? MARGINS[idx] : 130;
   const tl = TL[idx % 3];
   const tr = TR[idx % 3];
-  // Server-render the caption as aria-label text; the photo-area is filled by JS.
+  // Server-render the caption as aria-label text; the photo-area is filled by JS
+  // for uploads (it draws the placeholder art). Shipped demo photos paint here.
   const labelText = photo.caption ? `Open photo: ${photo.caption}` : `Open photo ${idx + 1}`;
-  const imgMarkup = photo.photo
+  const imgMarkup = photo.photo && DEMO_ASSET_URL.test(photo.photo)
     ? `<img src="${escape(photo.photo)}" alt="${escape(photo.caption || '')}" loading="lazy">`
     : '';
   const dateMarkup = photo.date
@@ -55,7 +55,6 @@ function renderPolaroid(photo, idx) {
  */
 function render(paigaam = {}, opts = {}) {
   const d = resolve(config, paigaam && paigaam.customer_data, schema);
-  const bgm = d.bgmSong || '';
   const preview = !!opts.isPreview;
 
   const title = 'Our Little Scrapbook · Paigaam';
@@ -68,7 +67,7 @@ function render(paigaam = {}, opts = {}) {
 
   // Payload for the client script: photo src (upload or '') + caption + date.
   const photosPayload = d.photos.map(p => ({
-    src:     p.photo || '',
+    src:     DEMO_ASSET_URL.test(p.photo || '') ? '' : (p.photo || ''),
     caption: p.caption || '',
     date:    p.date || '',
   }));
@@ -79,8 +78,6 @@ function render(paigaam = {}, opts = {}) {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 ${head({ paigaam, opts, title, description, themeColor: '#FFFDF8', image: ogPhoto })}
-<link rel="stylesheet" href="/bfday/bgm.css">
-<style>:root { --bgm-accent: #B85C48; }</style>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
@@ -135,8 +132,6 @@ ${d.photos.map((photo, idx) => renderPolaroid(photo, idx)).join('\n')}
     </div>
   </div>
 
-${bgmMarkup(bgm, 'our song')}
-${bgmScript(bgm)}
 </body>
 </html>`;
 }

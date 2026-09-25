@@ -82,8 +82,8 @@ module.exports = {
     question: 'Will you be mine — this Boyfriend Day, and every day after?',
     buildUp: BUILD_UP,
     whatsapp: '',
-    songTitle: '',
-    songUrl: '',
+    songTitle: 'Tum Hi Ho',
+    songUrl: 'https://www.youtube.com/watch?v=WWZxDA81JFk',
   },
 
   sections: ['build-up', 'question', 'reply'],
