@@ -238,13 +238,13 @@ test('HTML: render emits required elements and valid data-count attributes', () 
   // The shipped demo is a YouTube link → inline embed, no play link
   const htmlYt = render({ customer_data: config.demo }, {});
   assert.match(htmlYt, /class="song-embed"/, 'YouTube link renders the embed');
-  assert.match(htmlYt, /youtube-nocookie\.com\/embed\/hxMNYkLN7tI/, 'embed carries the video ID');
+  assert.match(htmlYt, /youtube-nocookie\.com\/embed\/mt9xg0mmt28/, 'embed carries the video ID');
   assert.doesNotMatch(htmlYt, /play-link/, 'no play-link alongside the embed');
   assert.doesNotMatch(htmlYt, /autoplay=1|autoplay;/, 'embed never autoplays');
 
   // youtu.be short links → embed too
-  const htmlShort = render({ customer_data: { ...config.demo, songUrl: 'https://youtu.be/hxMNYkLN7tI' } }, {});
-  assert.match(htmlShort, /youtube-nocookie\.com\/embed\/hxMNYkLN7tI/, 'youtu.be link renders the embed');
+  const htmlShort = render({ customer_data: { ...config.demo, songUrl: 'https://youtu.be/mt9xg0mmt28' } }, {});
+  assert.match(htmlShort, /youtube-nocookie\.com\/embed\/mt9xg0mmt28/, 'youtu.be link renders the embed');
 
   // Spotify link → branded play link
   const html2 = render({ customer_data: { ...config.demo, songUrl: 'https://open.spotify.com/track/abc' } }, {});
