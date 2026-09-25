@@ -1,0 +1,308 @@
+/* Shubh Vivah — ivory, maroon, gold. Cormorant Garamond display. */
+
+:root {
+  --ivory: #FBF6EC;
+  --maroon: #8E1F2F;
+  --gold: #C9A24B;
+  --ink: #4A3226;
+  --gold-soft: rgba(201, 162, 75, 0.35);
+}
+
+* { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  background: var(--ivory) url('/shubh-vivah/paper.jpg') center / 640px repeat;
+  color: var(--ink);
+  font-family: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
+  font-size: 19px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+.sv-story { position: relative; }
+
+.sv-visuallyhidden {
+  position: absolute; width: 1px; height: 1px;
+  margin: -1px; padding: 0; border: 0;
+  clip: rect(0 0 0 0); overflow: hidden; white-space: nowrap;
+}
+
+/* ------- shared reveal (scroll-triggered rise, 12px / 550ms ease-out) ------- */
+.sv-reveal {
+  opacity: 0;
+  transform: translateY(14px);
+  transition: opacity 550ms ease-out, transform 550ms ease-out;
+}
+.sv-reveal.sv-in { opacity: 1; transform: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .sv-reveal { opacity: 1; transform: none; transition: none; }
+  html { scroll-behavior: auto; }
+}
+
+/* ------- beats ------- */
+.sv-beat {
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 64px 22px;
+  position: relative;
+}
+
+.sv-smallcaps {
+  font-size: 13px;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: var(--maroon);
+  margin: 0 0 22px;
+  font-weight: 600;
+}
+
+.sv-rule {
+  display: block;
+  width: 72px;
+  height: 1px;
+  background: var(--gold);
+  margin: 26px auto;
+}
+
+/* ------- corner ornaments (gold frame, strictly decorative) ------- */
+.sv-corner {
+  position: absolute;
+  width: clamp(84px, 22vw, 150px);
+  height: auto;
+  pointer-events: none;
+  opacity: 0.95;
+}
+.sv-corner--tl { top: 10px; left: 10px; }
+.sv-corner--tr { top: 10px; right: 10px; }
+.sv-corner--bl { bottom: 10px; left: 10px; }
+.sv-corner--br { bottom: 10px; right: 10px; }
+
+/* ------- beat 1 · countdown opener ------- */
+.sv-beat--open { text-align: center; }
+
+.sv-eyebrow {
+  font-family: 'Great Vibes', 'Cormorant Garamond', cursive;
+  font-size: clamp(30px, 7vw, 46px);
+  color: var(--maroon);
+  margin: 0 0 10px;
+  line-height: 1.2;
+}
+
+.sv-open__h {
+  font-size: clamp(26px, 5.4vw, 42px);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--ink);
+  margin: 0 0 40px;
+  max-width: 18ch;
+}
+
+.sv-open__date {
+  font-size: clamp(20px, 4vw, 28px);
+  font-style: italic;
+  color: var(--maroon);
+}
+
+.sv-count {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(64px, 108px));
+  gap: clamp(10px, 3vw, 22px);
+  justify-content: center;
+}
+
+.sv-tile {
+  border: 1px solid var(--gold-soft);
+  border-radius: 6px;
+  background: rgba(255, 253, 248, 0.72);
+  padding: 16px 6px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-shadow: 0 1px 0 rgba(201, 162, 75, 0.25);
+}
+.sv-tile__num {
+  font-size: clamp(28px, 6.4vw, 44px);
+  font-weight: 700;
+  color: var(--maroon);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.sv-tile__lbl {
+  margin-top: 8px;
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+
+.sv-open__cue {
+  margin: 52px 0 0;
+  font-size: 12px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--ink);
+  opacity: 0.55;
+}
+
+/* ------- cards (beats 2 and 3) ------- */
+.sv-card {
+  position: relative;
+  width: min(680px, 100%);
+  text-align: center;
+  padding: clamp(48px, 9vw, 96px) clamp(28px, 7vw, 72px);
+  background: rgba(255, 253, 248, 0.66);
+  border-radius: 4px;
+}
+.sv-card--quiet {
+  /* one corner set max on the families' beat — the quiet one */
+  padding-top: clamp(56px, 10vw, 108px);
+  padding-bottom: clamp(56px, 10vw, 108px);
+}
+.sv-parents {
+  font-size: clamp(21px, 4.4vw, 30px);
+  font-weight: 600;
+  color: var(--ink);
+  margin: 14px 0 0;
+  line-height: 1.35;
+}
+
+/* beat 3 · the muhurtham — the hero card, full four-corner frame */
+.sv-card--frame {
+  border: 1px solid var(--gold-soft);
+}
+.sv-card__name {
+  font-size: clamp(40px, 9vw, 76px);
+  font-weight: 700;
+  color: var(--maroon);
+  margin: 0;
+  line-height: 1.08;
+}
+.sv-facts {
+  margin: 8px 0 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.sv-fact dt {
+  font-size: 11px;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: var(--maroon);
+  margin-bottom: 2px;
+}
+.sv-fact dd {
+  margin: 0;
+  font-size: clamp(19px, 4vw, 25px);
+  font-weight: 600;
+  color: var(--ink);
+  /* venue never truncates — it wraps */
+  overflow-wrap: break-word;
+}
+.sv-card__couple {
+  display: block;
+  margin: 6px auto 0;
+  width: min(280px, 58vw);
+  height: auto;
+}
+
+/* ------- beat 4 · the photograph ------- */
+.sv-photo {
+  position: relative;
+  margin: 0;
+  width: min(460px, 100%);
+  padding: clamp(26px, 6vw, 46px);
+  background: rgba(255, 253, 248, 0.66);
+  border: 1px solid var(--gold-soft);
+  border-radius: 4px;
+  text-align: center;
+}
+.sv-photo__img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 2px;
+}
+.sv-photo__img--illu {
+  width: min(240px, 60%);
+  margin: 0 auto;
+}
+.sv-photo__cap {
+  margin-top: 18px;
+  font-style: italic;
+  font-size: clamp(17px, 3.6vw, 21px);
+  color: var(--ink);
+}
+
+/* ------- beat 5 · the closing band ------- */
+.sv-beat--close {
+  padding: 0;
+}
+.sv-close {
+  width: 100%;
+  min-height: 100svh;
+  background: var(--maroon);
+  color: #FBF6EC;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 72px 26px;
+}
+.sv-close__couple {
+  width: min(170px, 40vw);
+  height: auto;
+  margin-bottom: 26px;
+}
+.sv-close__msg {
+  font-size: clamp(21px, 4.6vw, 30px);
+  font-style: italic;
+  max-width: 30ch;
+  margin: 0;
+  line-height: 1.5;
+}
+.sv-close__rule {
+  width: 84px;
+  height: 1px;
+  background: var(--gold);
+  margin: 34px 0;
+}
+.sv-close__love {
+  font-size: 14px;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  margin: 0 0 8px;
+  opacity: 0.85;
+}
+.sv-close__names {
+  font-family: 'Great Vibes', 'Cormorant Garamond', cursive;
+  font-size: clamp(38px, 9vw, 62px);
+  margin: 0;
+  line-height: 1.15;
+}
+.sv-close__made {
+  margin: 46px 0 0;
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  opacity: 0.72;
+}
+.sv-close__made a { color: inherit; }
+
+/* ------- small screens: countdown 2×2 under 380px ------- */
+@media (max-width: 379px) {
+  .sv-count { grid-template-columns: repeat(2, minmax(84px, 1fr)); }
+  .sv-card { padding-left: 20px; padding-right: 20px; }
+  .sv-corner { width: 72px; }
+}
+
+@media (min-width: 760px) {
+  body { font-size: 20px; }
+}
