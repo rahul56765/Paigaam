@@ -36,7 +36,7 @@ module.exports = {
   currency: 'INR',
   description: 'The Password Letter — a locked dark screen only he can open. He guesses the secret word, a tiny ceremony plays, and a gift box pops open to your letter. For the one who knows you best.',
   thumbnail_url: '',
-  ogImage: '/raaz/og.jpg',
+  ogImage: '/assets/raaz/og.jpg',
   version: 1,
   editable: true,
   displayField: 'recipientName',
