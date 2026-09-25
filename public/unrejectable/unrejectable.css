@@ -1,0 +1,182 @@
+/* Lajja — The Unrejectable Card
+ * Ported verbatim from t4-unrejectable.html (Boyfriend Day family).
+ * Class names are namespaced with uc- to avoid collisions with the shared
+ * engine stylesheet. No changes to values, timing or layout.
+ */
+
+:root {
+  --uc-blush: #F2C4BC;
+  --uc-cream: #FFFDF8;
+  --uc-coral: #B85C48;
+  --uc-ink: #2B2118;
+  --uc-gold: #C9A86A;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+
+body {
+  background: linear-gradient(160deg, var(--uc-blush) 0%, #F7DDD3 45%, var(--uc-cream) 100%);
+  color: var(--uc-ink);
+  font-family: 'Fraunces', serif;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100dvh;
+  padding: 24px 20px;
+  overflow-x: hidden;
+}
+
+.uc-card {
+  width: 100%;
+  max-width: 480px;
+  text-align: center;
+  position: relative;
+}
+
+.uc-arch {
+  width: 200px;
+  max-width: 56vw;
+  aspect-ratio: 3 / 4;
+  border-radius: 999px 999px 0 0;
+  overflow: hidden;
+  margin: 0 auto 28px;
+  border: 3px solid var(--uc-gold);
+  box-shadow: 0 14px 34px rgba(43, 33, 24, .14);
+}
+
+.uc-arch svg { display: block; width: 100%; height: 100%; }
+
+.uc-question {
+  font-family: 'Fraunces', serif;
+  font-weight: 900;
+  font-size: clamp(32px, 10vw, 40px);
+  line-height: 1.12;
+  letter-spacing: -.01em;
+  padding: 0 4px;
+}
+
+.uc-buttons {
+  margin-top: 32px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.uc-yes {
+  font-family: 'Fraunces', serif;
+  font-weight: 900;
+  font-size: 20px;
+  color: #fff;
+  background: var(--uc-coral);
+  border: none;
+  border-radius: 999px;
+  padding: 18px 46px;
+  cursor: pointer;
+  box-shadow: 0 10px 24px rgba(184, 92, 72, .35);
+  transform: scale(1);
+  transition: transform .25s cubic-bezier(.22, 1, .36, 1);
+}
+
+.uc-yes:active { filter: brightness(.96); }
+
+.uc-no-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.uc-no {
+  font-family: 'Fraunces', serif;
+  font-weight: 600;
+  font-size: 17px;
+  color: var(--uc-ink);
+  background: transparent;
+  border: 2px solid var(--uc-ink);
+  border-radius: 999px;
+  padding: 14px 34px;
+  cursor: pointer;
+  transition: opacity .4s ease;
+}
+
+.uc-caption {
+  font-family: 'Caveat', cursive;
+  font-weight: 600;
+  font-size: 21px;
+  color: var(--uc-coral);
+  white-space: nowrap;
+}
+
+.uc-no-message {
+  font-family: 'Caveat', cursive;
+  font-weight: 600;
+  font-size: 24px;
+  color: var(--uc-coral);
+  margin-top: 26px;
+  line-height: 1.35;
+}
+
+.uc-share-hint {
+  font-family: 'Caveat', cursive;
+  font-weight: 600;
+  font-size: 19px;
+  color: rgba(43, 33, 24, .62);
+  margin-top: 30px;
+}
+
+.uc-headline {
+  font-family: 'Fraunces', serif;
+  font-weight: 900;
+  font-size: clamp(30px, 9vw, 36px);
+  line-height: 1.15;
+}
+
+.uc-heart {
+  display: inline-block;
+  animation: uc-heartbeat 1.6s ease-in-out infinite;
+  transform-origin: center;
+}
+
+@keyframes uc-heartbeat {
+  0%, 100% { transform: scale(1); }
+  22%       { transform: scale(1.14); }
+  38%       { transform: scale(1); }
+  55%       { transform: scale(1.08); }
+  70%       { transform: scale(1); }
+}
+
+.uc-celebrate-msg {
+  font-family: 'Caveat', cursive;
+  font-weight: 600;
+  font-size: 25px;
+  line-height: 1.4;
+  color: var(--uc-ink);
+  margin-top: 20px;
+}
+
+.uc-celebrate-hint {
+  font-family: 'Caveat', cursive;
+  font-weight: 600;
+  font-size: 19px;
+  color: rgba(43, 33, 24, .62);
+  margin-top: 28px;
+}
+
+[hidden] { display: none !important; }
+
+#ucConfetti {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 99;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .uc-heart { animation: none; }
+  .uc-yes, .uc-no, .uc-no-wrap { transition: none !important; }
+}

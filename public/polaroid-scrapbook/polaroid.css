@@ -1,0 +1,307 @@
+/*
+ * Tasveer — Our Little Scrapbook (Boyfriend Day family).
+ * Ported verbatim from the original single-file design (t2-polaroid.html).
+ * Hosting-sandbox injections (the broken-image retry handler, the
+ * Escape → close-fullscreen postMessage, and the sandbox placeholder styles)
+ * have been stripped.
+ * Fonts (Caveat, Inter) are linked from the page head.
+ */
+:root {
+  --paper: #FFFDF8;
+  --blush: #F2C4BC;
+  --deep-blush: #D98A80;
+  --kraft: #8A6A4B;
+  --ink: #2B2118;
+  --shadow: 0 6px 24px rgba(43, 33, 24, 0.14), 0 2px 8px rgba(43, 33, 24, 0.08);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--paper);
+  background-image:
+    radial-gradient(circle at 15% 20%, rgba(242, 196, 188, 0.18) 0%, transparent 45%),
+    radial-gradient(circle at 85% 70%, rgba(217, 138, 128, 0.10) 0%, transparent 40%);
+  color: var(--ink);
+  font-family: 'Inter', system-ui, sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body.lightbox-open { overflow: hidden; }
+
+.col {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+/* ---------- Header ---------- */
+header {
+  padding: 48px 0 8px;
+  text-align: center;
+}
+header h1 {
+  font-family: 'Caveat', cursive;
+  font-weight: 700;
+  font-size: 34px;
+  color: var(--ink);
+  letter-spacing: 0.5px;
+}
+header .sub {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.22em;
+  color: var(--kraft);
+  margin-top: 10px;
+  font-weight: 500;
+}
+
+/* ---------- Washi tape divider ---------- */
+.washi-divider {
+  position: relative;
+  height: 40px;
+  margin: 20px auto 8px;
+  width: 220px;
+}
+.washi-divider::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 8px;
+  transform: translateX(-50%) rotate(-2deg);
+  width: 220px;
+  height: 26px;
+  background:
+    repeating-linear-gradient(45deg, rgba(255,255,255,0.35) 0 4px, transparent 4px 12px),
+    repeating-linear-gradient(-45deg, rgba(217,138,128,0.28) 0 6px, transparent 6px 14px),
+    linear-gradient(rgba(242,196,188,0.75), rgba(242,196,188,0.75));
+  box-shadow: 0 2px 6px rgba(43,33,24,0.10);
+  opacity: 0.85;
+}
+.washi-divider::after {
+  content: '';
+  position: absolute;
+  left: 8%;
+  top: 16px;
+  transform: rotate(1.5deg);
+  width: 60px;
+  height: 14px;
+  background:
+    repeating-linear-gradient(45deg, rgba(255,255,255,0.4) 0 3px, transparent 3px 9px),
+    linear-gradient(rgba(217,138,128,0.55), rgba(217,138,128,0.55));
+  border-radius: 2px;
+}
+
+/* ---------- Doodle heart SVG ---------- */
+.doodle-wrap {
+  display: flex;
+  justify-content: center;
+  padding: 36px 0 10px;
+}
+.doodle-wrap svg { overflow: visible; }
+.doodle-path {
+  fill: none;
+  stroke: var(--deep-blush);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* ---------- Polaroids ---------- */
+.polaroid {
+  background: #fff;
+  padding: 14px 14px 56px;
+  box-shadow: var(--shadow);
+  border-radius: 2px;
+  position: relative;
+  margin: 0 auto 0;
+  width: min(320px, 82vw);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.25s ease;
+}
+.polaroid:focus-visible {
+  outline: 3px solid var(--deep-blush);
+  outline-offset: 4px;
+}
+.polaroid:active { transform: scale(0.985); }
+
+.p1 { transform: rotate(-4deg); margin-top: 56px; }
+.p2 { transform: rotate(3deg);  margin-top: 96px; }
+.p3 { transform: rotate(-4deg); margin-top: 110px; }
+.p4 { transform: rotate(3deg);  margin-top: 120px; }
+.p5 { transform: rotate(-4deg); margin-top: 130px; }
+
+.photo-area {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  background: #f4ece4;
+  display: block;
+  overflow: hidden;
+}
+.photo-area img { width: 100%; height: 100%; display: block; object-fit: cover; }
+
+/* lightbox photo area overrides */
+.lightbox-frame .photo-area {
+  aspect-ratio: auto;
+  max-height: 62vh;
+  display: flex;
+}
+.lightbox-frame .photo-area img { object-fit: contain; }
+
+.polaroid .caption {
+  font-family: 'Caveat', cursive;
+  font-size: 24px;
+  color: var(--ink);
+  text-align: center;
+  margin-top: 14px;
+  line-height: 1.1;
+}
+.polaroid .date {
+  display: block;
+  font-family: 'Inter', sans-serif;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: var(--kraft);
+  text-align: center;
+  margin-top: 6px;
+  font-weight: 500;
+}
+
+/* corner washi tapes on polaroids */
+.tape {
+  position: absolute;
+  width: 84px;
+  height: 26px;
+  top: -12px;
+  background:
+    repeating-linear-gradient(45deg, rgba(255,255,255,0.4) 0 4px, transparent 4px 11px),
+    linear-gradient(var(--tape-tint, rgba(242,196,188,0.7)), var(--tape-tint, rgba(242,196,188,0.7)));
+  box-shadow: 0 2px 5px rgba(43,33,24,0.12);
+  z-index: 2;
+}
+.tape.tl { left: -22px; transform: rotate(-38deg); }
+.tape.tr { right: -22px; transform: rotate(38deg); }
+.tint-a { --tape-tint: rgba(242,196,188,0.72); }
+.tint-b { --tape-tint: rgba(217,138,128,0.55); }
+.tint-c { --tape-tint: rgba(138,106,75,0.42); }
+
+/* ---------- Footer note card ---------- */
+.note-card {
+  background: #fff;
+  padding: 34px 26px 30px;
+  box-shadow: var(--shadow);
+  border-radius: 2px;
+  position: relative;
+  margin: 120px auto 0;
+  width: min(320px, 82vw);
+  transform: rotate(3deg);
+  text-align: center;
+}
+.note-card .note-text {
+  font-family: 'Caveat', cursive;
+  font-size: 30px;
+  color: var(--ink);
+  line-height: 1.25;
+}
+.note-card .heart-doodle {
+  display: block;
+  margin: 14px auto 0;
+  width: 30px;
+  height: 30px;
+}
+.note-card .date {
+  display: block;
+  font-family: 'Inter', sans-serif;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: var(--kraft);
+  margin-top: 14px;
+  font-weight: 500;
+}
+
+footer {
+  text-align: center;
+  padding: 60px 0 72px;
+  font-family: 'Inter', sans-serif;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.22em;
+  color: rgba(138, 106, 75, 0.7);
+}
+footer a {
+  color: inherit;
+  text-decoration: none;
+}
+footer a:hover { text-decoration: underline; }
+
+/* ---------- Scroll reveal ---------- */
+.reveal {
+  opacity: 0;
+  transform: translateY(48px) rotate(0deg) scale(0.97);
+}
+.reveal.shown {
+  opacity: 1;
+  transform: translateY(0) rotate(var(--tilt, 0deg)) scale(1);
+  transition: opacity 0.6s ease-out, transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.reveal.d1 { transition-delay: 0s; }
+.reveal.d2 { transition-delay: 0.12s; }
+
+/* ---------- Lightbox ---------- */
+.lightbox {
+  position: fixed;
+  inset: 0;
+  background: rgba(43, 33, 24, 0.88);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 24px;
+}
+.lightbox.open { display: flex; }
+.lightbox-frame {
+  background: #fff;
+  padding: 14px 14px 56px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+  border-radius: 2px;
+  width: min(88vw, 420px);
+  max-height: 88vh;
+  position: relative;
+  transform: rotate(-1deg);
+}
+.lightbox-close {
+  position: absolute;
+  top: -52px;
+  right: -6px;
+  min-width: 44px;
+  min-height: 44px;
+  border: none;
+  background: transparent;
+  color: #fff;
+  font-size: 26px;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  border-radius: 50%;
+  line-height: 1;
+}
+.lightbox-close:focus-visible {
+  outline: 3px solid var(--blush);
+  outline-offset: 2px;
+}
+
+/* ---------- Reduced motion ---------- */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .reveal {
+    opacity: 1 !important;
+    transform: rotate(var(--tilt, 0deg)) !important;
+    transition: none !important;
+  }
+  .polaroid:active, .polaroid { transition: none; }
+}

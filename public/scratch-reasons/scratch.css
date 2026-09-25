@@ -1,0 +1,306 @@
+:root {
+  --cream: #FBF3E4;
+  --coral: #B85C48;
+  --ink: #2B2118;
+  --gold: #C9A86A;
+  --ink-60: rgba(43, 33, 24, 0.6);
+  --ink-15: rgba(43, 33, 24, 0.15);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  background: var(--cream);
+  color: var(--ink);
+  font-family: 'Inter', sans-serif;
+  min-height: 100vh;
+  /* subtle paper grain via layered gradients */
+  background-image:
+    radial-gradient(ellipse at 20% 0%, rgba(201, 168, 106, 0.07), transparent 50%),
+    radial-gradient(ellipse at 90% 100%, rgba(184, 92, 72, 0.05), transparent 45%);
+}
+
+.wrap {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+/* ---------- HEADER ---------- */
+header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: linear-gradient(to bottom, var(--cream) 82%, rgba(251, 243, 228, 0));
+  padding: 22px 0 14px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+h1 {
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  font-weight: 600;
+  font-size: clamp(40px, 11vw, 52px);
+  line-height: 0.95;
+  letter-spacing: -0.02em;
+}
+
+h1 .sub {
+  display: block;
+  font-family: 'Caveat', cursive;
+  font-style: normal;
+  font-weight: 500;
+  font-size: clamp(22px, 6vw, 27px);
+  color: var(--coral);
+  margin-top: 8px;
+  letter-spacing: 0;
+}
+
+.counter {
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.06em;
+  color: var(--ink-60);
+  border: 1px solid var(--ink-15);
+  border-radius: 999px;
+  padding: 7px 14px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.counter b { color: var(--ink); }
+
+.counter.bounce { animation: counterBounce 0.45s cubic-bezier(0.34, 1.56, 0.64, 1); }
+
+@keyframes counterBounce {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.22); }
+  100% { transform: scale(1); }
+}
+
+/* ---------- CARDS ---------- */
+main { padding-bottom: 32px; }
+
+.card-section {
+  min-height: min(88vh, 640px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14px 0;
+}
+
+.card {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  max-height: 560px;
+  background:
+    linear-gradient(160deg, rgba(255,255,255,0.55), rgba(255,255,255,0) 55%),
+    var(--cream);
+  border: 1px solid var(--ink-15);
+  border-radius: 22px;
+  box-shadow:
+    0 1px 2px rgba(43, 33, 24, 0.05),
+    0 12px 32px -12px rgba(43, 33, 24, 0.18);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  transform: scale(1);
+}
+
+.card.pop { animation: cardPop 0.6s cubic-bezier(0.22, 1.2, 0.36, 1); }
+
+@keyframes cardPop {
+  0%   { transform: scale(1.02); }
+  100% { transform: scale(1); }
+}
+
+.card-inner {
+  position: relative;
+  padding: 34px 28px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  pointer-events: none; /* let the canvas on top receive all scratches */
+}
+
+.reason {
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  font-weight: 500;
+  font-size: 26px;
+  line-height: 1.35;
+  letter-spacing: -0.01em;
+}
+
+.reason .num {
+  display: block;
+  font-family: 'Inter', sans-serif;
+  font-style: normal;
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  color: var(--coral);
+  margin-bottom: 14px;
+}
+
+.doodle { display: block; }
+
+.sparkle-icon { display: block; }
+
+/* scratch canvas sits above revealed content */
+canvas.foil {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 22px;
+  touch-action: none;   /* ONLY here — page scroll works everywhere else */
+  cursor: grab;
+  z-index: 2;
+  transition: opacity 0.45s ease;
+}
+
+canvas.foil.cleared {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.ghost {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+  font-family: 'Caveat', cursive;
+  font-size: 30px;
+  color: rgba(43, 33, 24, 0.35);
+  pointer-events: none;
+}
+
+/* ---------- REVEAL ALL ---------- */
+.reveal-all-row {
+  text-align: center;
+  padding: 10px 0 40px;
+}
+
+.reveal-all-btn {
+  background: none;
+  border: none;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--ink-60);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  cursor: pointer;
+  padding: 10px 16px;
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+
+.reveal-all-btn.visible { opacity: 1; transform: translateY(0); }
+.reveal-all-btn.hidden { display: none; }
+
+/* ---------- FINALE ---------- */
+.finale {
+  display: none;
+  min-height: 72vh;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 40px 12px 60px;
+}
+
+.finale.show { display: flex; animation: finaleFade 0.8s ease; }
+
+@keyframes finaleFade {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.finale .letter {
+  font-family: 'Caveat', cursive;
+  font-size: clamp(28px, 7.5vw, 36px);
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--ink);
+  max-width: 340px;
+}
+
+.finale .letter .heart { color: var(--coral); }
+
+.finale-from {
+  font-family: 'Caveat', cursive;
+  font-size: clamp(20px, 5.5vw, 26px);
+  font-weight: 500;
+  color: var(--coral);
+  margin-top: 2px;
+  max-width: 340px;
+}
+
+.finale .rule {
+  width: 56px;
+  height: 2px;
+  background: var(--gold);
+  border: none;
+  margin: 26px auto;
+  border-radius: 2px;
+}
+
+.replay-btn {
+  background: none;
+  border: none;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--ink-60);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  cursor: pointer;
+  padding: 10px;
+}
+
+.replay-btn:hover { color: var(--coral); }
+
+/* ---------- SPARKLE PARTICLES ---------- */
+.spark {
+  position: fixed;
+  z-index: 50;
+  width: 10px;
+  height: 10px;
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+
+.spark.animate { animation: sparkOut 0.7s ease-out forwards; }
+
+@keyframes sparkOut {
+  0%   { transform: translate(0, 0) scale(1) rotate(0deg); opacity: 1; }
+  100% { transform: translate(var(--dx), var(--dy)) scale(0.1) rotate(160deg); opacity: 0; }
+}
+
+/* ---------- REDUCED MOTION ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .card.pop { animation: none; transform: none; }
+  .counter.bounce { animation: none; }
+  .finale.show { animation: none; }
+  .spark { display: none !important; }
+  canvas.foil { transition: none; }
+  .reveal-all-btn { transition: none; }
+}

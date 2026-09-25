@@ -47,6 +47,14 @@ const GROUPS = [
   { id: 'photos',   step: '04', title: 'A photograph' },
 ];
 
+/**
+ * The Boyfriend Day family (templates/bfday.js → templates/<slug>/): every
+ * member that passed the engine's contract check, in registration order.
+ * Their routes, wizard and renderer come from lib/bfday/ — nothing per
+ * template is wired here.
+ */
+const bfday = require('../lib/bfday/family');
+
 const TEMPLATES = [
   require('./sawaal/config'),
   require('./sau-wajah/config'),
@@ -118,6 +126,7 @@ const TEMPLATES = [
       motif: 'dove', ampersand: false, serifCase: 'title', layout: 'custom',
     },
   },
+  ...bfday.list.map(t => t.config),
 ];
 
 function getTemplateConfig(slug) {
@@ -134,6 +143,7 @@ function fieldGroups(template) {
 /** Display helpers used across renderers. */
 function displayNames(tplSlug, data) {
   const d = data || {};
+  if (bfday.has(tplSlug)) return [bfday.displayName(tplSlug, d)];
   if (tplSlug === 'ganpati-courtyard') return [d.familyName || 'Your family'];
   if (tplSlug === 'ganapati-aagman') return [d.familyName || 'Your family'];
   if (tplSlug === 'love-awaits') return [d.recipientName || 'You'];

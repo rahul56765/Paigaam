@@ -1,6 +1,7 @@
 'use strict';
 const { page, esc } = require('../lib/layout');
 const { renderPaigaamPage } = require('../lib/renderPaigaam');
+const bfday = require('../lib/bfday/family');
 
 /** Sample data so the preview always looks alive. */
 function sampleData(tpl) {
@@ -48,6 +49,8 @@ function templateDetail(tpl) {
     previewInner = '<iframe title="Valentine Say Yes live preview" src="/valentine-say-yes/demo" style="width:100%;height:100%;border:0" loading="lazy" allow="autoplay"></iframe>';
   } else if (tpl.slug === 'sau-wajah') {
     previewInner = '<iframe title="Sau Wajah live preview" src="/sau-wajah/demo" style="width:100%;height:100%;border:0" loading="lazy" allow="autoplay"></iframe>';
+  } else if (bfday.has(tpl.slug)) {
+    previewInner = `<iframe title="${esc(tpl.name)} live preview" src="/${esc(tpl.slug)}/demo" style="width:100%;height:100%;border:0" loading="lazy" allow="autoplay"></iframe>`;
   } else if (isCustom) {
     previewInner = `<iframe title="Preview of ${esc(tpl.name)}" src="${esc(appPath)}" style="width:100%;height:100%;border:0" loading="lazy" allow="autoplay"></iframe>`;
   } else {
@@ -95,6 +98,7 @@ function templateDetail(tpl) {
           ${tpl.slug === 'love-album' ? '<a class="btn btn--ghost" href="/love-album/demo" target="_blank" rel="noopener">Experience full preview</a>' : ''}
           ${tpl.slug === 'sau-wajah' ? '<a class="btn btn--ghost" href="/sau-wajah/demo" target="_blank" rel="noopener">Experience full preview</a>' : ''}
           ${tpl.slug === 'love-awaits' ? '<a class="btn btn--ghost" href="/love-awaits/demo" target="_blank" rel="noopener">Experience full preview</a>' : ''}
+          ${bfday.has(tpl.slug) ? `<a class="btn btn--ghost" href="/${esc(tpl.slug)}/demo" target="_blank" rel="noopener">Experience full preview</a>` : ''}
           <a class="btn btn--ghost" href="/templates">Back to templates</a>
         </div>
         <p class="detail__note">${note}</p>
