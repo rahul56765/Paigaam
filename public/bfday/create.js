@@ -244,7 +244,7 @@
       f.options.forEach(function (o) { var opt = make('option', '', o.label); opt.value = o.value; input.appendChild(opt); });
     } else {
       input = make('input');
-      input.type = f.type === 'number' ? 'number' : (f.type === 'url' ? 'url' : 'text');
+      input.type = f.type === 'number' ? 'number' : (f.type === 'url' ? 'url' : (f.type === 'date' ? 'date' : 'text'));
       input.autocomplete = 'off';
       if (f.type === 'number') { input.min = f.min; input.max = f.max; input.step = 1; }
     }

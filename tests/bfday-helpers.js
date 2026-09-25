@@ -39,6 +39,7 @@ function hostileFor(fields) {
     if (f.type === 'number') return f.max;
     if (f.type === 'url') return 'https://x.example/?a=1&b=%3Cscript%3E'.slice(0, f.maxLength); // quotes/<> are rejected outright
     if (f.type === 'select') return f.options[f.options.length - 1].value;
+    if (f.type === 'date') return '2026-10-03';   // the only valid shape; hostility lives in the text fields
     return '';
   };
   const out = {};

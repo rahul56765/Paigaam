@@ -26,6 +26,7 @@ function scalarField(f) {
   let control;
   if (f.type === 'text') control = `<input type="text" ${common} maxlength="${f.maxLength}"${ph} autocomplete="off">`;
   else if (f.type === 'url') control = `<input type="url" ${common} maxlength="${f.maxLength}"${ph} inputmode="url" autocomplete="off">`;
+  else if (f.type === 'date') control = `<input type="date" ${common} min="1900-01-01" max="2200-12-31">`;
   else if (f.type === 'number') control = `<input type="number" ${common} min="${f.min}" max="${f.max}" step="1" inputmode="numeric"${ph}>`;
   else if (f.type === 'textarea') control = `<textarea ${common} maxlength="${f.maxLength}" rows="${f.rows}"${ph}></textarea>`;
   else if (f.type === 'select') {
@@ -114,7 +115,7 @@ ${jsonPayload('bfSpec', spec)}
     <aside class="journey">
       <p class="eyebrow">Your ${escape(spec.noun)}</p>
       <ol id="progress" aria-label="Progress">
-        ${steps.map((s, i) => `<li data-progress="${i}"><span class="step-number">0${i + 1}</span><span>${escape(s.title)}</span></li>`).join('')}
+        ${steps.map((s, i) => `<li data-progress="${i}"><span class="step-number">${String(i + 1).padStart(2, '0')}</span><span>${escape(s.title)}</span></li>`).join('')}
       </ol>
       <p class="aside-note">Nothing is public until you press send. The preview follows your typing — no saving needed.</p>
     </aside>

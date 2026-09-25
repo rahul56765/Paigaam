@@ -17,4 +17,7 @@ module.exports = [
   'unrejectable',
   'our-wrapped',
   'know-us-quiz',
+  'meri-duniya',
+  'khulta',
+  'aakhri-sawaal',
 ];

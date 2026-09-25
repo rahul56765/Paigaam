@@ -211,7 +211,7 @@ const server = http.createServer(async (req, res) => {
     if (method === 'GET' && m) {
       const tpl = q.templateBySlug(m[1]);
       if (!tpl || tpl.status !== 'published') return send(res, 404, errorPage('404', 'This Paigaam seems to have wandered away.', "Let's take you back to the collection."));
-      return send(res, 200, templateDetail(tpl));
+      return send(res, 200, templateDetail(tpl, { baseUrl: BASE_URL }));
     }
     // Bare, sample-data render of a template — powers live-scrolling card thumbnails.
     m = p.match(/^\/template-view\/([a-z0-9-]+)$/);

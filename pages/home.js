@@ -3,6 +3,7 @@ const { page, esc } = require('../lib/layout');
 const { doveSVG } = require('../lib/logo');
 const { logoFull } = require('../lib/brand');
 const { qrSVG } = require('../lib/qrcode');
+const bfday = require('../lib/bfday/family');
 
 const OCCASIONS = [
   ['Wedding', 'For two hearts becoming one.'],
@@ -37,7 +38,7 @@ function templateCard(t) {
   </div>
   <div class="tcard__meta">
     <span class="tcard__title">${esc(t.name)}</span>
-    <span class="tcard__price">₹${esc(t.price)}</span>
+    ${bfday.has(t.slug) ? '' : `<span class="tcard__price">₹${esc(t.price)}</span>`}
   </div>
   <div style="padding:6px 4px 0"><span class="tcard__view">View Paigaam</span></div>
 </a>`;

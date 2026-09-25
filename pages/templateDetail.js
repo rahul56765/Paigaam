@@ -24,7 +24,22 @@ function sampleData(tpl) {
   return d;
 }
 
-function templateDetail(tpl) {
+/** A family member's own share card (config.ogImage, site-relative) as og:image / twitter:image. */
+function shareImage(tpl, baseUrl) {
+  const member = bfday.bySlug(tpl.slug);
+  const image = member && member.config.ogImage;
+  if (typeof image !== 'string' || !image.startsWith('/')) return '';
+  let origin = '';
+  try { origin = new URL(baseUrl).origin; } catch { return ''; }
+  const url = esc(origin + image);
+  return `<meta property="og:image" content="${url}">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="${url}">`;
+}
+
+function templateDetail(tpl, { baseUrl = '' } = {}) {
   const isCustom = !!(tpl.config && tpl.config.custom) || !!tpl.custom;
   const appPath = (tpl.config && tpl.config.appPath) || tpl.appPath || '';
   // Custom templates embed the live app directly; native templates render a srcdoc preview.
@@ -87,7 +102,7 @@ function templateDetail(tpl) {
         <span class="kicker">${esc(tpl.category)}</span>
         <h1 class="section__title" style="letter-spacing:0.14em">${esc(tpl.name.toUpperCase())}</h1>
         <p style="font-family:var(--serif);font-style:italic;font-size:20px;color:var(--ink-soft);margin-top:16px;line-height:1.5">${esc(tpl.description)}</p>
-        <div class="detail__price"><small>One Paigaam</small>₹${esc(tpl.price)}</div>
+        ${bfday.has(tpl.slug) ? '' : `<div class="detail__price"><small>One Paigaam</small>₹${esc(tpl.price)}</div>`}
         <div class="detail__actions">
           ${cta}
           ${tpl.slug === 'ganapati-aagman' ? '<a class="btn btn--ghost" href="/ganapati/demo" target="_blank" rel="noopener">Experience full preview</a>' : ''}
@@ -105,7 +120,7 @@ function templateDetail(tpl) {
       </div>
     </div>
   </div>
-</main>`, { current: '/templates' });
+</main>`, { current: '/templates', headExtra: shareImage(tpl, baseUrl) });
 }
 
 module.exports = { templateDetail, sampleData };
