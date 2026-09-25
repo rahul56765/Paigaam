@@ -97,6 +97,20 @@ button, textarea { font: inherit; color: inherit; }
 .as-song span { color: var(--gold); }
 .as-song small { color: var(--muted); font-size: .7rem; letter-spacing: .08em; }
 
+/* inline song player — YouTube links play right here, never a redirect */
+.as-songwrap { display: flex; flex-direction: column; align-items: center; gap: 12px; margin-top: 26px; width: 100%; }
+.as-song--head { margin: 0; }
+.as-song--head small { display: none; }
+.as-songplay {
+  position: relative; display: flex; align-items: center; justify-content: center; width: 100%; max-width: 420px;
+  aspect-ratio: 16 / 9; padding: 0; border: 1px solid rgba(242, 209, 107, .25); border-radius: 14px; overflow: hidden; cursor: pointer;
+  background: linear-gradient(160deg, #1A2430 0%, #101820 70%);
+}
+.as-songplay__frame, .as-songplay .song-play__frame { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+.as-songplay__frame iframe, .as-songplay .song-play__frame iframe { width: 100%; height: 100%; border: 0; }
+.as-songplay__cue { position: relative; z-index: 1; font-size: .7rem; letter-spacing: .14em; text-transform: uppercase; color: var(--gold); }
+.as-songplay.is-playing .as-songplay__cue, .as-songplay.is-playing .song-play__cue { display: none; }
+
 /* buttons */
 .as-btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 10px;

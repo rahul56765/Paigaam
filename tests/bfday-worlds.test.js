@@ -20,6 +20,28 @@ test('date field: real calendar days only', () => {
   assert.equal(s.validate({ d: '2026-02-30' }, { mode: 'lenient' }).d, '');
 });
 
+test('Music plays in the browser: YouTube song links render inline embeds, never a redirect link', () => {
+  // Meri Duniya
+  const dYt = duniya.render({ customer_data: { ...duniyaConfig.demo } }, { isPreview: true });
+  assert.match(dYt, /class="md-song-play" data-yt="mt9xg0mmt28"/, 'Meri Duniya: YouTube song becomes a tap-to-play inline embed');
+  assert.doesNotMatch(dYt, /a class="md-song" href=/, 'Meri Duniya: no bare song link that navigates away');
+  const dSp = duniya.render({ customer_data: { ...duniyaConfig.demo, songUrl: 'https://open.spotify.com/track/x' } }, { isPreview: true });
+  assert.match(dSp, /md-song--pill/, 'Meri Duniya: non-YouTube keeps the branded pill');
+  assert.doesNotMatch(dSp, /data-yt=/, 'Meri Duniya: Spotify never embeds');
+
+  // Aakhri Sawaal
+  const sawaalConfig = require('../templates/aakhri-sawaal/config');
+  const sYt = sawaal.render({ customer_data: sawaalConfig.demo }, { isPreview: true });
+  assert.match(sYt, /class="as-songplay" data-yt="WWZxDA81JFk"/, 'Aakhri Sawaal: YouTube song becomes an inline embed');
+  assert.doesNotMatch(sYt, /a class="as-song" href=/, 'Aakhri Sawaal: no bare song link that navigates away');
+
+  // Khulta — song doors
+  const khultaConfig = require('../templates/khulta/config');
+  const kYt = khulta.render({ customer_data: khultaConfig.demo }, { isPreview: true });
+  assert.match(kYt, /class="kh-songplay" data-yt=/, 'Khulta: a YouTube song door becomes an inline embed');
+  assert.doesNotMatch(kYt, />Play it ↗</, 'Khulta: the old redirect button is gone');
+});
+
 test('Meri Duniya: days together counts in Asia/Kolkata; future dates hide the counter', () => {
   const now = Date.UTC(2026, 9, 2, 20, 0);           // 3 Oct 01:30 IST
   assert.equal(duniya.daysSince('2026-10-03', now), 0);

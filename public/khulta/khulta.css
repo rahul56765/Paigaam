@@ -244,6 +244,17 @@ button { font: inherit; color: inherit; }
 @keyframes kh-spin { to { transform: rotate(360deg); } }
 .kh-song p { margin: 0; font-family: var(--serif); font-style: italic; font-size: 1.15rem; line-height: 1.55; overflow-wrap: anywhere; }
 
+/* inline song player — YouTube links play right here, never a redirect */
+.kh-songplay {
+  position: relative; display: flex; align-items: center; justify-content: center; width: 100%;
+  aspect-ratio: 16 / 9; padding: 0; border: 0; border-radius: 12px; overflow: hidden; cursor: pointer;
+  background: linear-gradient(160deg, #2E4A44 0%, #1E332E 70%);
+}
+.kh-songplay__frame, .kh-songplay .song-play__frame { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+.kh-songplay__frame iframe, .kh-songplay .song-play__frame iframe { width: 100%; height: 100%; border: 0; }
+.kh-songplay__cue { position: relative; z-index: 1; font-size: .7rem; letter-spacing: .16em; text-transform: uppercase; color: #fff; }
+.kh-songplay.is-playing .kh-songplay__cue, .kh-songplay.is-playing .song-play__cue { display: none; }
+
 .kh-promise {
   margin: 0; padding: 8px 0 0; font-family: var(--serif); font-weight: 400; font-size: clamp(1.6rem, 6.5vw, 2.2rem); line-height: 1.25;
   color: var(--teal-dark); overflow-wrap: anywhere;

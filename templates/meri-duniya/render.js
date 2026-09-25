@@ -19,6 +19,7 @@ const config = require('./config');
 const schema = require('./schema');
 const { resolve } = require('../../lib/bfday/fields');
 const { escape, multiline, jsonPayload, head, previewBadge } = require('../../lib/bfday/page');
+const { youtubeId, songCard, songScript } = require('../../lib/bfday/song');
 
 const IST_OFFSET_MS = 330 * 60000;   // Asia/Kolkata, no DST
 
@@ -149,12 +150,9 @@ ${stats.map(s => `      <div class="md-stat md-reveal">
 
 function gallerySection(d, num) {
   const items = d.gallery;
-  const song = d.songTitle || d.songUrl ? `
-    <${d.songUrl ? `a class="md-song" href="${escape(d.songUrl)}" target="_blank" rel="noopener noreferrer"` : 'div class="md-song"'}>
-      <span class="md-song__disc" aria-hidden="true"></span>
-      <span class="md-song__text"><small>Our song</small><b>${escape(d.songTitle || 'Play our song')}</b></span>
-      ${d.songUrl ? '<span class="md-song__play" aria-hidden="true">tap to play ↗</span>' : ''}
-    </${d.songUrl ? 'a' : 'div'}>` : '';
+  // Rahul's rule: the song plays in the browser — a YouTube link becomes an
+  // inline embed on tap; other services keep a branded pill. Never a bare link.
+  const song = d.songTitle || d.songUrl ? songCard(d.songUrl, d.songTitle || 'Play our song', 'md-song') : '';
   return `<section class="md-sec md-sec--gallery" id="gallery" aria-labelledby="h-gallery">
     ${sectionHead(num, 'Yaadein', 'The Gallery', 'h-gallery')}
     <div class="md-gal" id="mdGal">
@@ -234,6 +232,7 @@ ${head({ paigaam, opts, title, description, themeColor: '#1C1420', image: config
 <link rel="preload" as="image" href="/meri-duniya/wax-seal.webp" type="image/webp">
 <link rel="stylesheet" href="/meri-duniya/duniya.css">
 <script src="/meri-duniya/duniya.js" defer></script>
+${(d.songTitle || d.songUrl) ? songScript() : ''}
 <noscript><style>
   .md-open { display: none !important; }
   body.md-locked { overflow: auto !important; }

@@ -18,6 +18,7 @@ const config = require('./config');
 const schema = require('./schema');
 const { resolve } = require('../../lib/bfday/fields');
 const { escape, multiline, jsonPayload, head, previewBadge } = require('../../lib/bfday/page');
+const { youtubeId, songScript } = require('../../lib/bfday/song');
 
 const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -92,10 +93,17 @@ function surprise(door, i, d) {
         </div>
         ${text ? `<p class="kh-voice__text">${multiline(text)}</p>` : ''}`;
   } else if (kind === 'song') {
+    // Rahul's rule: the song plays in the browser itself — a YouTube link
+    // becomes an inline embed on tap, never a redirect to youtube.com.
+    const ytId = youtubeId(door.link);
     inner = `<div class="kh-song">
           <span class="kh-song__disc" aria-hidden="true"></span>
           ${text ? `<p>${multiline(text)}</p>` : ''}
-          ${door.link ? `<a class="kh-btn" href="${escape(door.link)}" target="_blank" rel="noopener noreferrer">Play it ↗</a>` : ''}
+          ${ytId ? `<button type="button" class="kh-songplay" data-yt="${ytId}" data-armed="false" aria-pressed="false" aria-label="Play the song on this page">
+              <span class="song-play__frame" aria-hidden="true"></span>
+              <span class="song-play__cue" aria-hidden="true">tap to play ♪</span>
+            </button>`
+          : door.link ? `<a class="kh-btn" href="${escape(door.link)}" target="_blank" rel="noopener noreferrer">Play it in the app ↗</a>` : ''}
         </div>`;
   } else if (kind === 'promise') {
     inner = `<blockquote class="kh-promise">${multiline(text || 'I promise to keep choosing you.')}</blockquote>`;
@@ -164,6 +172,7 @@ ${head({ paigaam, opts, title, description, themeColor: '#F6E7D7', image: config
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,300..600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/khulta/khulta.css">
 <script src="/khulta/khulta.js" defer></script>
+${d.doors.some(door => (door.kind || 'letter') === 'song' && youtubeId(door.link)) ? songScript() : ''}
 <noscript><style>
   .kh-surprise { display: block !important; position: static !important; }
   .kh-sheet { position: static !important; display: block !important; background: none !important; }

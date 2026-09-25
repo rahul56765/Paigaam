@@ -14,9 +14,30 @@ const config = require('./config');
 const schema = require('./schema');
 const { resolve } = require('../../lib/bfday/fields');
 const { escape, multiline, jsonPayload, head, previewBadge } = require('../../lib/bfday/page');
+const { youtubeId, songScript } = require('../../lib/bfday/song');
 
 const HEART_PATH = 'M12 21s-7.5-4.6-9.6-9.2C.9 8.4 2.9 4.5 6.6 4.1c2.1-.2 3.7.9 5.4 2.9 1.7-2 3.3-3.1 5.4-2.9 3.7.4 5.7 4.3 4.2 7.7C19.5 16.4 12 21 12 21z';
 const heart = cls => `<svg class="${cls}" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="${HEART_PATH}"/></svg>`;
+
+/**
+ * The song, per Rahul's rule: it plays in the browser itself. A YouTube link
+ * becomes an inline embed (iframe mounts on tap, autoplay=1 — no navigation,
+ * no YouTube app); any other service keeps the branded pill hop.
+ */
+function songMarkup(d) {
+  if (!d.songTitle && !d.songUrl) return '';
+  const ytId = youtubeId(d.songUrl);
+  if (ytId) {
+    return `<div class="as-songwrap"><p class="as-song as-song--head"><span aria-hidden="true">♪</span> ${escape(d.songTitle || 'Our song')}</p>
+      <button type="button" class="as-songplay" data-yt="${ytId}" data-armed="false" aria-pressed="false" aria-label="Play ${escape(d.songTitle || 'our song')} on this page">
+        <span class="song-play__frame" aria-hidden="true"></span>
+        <span class="song-play__cue" aria-hidden="true">tap to play ♪</span>
+      </button></div>`;
+  }
+  return d.songUrl
+    ? `<a class="as-song" href="${escape(d.songUrl)}" target="_blank" rel="noopener noreferrer"><span aria-hidden="true">♪</span> ${escape(d.songTitle || 'Our song')} <small>Play in the app ↗</small></a>`
+    : `<p class="as-song"><span aria-hidden="true">♪</span> ${escape(d.songTitle || 'Our song')}</p>`;
+}
 
 /** '+91 98765-43210' → '919876543210'; a bare 10-digit Indian mobile gets 91; anything implausible → ''. */
 function waNumber(raw) {
@@ -55,9 +76,7 @@ function render(paigaam = {}, opts = {}) {
       <h1 class="as-q" id="asQ">${multiline(d.question)}</h1>
       ${sender ? `<p class="as-signed">— ${escape(sender)}</p>` : ''}
       <button type="button" class="as-btn as-btn--gold" id="asAnswer">Write your answer</button>
-      ${d.songTitle || d.songUrl ? `<${d.songUrl ? `a class="as-song" href="${escape(d.songUrl)}" target="_blank" rel="noopener noreferrer"` : 'p class="as-song"'}>
-        <span aria-hidden="true">♪</span> ${escape(d.songTitle || 'Our song')}${d.songUrl ? ' <small>tap to play ↗</small>' : ''}
-      </${d.songUrl ? 'a' : 'p'}>` : ''}
+      ${songMarkup(d)}
     </section>`,
     `<section class="as-card as-card--reply" data-step="${cards.length + 2}" hidden aria-labelledby="asReplyTitle">
       <p class="as-reply__q">${multiline(d.question)}</p>
@@ -107,6 +126,7 @@ ${head({ paigaam, opts, title, description, themeColor: '#101820', image: config
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,300..600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/aakhri-sawaal/sawaal.css">
 <script src="/aakhri-sawaal/sawaal.js" defer></script>
+${(d.songTitle || d.songUrl) ? songScript() : ''}
 <noscript><style>
   .as-card[hidden] { display: flex !important; }
   .as-card--heart, .as-card--sent, .as-tap, #asAnswer, .as-photo, .as-quick, #asSend, #asShareCard { display: none !important; }

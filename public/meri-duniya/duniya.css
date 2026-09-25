@@ -349,16 +349,42 @@ body.md-in .md-fill { opacity: 1; }
   padding: 14px 18px; border-radius: 16px; background: var(--plum); color: var(--cream); text-decoration: none;
 }
 a.md-song:hover .md-song__disc { animation-duration: 1.4s; }
-.md-song__disc {
+.md-song__disc, .md-song .md-song-disc {
   flex: none; width: 46px; height: 46px; border-radius: 50%;
   background: radial-gradient(circle, var(--rose) 0 18%, #111 19% 22%, #2A2A2A 23% 60%, #111 61% 100%);
   animation: md-spin 6s linear infinite;
 }
 @keyframes md-spin { to { transform: rotate(360deg); } }
-.md-song__text { display: flex; flex-direction: column; min-width: 0; }
-.md-song__text small { font-size: .62rem; font-weight: 600; letter-spacing: .26em; text-transform: uppercase; color: #F4A8BE; }
-.md-song__text b { font-family: var(--serif); font-weight: 400; font-size: 1.15rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.md-song__text, .md-song .md-song-text { display: flex; flex-direction: column; min-width: 0; }
+.md-song__text small, .md-song .md-song-text small { font-size: .62rem; font-weight: 600; letter-spacing: .26em; text-transform: uppercase; color: #F4A8BE; }
+.md-song__text b, .md-song .md-song-text b { font-family: var(--serif); font-weight: 400; font-size: 1.15rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .md-song__play { margin-left: auto; flex: none; font-size: .66rem; letter-spacing: .14em; text-transform: uppercase; color: #FFD9E4; }
+
+/* inline song player — YouTube links play right here, never a redirect */
+.md-song-embedwrap {
+  display: flex; flex-direction: column; gap: 0; max-width: 460px; margin: 32px auto 0;
+  width: calc(100% - 2 * var(--gutter)); padding: 14px 18px 16px; border-radius: 16px; background: var(--plum); color: var(--cream);
+}
+.md-song-embedwrap__head { display: flex; align-items: center; gap: 14px; min-width: 0; }
+.md-song-embedwrap .md-song-disc { flex: none; width: 46px; height: 46px; border-radius: 50%;
+  background: radial-gradient(circle, var(--rose) 0 18%, #111 19% 22%, #2A2A2A 23% 60%, #111 61% 100%);
+  animation: md-spin 6s linear infinite; }
+.md-song-embedwrap__head .md-song-text { display: flex; flex-direction: column; min-width: 0; }
+.md-song-embedwrap__head .md-song-text small { font-size: .62rem; font-weight: 600; letter-spacing: .26em; text-transform: uppercase; color: #F4A8BE; }
+.md-song-embedwrap__head .md-song-text b { font-family: var(--serif); font-weight: 400; font-size: 1.15rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.md-song-play {
+  appearance: none; position: relative; display: flex; align-items: center; justify-content: center; width: 100%;
+  aspect-ratio: 16 / 9; margin-top: 14px; padding: 0; border: 0; border-radius: 12px; overflow: hidden; cursor: pointer;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(244, 168, 190, .35) 0 8%, transparent 9%),
+    linear-gradient(160deg, #3A2438 0%, #241426 60%, #1C1420 100%);
+}
+.md-song-play__frame, .md-song-play .song-play__frame { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+.md-song-play__frame iframe, .md-song-play .song-play__frame iframe { width: 100%; height: 100%; border: 0; }
+.md-song-play__cue { position: relative; z-index: 1; font-size: .7rem; letter-spacing: .18em; text-transform: uppercase; color: #FFD9E4; }
+.md-song-play.is-playing .md-song-play__cue, .md-song-play.is-playing .song-play__cue { display: none; }
+.md-song--pill { cursor: pointer; }
+.md-song--pill:hover .md-song__disc { animation-duration: 1.2s; }
 
 /* ================= 6 · the question ================= */
 .md-sec--question {
