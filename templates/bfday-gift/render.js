@@ -71,6 +71,15 @@ function renderNoteCard(item, idx) {
       </div>`;
 }
 
+function coverHeadline(line) {
+  // "happy Boyfriend's Day" → "happy<br>Boyfriend's Day" (manual break keeps
+  // "Day" off a line of its own); anything else renders on one balanced line.
+  const v = String(line || '');
+  const m = v.match(/^(\S+)\s+(.+)$/);
+  if (m && v.length > 12) return `${escape(m[1])}<br>${escape(m[2])}`;
+  return escape(v);
+}
+
 /**
  * @param paigaam  the paigaam row ({ customer_data, slug, id, … })
  * @param opts     { baseUrl, isPreview }
@@ -120,7 +129,7 @@ ${previewBadge(opts)}
     <img class="cover-stars s1" src="/assets/bfday-gift/stars.png" alt="" aria-hidden="true">
     <img class="cover-stars s2" src="/assets/bfday-gift/stars.png" alt="" aria-hidden="true">
     <div class="cover-inner">
-      <h1 class="cover-headline">${escape(d.occasionLine)}</h1>
+      <h1 class="cover-headline">${coverHeadline(d.occasionLine)}</h1>
       <p class="cover-name">for <strong>${escape(who)}</strong></p>
       <button class="bunny-btn" id="bunnyBtn" type="button" aria-label="Open your gift">
         <img src="/assets/bfday-gift/bunny.png" alt="the little bunny mascot, waving">

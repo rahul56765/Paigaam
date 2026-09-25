@@ -74,6 +74,7 @@ img { max-width: 100%; }
   color: var(--raspberry);
   text-shadow: 0 2px 0 rgba(255, 255, 255, .75);
   margin-bottom: 10px;
+  text-wrap: balance;
 }
 
 .cover-name {
@@ -92,7 +93,9 @@ img { max-width: 100%; }
   pointer-events: none;
   z-index: 1;
 }
-.cover-stars.s1 { top: -30px; left: -40px; }
+/* the scatter is denser at its top — keep the top-left cluster quieter so
+   the two corners read balanced */
+.cover-stars.s1 { top: -30px; left: -40px; opacity: .3; }
 .cover-stars.s2 { bottom: -40px; right: -50px; transform: scaleX(-1); }
 
 .bunny-btn {
@@ -219,7 +222,10 @@ img { max-width: 100%; }
 .word-list {
   list-style: none;
   text-align: center;
-  min-height: 3em;
+  /* the lines set the height — never clip, never a fixed min-height that
+     cuts the tail of a long list */
+  height: auto;
+  overflow: visible;
 }
 
 .word-line {
