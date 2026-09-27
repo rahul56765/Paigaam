@@ -59,7 +59,7 @@ function home(templates) {
 <main>
   <!-- HERO: dark editorial, left copy / right device mockup -->
   <section class="hero--dark">
-    <div class="wrap hero__grid-wrap" style="display:contents">
+    <div class="wrap">
       <div class="hero__copy reveal in">
         <span class="hero__eyebrow">Paigaam &middot; Digital experiences, made personal</span>
         <h1>Make your moments<br><em>worth remembering.</em></h1>

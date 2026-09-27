@@ -494,8 +494,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
 .hero--dark {
   position: relative;
   min-height: calc(100vh - 78px);
-  display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
-  align-items: center; gap: 64px;
+  display: block;
   text-align: left;
   padding: 90px 0 110px;
   background:
@@ -503,6 +502,10 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
     radial-gradient(900px 560px at 8% 88%, rgba(143, 16, 24, 0.10), transparent 55%),
     var(--dark);
   overflow: hidden;
+}
+.hero--dark .wrap {
+  display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+  align-items: center; gap: 64px;
 }
 .hero--dark::after {
   content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 1px;
@@ -671,7 +674,8 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
 
 /* ---------- Responsive (editorial layer) ---------- */
 @media (max-width: 1020px) {
-  .hero--dark { grid-template-columns: 1fr; text-align: center; padding: 70px 0 90px; gap: 56px; }
+  .hero--dark .wrap { grid-template-columns: 1fr; text-align: center; }
+  .hero--dark { padding: 70px 0 90px; }
   .hero--dark .hero__lede { margin-left: auto; margin-right: auto; }
   .hero--dark .hero__ctas, .hero--dark .hero__micro { justify-content: center; }
   .occ-grid { grid-template-columns: repeat(2, 1fr); }
