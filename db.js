@@ -110,6 +110,16 @@ CREATE TABLE IF NOT EXISTS sessions (
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 CREATE INDEX IF NOT EXISTS idx_sessions_admin ON sessions(admin_id);
+
+CREATE TABLE IF NOT EXISTS events (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  event      TEXT NOT NULL,
+  props      TEXT NOT NULL DEFAULT '{}',
+  path       TEXT NOT NULL DEFAULT '',
+  ref        TEXT NOT NULL DEFAULT '',
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_events_name ON events(event);
 `);
 
 const uid = () => crypto.randomBytes(9).toString('base64url');
@@ -127,6 +137,15 @@ function parse(row, fields = ['config', 'customer_data']) {
 }
 
 const q = {
+  // analytics: anonymous funnel events (no PII — event name, stringified props, path)
+  eventInsert: (event, props = {}, path = '', ref = '') => {
+    try {
+      db.prepare('INSERT INTO events (event, props, path, ref, created_at) VALUES (?,?,?,?,?)')
+        .run(String(event).slice(0, 64), JSON.stringify(props || {}).slice(0, 2000), String(path || '').slice(0, 300), String(ref || '').slice(0, 300), now());
+    } catch (e) { /* never fail a request for analytics */ }
+  },
+  eventsRecent: (limit = 200) => db.prepare('SELECT * FROM events ORDER BY id DESC LIMIT ?').all(limit).map(r => ({ ...r, props: (() => { try { return JSON.parse(r.props); } catch { return {}; } })() })),
+  eventsCountToday: () => db.prepare("SELECT COUNT(*) AS n FROM events WHERE created_at >= date('now')").get().n,
   // templates
   templatesAll:      () => db.prepare('SELECT * FROM templates ORDER BY created_at DESC').all().map(r => parse(r, ['config'])),
   templatesPublished:() => db.prepare("SELECT * FROM templates WHERE status = 'published' ORDER BY created_at ASC").all().map(r => parse(r, ['config'])),

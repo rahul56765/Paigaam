@@ -42,33 +42,21 @@ function shareImage(tpl, baseUrl) {
 function templateDetail(tpl, { baseUrl = '' } = {}) {
   const isCustom = !!(tpl.config && tpl.config.custom) || !!tpl.custom;
   const appPath = (tpl.config && tpl.config.appPath) || tpl.appPath || '';
-  // Custom templates embed the live app directly; native templates render a srcdoc preview.
+  // Every template with a /<slug>/demo route gets the live iframe preview.
+  // (Per-template modules mount /<slug>/demo; custom webapps iframe their app.)
+  const DEMO_PATHS = {
+    'ganapati-aagman': 'ganapati',                    // historic route: /ganapati/demo
+    'lavender-tic-tac-toe-bloom': 'lavender-bloom',   // demo route differs from slug
+  };
+  const demoPath = DEMO_PATHS[tpl.slug] || tpl.slug;
+  const hasDemo = !isCustom && (bfday.has(tpl.slug) || [
+    'ganapati-aagman', 'saalgirah', 'lavender-tic-tac-toe-bloom', 'ganpati-courtyard',
+    'maafi', 'love-awaits', 'sawaal', 'love-album', 'valentine-say-yes', 'sau-wajah',
+  ].includes(tpl.slug));
   let previewInner;
-  if (tpl.slug === 'ganapati-aagman') {
-    previewInner = '<iframe title="Ganapati Aagman live preview" src="/ganapati/demo" style="width:100%;height:100%;border:0" loading="lazy" allow="autoplay"></iframe>';
-  } else if (tpl.slug === 'saalgirah') {
-    previewInner = '<iframe title="Saalgirah live preview" src="/saalgirah/demo" style="width:100%;height:100%;border:0" loading="lazy" allow="autoplay"></iframe>';
-  } else if (tpl.slug === 'lavender-tic-tac-toe-bloom') {
-    previewInner = '<iframe title="Lavender Bloom live preview" src="/lavender-bloom/demo" style="width:100%;height:100%;border:0" loading="lazy" allow="autoplay"></iframe>';
-  } else if (tpl.slug === 'ganpati-courtyard') {
-    previewInner = '<iframe title="Ganpati Courtyard live preview" src="/ganpati-courtyard/demo" style="width:100%;height:100%;border:0" loading="lazy" allow="autoplay"></iframe>';
-  } else if (tpl.slug === 'maafi') {
-    previewInner = '<iframe title="Maafi live preview" src="/maafi/demo" style="width:100%;height:100%;border:0" loading="lazy" allow="autoplay"></iframe>';
-  } else if (tpl.slug === 'love-awaits') {
-    previewInner = '<iframe title="Love Awaits live preview" src="/love-awaits/demo" style="width:100%;height:100%;border:0" loading="lazy" allow="autoplay"></iframe>';
-  } else if (tpl.slug === 'sawaal') {
-    previewInner = '<iframe title="Sawaal live preview" src="/sawaal/demo" style="width:100%;height:100%;border:0" loading="lazy" allow="autoplay"></iframe>';
-  } else if (tpl.slug === 'love-album') {
-    previewInner = '<iframe title="Love Album live preview" src="/love-album/demo" style="width:100%;height:100%;border:0" loading="lazy" allow="autoplay"></iframe>';
-  } else if (tpl.slug === 'valentine-say-yes') {
-    previewInner = '<iframe title="Valentine Say Yes live preview" src="/valentine-say-yes/demo" style="width:100%;height:100%;border:0" loading="lazy" allow="autoplay"></iframe>';
-  } else if (tpl.slug === 'sau-wajah') {
-    previewInner = '<iframe title="Sau Wajah live preview" src="/sau-wajah/demo" style="width:100%;height:100%;border:0" loading="lazy" allow="autoplay"></iframe>';
-  } else if (bfday.has(tpl.slug)) {
-    previewInner = `<iframe title="${esc(tpl.name)} live preview" src="/${esc(tpl.slug)}/demo" style="width:100%;height:100%;border:0" loading="lazy" allow="autoplay"></iframe>`;
+  if (hasDemo) {
+    previewInner = `<iframe title="${esc(tpl.name)} live preview" src="/${esc(demoPath)}/demo" style="width:100%;height:100%;border:0" loading="lazy" allow="autoplay"></iframe>`;
   } else if (isCustom) {
-    previewInner = `<iframe title="Preview of ${esc(tpl.name)}" src="${esc(appPath)}" style="width:100%;height:100%;border:0" loading="lazy" allow="autoplay"></iframe>`;
-  } else {
     const sample = sampleData(tpl);
     const previewHTML = renderPaigaamPage(
       { slug: tpl.slug, category: tpl.category, config: tpl.config },
@@ -82,10 +70,14 @@ function templateDetail(tpl, { baseUrl = '' } = {}) {
 
   const cta = isCustom
     ? `<a class="btn btn--primary" href="/create/${esc(tpl.slug)}">Get this Paigaam</a>`
-    : `<a class="btn btn--primary" href="/create/${esc(tpl.slug)}">Personalize this Paigaam</a>`;
+    : `<a class="btn btn--primary" href="/create/${esc(tpl.slug)}" data-track="template_create_clicked" data-template="${esc(tpl.slug)}">Create this Paigaam &rarr;</a>`;
   const note = isCustom
     ? `A fixed, ready-made experience — exactly as designed. Get yours and share the link.`
     : `You'll see your Paigaam come alive as you fill it in — and receive your own link to share.`;
+  const free = Number(tpl.price) === 0;
+  const priceHTML = bfday.has(tpl.slug) ? '' : (free
+    ? `<div class="detail__price"><small>One Paigaam</small><span style="font-size:26px;letter-spacing:0.18em;color:#3E6B40">FREE</span></div>`
+    : `<div class="detail__price"><small>One Paigaam</small>&#8377;${esc(tpl.price)}</div>`);
 
   return page(tpl.name, `
 <main>
@@ -102,25 +94,40 @@ function templateDetail(tpl, { baseUrl = '' } = {}) {
         <span class="kicker">${esc(tpl.category)}</span>
         <h1 class="section__title" style="letter-spacing:0.14em">${esc(tpl.name.toUpperCase())}</h1>
         <p style="font-family:var(--serif);font-style:italic;font-size:20px;color:var(--ink-soft);margin-top:16px;line-height:1.5">${esc(tpl.description)}</p>
-        ${bfday.has(tpl.slug) ? '' : `<div class="detail__price"><small>One Paigaam</small>₹${esc(tpl.price)}</div>`}
+        ${priceHTML}
         <div class="detail__actions">
           ${cta}
-          ${tpl.slug === 'ganapati-aagman' ? '<a class="btn btn--ghost" href="/ganapati/demo" target="_blank" rel="noopener">Experience full preview</a>' : ''}
-          ${tpl.slug === 'saalgirah' ? '<a class="btn btn--ghost" href="/saalgirah/demo" target="_blank" rel="noopener">Experience full preview</a>' : ''}
-          ${tpl.slug === 'lavender-tic-tac-toe-bloom' ? '<a class="btn btn--ghost" href="/lavender-bloom/demo" target="_blank" rel="noopener">Experience full preview</a>' : ''}
-          ${tpl.slug === 'ganpati-courtyard' ? '<a class="btn btn--ghost" href="/ganpati-courtyard/demo" target="_blank" rel="noopener">Experience full preview</a>' : ''}
-          ${tpl.slug === 'valentine-say-yes' ? '<a class="btn btn--ghost" href="/valentine-say-yes/demo" target="_blank" rel="noopener">Experience full preview</a>' : ''}
-          ${tpl.slug === 'love-album' ? '<a class="btn btn--ghost" href="/love-album/demo" target="_blank" rel="noopener">Experience full preview</a>' : ''}
-          ${tpl.slug === 'sau-wajah' ? '<a class="btn btn--ghost" href="/sau-wajah/demo" target="_blank" rel="noopener">Experience full preview</a>' : ''}
-          ${tpl.slug === 'love-awaits' ? '<a class="btn btn--ghost" href="/love-awaits/demo" target="_blank" rel="noopener">Experience full preview</a>' : ''}
-          ${bfday.has(tpl.slug) ? `<a class="btn btn--ghost" href="/${esc(tpl.slug)}/demo" target="_blank" rel="noopener">Experience full preview</a>` : ''}
+          ${hasDemo ? `<a class="btn btn--ghost" href="/${esc(demoPath)}/demo" target="_blank" rel="noopener">Experience full preview</a>` : ''}
           <a class="btn btn--ghost" href="/templates">Back to templates</a>
         </div>
         <p class="detail__note">${note}</p>
       </div>
     </div>
   </div>
-</main>`, { current: '/templates', headExtra: shareImage(tpl, baseUrl) });
+</main>
+<!-- sticky mobile create bar -->
+<div class="sticky-cta" id="stickyCta" aria-hidden="false">
+  <div class="sticky-cta__inner">
+    <div class="sticky-cta__info">
+      <strong>${esc(tpl.name)}</strong>
+      <span>${free ? 'FREE' : '&#8377;' + esc(tpl.price) + ' &middot; one-time'}</span>
+    </div>
+    <a class="btn btn--primary" href="/create/${esc(tpl.slug)}" data-track="template_create_clicked" data-template="${esc(tpl.slug)}" data-label="sticky_bar">Create &rarr;</a>
+  </div>
+</div>
+<script>
+/* Mobile sticky create bar: appears when the main CTA scrolls out of view. */
+(function () {
+  var bar = document.getElementById('stickyCta');
+  if (!bar) return;
+  if (window.matchMedia && window.matchMedia('(min-width: 721px)').matches) return;
+  var anchor = document.querySelector('.detail__actions');
+  if (!anchor || !('IntersectionObserver' in window)) return;
+  new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) { bar.classList.toggle('show', !e.isIntersecting); });
+  }, { threshold: 0 }).observe(anchor);
+})();
+</script>`, { current: '/templates', canonical: `/templates/${tpl.slug}`, description: `${tpl.name} — a ${String(tpl.category).toLowerCase()} Paigaam. ${tpl.description}`, headExtra: shareImage(tpl, baseUrl) });
 }
 
 module.exports = { templateDetail, sampleData };

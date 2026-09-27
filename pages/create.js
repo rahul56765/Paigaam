@@ -78,6 +78,14 @@ function createPage(tpl, draft, draftId) {
 <script>
 window.PAIGAAM_BOOT = ${JSON.stringify({ slug: tpl.slug, draftId: draftId || null, initial: draft || {} })};
 </script>
+<script>
+/* Funnel: personalization_started fires once the visitor touches the form. */
+(function(){
+  var f=document.getElementById('createForm'); if(!f||!window.paTrack) return;
+  var sent=false;
+  f.addEventListener('input', function once(){ if(sent) return; sent=true; window.paTrack('personalization_started',{template:f.dataset.template}); }, {passive:true});
+})();
+</script>
 <script src="/js/create.js" defer></script>`);
 }
 

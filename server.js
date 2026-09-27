@@ -15,6 +15,9 @@ const { page, errorPage, esc } = require('./lib/layout');
 const { home } = require('./pages/home');
 const { gallery } = require('./pages/gallery');
 const { templateDetail } = require('./pages/templateDetail');
+const { occasionPage, occasionsIndex } = require('./pages/occasionPage');
+const { legalPage } = require('./pages/legal');
+const { OCCASIONS, bySlug: occasionBySlug, occasionForCategory } = require('./lib/occasions');
 const { createPage } = require('./pages/create');
 const { previewPage } = require('./pages/preview');
 const { contactPage } = require('./pages/contact');
@@ -171,6 +174,7 @@ const server = http.createServer(async (req, res) => {
     const u = new URL(req.url, BASE_URL);
     const p = u.pathname.replace(/\/+$/, '') || '/';
     const method = req.method;
+    let m;
 
     if (await ganapati.handle(req, res, u, { baseUrl: BASE_URL, isAdmin: !!getAdmin(req) })) return;
     if (await saalgirah.handle(req, res, u, { baseUrl: BASE_URL, isAdmin: !!getAdmin(req) })) return;
@@ -204,11 +208,29 @@ const server = http.createServer(async (req, res) => {
     if (method === 'GET' && p === '/') {
       return send(res, 200, home(q.templatesPublished()));
     }
-    if (method === 'GET' && p === '/templates') {
-      return send(res, 200, gallery(q.templatesPublished(), u.searchParams.get('occasion') || 'All'));
+    if (method === 'GET' && p === '/occasions') {
+      const counts = {};
+      for (const t of q.templatesPublished()) {
+        const occ = occasionForCategory(t.category);
+        if (occ) counts[occ.slug] = (counts[occ.slug] || 0) + 1;
+      }
+      return send(res, 200, occasionsIndex(counts));
     }
-    let m = p.match(/^\/templates\/([a-z0-9-]+)$/);
+    if (method === 'GET' && p === '/templates') {
+      return send(res, 200, gallery(q.templatesPublished(), {
+        q: u.searchParams.get('q') || '',
+        occasion: u.searchParams.get('occasion') || 'all',
+        price: u.searchParams.get('price') || 'all',
+        sort: u.searchParams.get('sort') || 'newest',
+      }));
+    }
+    /* Occasion landing pages first (SEO), then real template slugs — existing
+       /templates/<slug> URLs are untouched because occasion slugs are reserved
+       and can never collide with template slugs. */
+    m = p.match(/^\/templates\/([a-z0-9-]+)$/);
     if (method === 'GET' && m) {
+      const occ = occasionBySlug[m[1]];
+      if (occ) return send(res, 200, occasionPage(occ, q.templatesPublished()));
       const tpl = q.templateBySlug(m[1]);
       if (!tpl || tpl.status !== 'published') return send(res, 404, errorPage('404', 'This Paigaam seems to have wandered away.', "Let's take you back to the collection."));
       return send(res, 200, templateDetail(tpl, { baseUrl: BASE_URL }));
@@ -295,6 +317,60 @@ const server = http.createServer(async (req, res) => {
     }
     if (method === 'GET' && p === '/contact') {
       return send(res, 200, contactPage(q.settings()));
+    }
+
+    /* ---------- Legal pages ---------- */
+    m = p.match(/^\/(privacy|terms|refund)$/);
+    if (method === 'GET' && m) {
+      return send(res, 200, legalPage(m[1]));
+    }
+
+    /* ---------- SEO: sitemap.xml (public pages only) ---------- */
+    if (method === 'GET' && p === '/sitemap.xml') {
+      const origin = BASE_URL.replace(/\/$/, '');
+      const urls = [
+        { loc: origin + '/', priority: '1.0' },
+        { loc: origin + '/templates', priority: '0.9' },
+        { loc: origin + '/occasions', priority: '0.8' },
+      ];
+      for (const o of OCCASIONS) urls.push({ loc: `${origin}/templates/${o.slug}`, priority: '0.8' });
+      for (const t of q.templatesPublished()) urls.push({ loc: `${origin}/templates/${t.slug}`, priority: '0.7' });
+      urls.push({ loc: origin + '/contact', priority: '0.4' });
+      const now = new Date().toISOString().slice(0, 10);
+      const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+${urls.map(u => `  <url><loc>${esc(u.loc)}</loc><lastmod>${now}</lastmod><priority>${u.priority}</priority></url>`).join('\n')}
+</urlset>`;
+      return send(res, 200, xml, 'application/xml; charset=utf-8', { 'Cache-Control': 'public, max-age=3600' });
+    }
+
+    /* ---------- SEO: robots.txt (admin/private routes blocked) ---------- */
+    if (method === 'GET' && p === '/robots.txt') {
+      const origin = BASE_URL.replace(/\/$/, '');
+      const txt = `User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /admin/
+Disallow: /create/
+Disallow: /preview/
+Disallow: /go/
+Disallow: /api/
+
+Sitemap: ${origin}/sitemap.xml
+`;
+      return send(res, 200, txt, 'text/plain; charset=utf-8', { 'Cache-Control': 'public, max-age=86400' });
+    }
+
+    /* ---------- Analytics: anonymous funnel events (no PII) ---------- */
+    if (method === 'POST' && p === '/api/track') {
+      try {
+        const body = JSON.parse(await readBody(req) || '{}');
+        const event = String(body.event || '').slice(0, 64);
+        if (event && /^[a-z_]+$/.test(event)) {
+          q.eventInsert(event, body.props || {}, body.path || '', body.ref || '');
+        }
+      } catch (e) { /* analytics never breaks the page */ }
+      return json(res, 204, null);
     }
 
     /* ---------- WhatsApp handoff ---------- */
