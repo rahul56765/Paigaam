@@ -137,7 +137,9 @@ function bfdayCreatePage(t) {
 
   return builderShell(c.name, `
 ${jsonPayload('bfSpec', spec)}
+<link rel="stylesheet" href="/bfday/create.css">
 <style>:root { --bg: ${escape(theme.bg)}; --ink: ${escape(theme.ink)}; --accent: ${escape(theme.accent)}; --soft: ${escape(theme.soft)}; }${darkThemeOverride(theme)}</style>
+<script src="/bfday/create.js" defer></script>
 <script src="/js/qr-card.js" defer></script>
 <main id="wizard">
   <section class="intro">
