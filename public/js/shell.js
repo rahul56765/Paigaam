@@ -103,9 +103,12 @@
       var box = liveFrame.parentElement; // .livepane__frame
       if (!box) return;
       var fitW = box.clientWidth || 300;
-      var fitH = window.innerHeight * (window.innerWidth <= 720 ? 0.36 : 0.62);
-      fitH = Math.min(fitH, window.innerWidth <= 720 ? 330 : 620);
-      var scale = Math.min(fitW / naturalW, fitH / naturalH);
+      if (!fitW || fitW > 340) fitW = Math.min(fitW, 320); // phone-width design
+      var fitH = window.innerHeight * (window.innerWidth <= 720 ? 0.42 : 0.66);
+      fitH = Math.min(fitH, window.innerWidth <= 720 ? 340 : 640);
+      // width-first: fill the frame width; only shrink further if too tall
+      var scale = fitW / naturalW;
+      if (naturalH * scale > fitH) scale = fitH / naturalH;
       if (!isFinite(scale) || scale <= 0) scale = 1;
       liveFrame.style.width = naturalW + 'px';
       liveFrame.style.height = naturalH + 'px';
