@@ -68,15 +68,18 @@ body.shell {
   flex-direction: column;
   align-items: center;
 }
-/* the wizard's own wrappers become transparent inside the shell */
-.shell .workspace,
+/* the wizard's own wrappers become transparent inside the shell.
+   .workspace is KEPT (it holds the paper + livepane); only true chrome hides. */
 .shell .intro,
 .shell .masthead,
-.shell footer:not(.shell-final),
 .shell .journey .aside-note,
 .shell .livepane .aside-note,
 .shell .livepane .eyebrow,
 .shell .journey .eyebrow { display: none !important; }
+.shell .workspace { display: flex !important; flex-direction: column; align-items: center; gap: 10px; padding: 0; }
+@media (min-width: 861px) and (min-height: 700px) {
+  .shell .workspace { flex-direction: row; justify-content: center; align-items: center; gap: clamp(40px, 6vw, 90px); padding: 40px; }
+}
 
 /* preview slot: smaller phone, anchored top */
 .shell .livepane { position: static; margin: 4px auto 0; padding: 0; width: auto; }
