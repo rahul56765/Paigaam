@@ -93,6 +93,7 @@ ${isFree ? `<script src="/js/qr-card.js" defer></script>
       document.getElementById('freeCopy').addEventListener('click', function () {
         var b = this;
         if (window.paTrack) window.paTrack('copy_link_clicked', { template: '${esc(paigaam.template_slug)}' });
+        if (window.paTrack) window.paTrack('share_clicked', { template: '${esc(paigaam.template_slug)}', via: 'copy' });
         if (navigator.clipboard) navigator.clipboard.writeText(url).then(function () {
           b.textContent = 'Copied'; setTimeout(function () { b.textContent = 'Copy link'; }, 1500);
         });

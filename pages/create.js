@@ -1,15 +1,47 @@
 'use strict';
+/**
+ * The interactive Paigaam builder — generic /create/:slug for every template
+ * without a bespoke wizard. One question at a time; the phone preview follows
+ * each keystroke and drifts to the section being personalised.
+ *
+ * Steps are generated from the template's actual field schema (one field per
+ * step — never a wall of form). Autosave: localStorage instantly, server
+ * draft (existing /api/drafts) as it lands. Final step hands to the existing
+ * /preview/:id publish flow — nothing about publishing changes.
+ */
 const { page, esc } = require('../lib/layout');
-const { fieldGroups } = require('../templates/registry');
+
+/* One friendly question per field. Labels come from the template schema;
+   these prompts frame them conversationally, keyed by field id. */
+const PROMPTS = {
+  recipientName: 'Who is this Paigaam for?',
+  senderName: "What's your name?",
+  message: 'Write a little something for them.',
+  photo: 'Add a photograph — optional, but it makes it yours.',
+  eventDate: 'When is the big day?',
+  eventTime: 'What time should everyone arrive?',
+  venue: 'Where is it happening?',
+  address: 'Add the address so nobody gets lost.',
+  brideName: "What's the bride's name?",
+  groomName: "What's the groom's name?",
+  partnerOne: "What's your name?",
+  partnerTwo: "What's their name?",
+  years: 'How many years are we celebrating?',
+  yourName: "What's your name?",
+  theirName: 'Who is this for?',
+  age: 'How old are they turning?',
+  occasion: "What's the occasion?",
+};
+
+/* Fallback prompt for fields without a specific one: use the schema label. */
+const promptFor = (f) => PROMPTS[f.id] || f.label || 'A few details';
 
 function fieldInput(f) {
-  const req = f.required ? ' <span class="req" aria-hidden="true">*</span>' : '';
-  const reqAttr = f.required ? ' required' : '';
-  const common = `id="f_${esc(f.id)}" name="${esc(f.id)}" data-field="${esc(f.id)}"${reqAttr}`;
+  const common = `id="f_${esc(f.id)}" name="${esc(f.id)}" data-field="${esc(f.id)}" autocomplete="off"`;
   let control;
   switch (f.type) {
     case 'textarea':
-      control = `<textarea class="textarea" ${common} placeholder="${esc(f.placeholder || '')}"></textarea>`; break;
+      control = `<textarea class="input input--area" ${common} rows="3" placeholder="${esc(f.placeholder || '')}"></textarea>`; break;
     case 'date':
       control = `<input class="input" type="date" ${common}>`; break;
     case 'time':
@@ -17,76 +49,68 @@ function fieldInput(f) {
     case 'number':
       control = `<input class="input" type="number" min="0" max="200" ${common} placeholder="${esc(f.placeholder || '')}">`; break;
     case 'image':
-      control = `<input class="input--file" type="file" accept="image/*" ${common} data-kind="image">
-        <p class="hint">A photograph makes it unmistakably yours. Optional — a soft, light image works best.</p>`; break;
+      control = `<label class="uploadbox" for="f_${esc(f.id)}">
+          <input class="input--file" type="file" accept="image/*" ${common} data-kind="image">
+          <span class="uploadbox__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M4 17.5 9.5 12l5 5 3-3 2.5 2.5"/><circle cx="9" cy="8.5" r="1.8"/><rect x="2.5" y="4" width="19" height="16" rx="2.5"/></svg>
+          </span>
+          <span class="uploadbox__label">Choose a photo</span>
+          <span class="uploadbox__file" id="uploadName" hidden></span>
+        </label>
+        <p class="hint">Optional — a soft, light image works best.</p>`; break;
     default:
-      control = `<input class="input" type="text" ${common} placeholder="${esc(f.placeholder || '')}">`;
+      control = `<input class="input" type="text" ${common} placeholder="${esc(f.placeholder || '')}" ${f.maxLength ? `maxlength="${esc(f.maxLength)}"` : ''}>`;
   }
-  return `<div class="field"><label for="f_${esc(f.id)}">${esc(f.label)}${req}</label>${control}</div>`;
+  return control;
 }
 
 function createPage(tpl, draft, draftId) {
-  const groups = fieldGroups({ fields: tpl.config.fields || [] });
-  const totalSteps = groups.length;
+  const fields = tpl.config.fields || [];
+  const totalSteps = fields.length; // one field per step
 
-  const stepsHTML = groups.map((g, gi) => `
-  <fieldset class="create__step" data-step="${gi}" ${gi > 0 ? 'hidden' : ''}>
-    <span class="kicker">Step ${esc(g.step)}</span>
-    <h2 style="font-size:34px;margin-bottom:36px">${esc(g.title)}</h2>
-    ${g.fields.map(fieldInput).join('')}
+  const stepsHTML = fields.map((f, fi) => `
+  <fieldset class="bstep" data-step="${fi}" ${fi > 0 ? 'hidden' : ''} data-field-id="${esc(f.id)}">
+    <span class="bstep__no">STEP ${String(fi + 1).padStart(2, '0')} OF ${String(totalSteps).padStart(2, '0')}</span>
+    <h2 class="bstep__q">${esc(promptFor(f))}${f.required ? '' : ' <span class="bstep__opt">(optional)</span>'}</h2>
+    ${fieldInput(f)}
+    <p class="bstep__err" id="err_${esc(f.id)}" hidden></p>
   </fieldset>`).join('');
 
-  return page(`Personalize ${tpl.name}`, `
-<main>
+  return page(`Make your ${tpl.name} Paigaam`, `
+<main class="builder">
   <div class="wrap">
-    <div class="create">
-      <div>
-        <span class="kicker">Make it yours</span>
-        <h1 style="font-size:clamp(34px,5vw,48px);margin-bottom:8px;letter-spacing:0.12em">${esc(tpl.name.toUpperCase())}</h1>
-        <p style="color:var(--ink-soft);font-family:var(--serif);font-style:italic;font-size:18px;margin-bottom:50px">A few details, and it's yours.</p>
+    <div class="builder__grid">
+      <div class="builder__panel">
+        <a class="builder__back-crumb" href="/templates/${esc(tpl.slug)}">&larr; ${esc(tpl.name)}</a>
 
-        <div class="stepbar" role="list" aria-label="Progress">
-          ${groups.map((g, i) => `<div class="stepbar__item ${i === 0 ? 'active' : ''}" data-stepbar="${i}" role="listitem">
-            <span class="stepbar__step">${esc(g.step)}</span><span class="stepbar__label">${esc(g.title)}</span>
-          </div>`).join('')}
+        <div class="builder__phone-wrap">
+          <div class="phone phone--builder">
+            <div class="phone__screen">
+              <iframe id="liveFrame" title="Live preview" style="width:100%;height:100%;border:0"></iframe>
+            </div>
+          </div>
         </div>
 
         <form id="createForm" novalidate data-total="${totalSteps}" data-template="${esc(tpl.slug)}" data-draft="${esc(draftId || '')}">
           ${stepsHTML}
-          <div class="create__nav">
-            <button type="button" class="btn btn--ghost" id="btnBack">Back</button>
-            <button type="button" class="btn btn--primary" id="btnNext">Continue</button>
+          <div class="builder__nav">
+            <button type="button" class="btn btn--ghost" id="btnBack" hidden>Back</button>
+            <button type="button" class="btn btn--primary" id="btnNext">Next &rarr;</button><!-- label becomes "Preview my Paigaam →" on the final step (builder.js) -->
           </div>
-          <p id="formError" class="form-error" hidden>Please fill in the fields marked with *.</p>
         </form>
       </div>
-
-      <div class="create__preview" id="previewCol">
-        <span class="kicker kicker--muted" style="text-align:center;display:block;margin-bottom:20px">Your Paigaam, as they’ll see it</span>
-        <div class="phone">
-          <div class="phone__screen">
-            <iframe id="liveFrame" title="Live preview" style="width:100%;height:100%;border:0"></iframe>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div style="text-align:center;padding-bottom:80px">
-      <button type="button" class="btn preview-toggle" id="previewToggle">Preview my Paigaam</button>
     </div>
   </div>
 </main>
 <script>
-window.PAIGAAM_BOOT = ${JSON.stringify({ slug: tpl.slug, draftId: draftId || null, initial: draft || {} })};
+window.PAIGAAM_BOOT = ${JSON.stringify({
+    slug: tpl.slug,
+    draftId: draftId || null,
+    initial: draft || {},
+    fields: fields.map(f => ({ id: f.id, type: f.type, required: !!f.required, label: f.label })),
+  }).replace(/</g, '\\u003c')};
 </script>
-<script>
-/* Funnel: personalization_started fires once the visitor touches the form. */
-(function(){
-  var f=document.getElementById('createForm'); if(!f||!window.paTrack) return;
-  var sent=false;
-  f.addEventListener('input', function once(){ if(sent) return; sent=true; window.paTrack('personalization_started',{template:f.dataset.template}); }, {passive:true});
-})();
-</script>
-<script src="/js/create.js" defer></script>`);
+<script src="/js/builder.js" defer></script>`);
 }
 
-module.exports = { createPage };
+module.exports = { createPage, promptFor };

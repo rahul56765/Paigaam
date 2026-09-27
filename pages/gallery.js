@@ -19,7 +19,7 @@ function searchIcon() {
  * state: { q, occasion, price, sort } — all URL-driven (shareable, no-JS safe).
  * The server honours the params on load; a small client script refines instantly.
  */
-function gallery(templates, state = {}) {
+function gallery(templates, state = {}, opts = {}) {
   const q = String(state.q || '').trim();
   const occasion = String(state.occasion || 'all').toLowerCase();
   const price = String(state.price || 'all').toLowerCase();
@@ -44,9 +44,17 @@ function gallery(templates, state = {}) {
     });
   }
   if (sort === 'popular') {
-    // No usage analytics yet — popular falls back to registry order (curated).
-    list.sort((a, b) => (b.popularRank || 0) - (a.popularRank || 0));
+    // Real engagement (30-day weighted events) when available; ties fall back
+    // to registry order (curated). scores map is passed in by the server.
+    const scores = opts.popularScores || {};
+    list.sort((a, b) => (scores[b.slug] || 0) - (scores[a.slug] || 0) || (b.popularRank || 0) - (a.popularRank || 0));
+  } else if (sort === 'price-asc') {
+    list.sort((a, b) => (Number(a.price) || 0) - (Number(b.price) || 0));
+  } else if (sort === 'price-desc') {
+    list.sort((a, b) => (Number(b.price) || 0) - (Number(a.price) || 0));
   }
+  // 'newest' (default) keeps the caller's order: created_at DESC, rowid ASC —
+  // newest templates first, straight from the database.
 
   const occLabel = occasion === 'all' ? '' : ` for ${(OCCASIONS.find(o => o.slug === occasion) || { name: occasion }).name.toLowerCase()}`;
   const countLine = list.length
@@ -83,8 +91,10 @@ function gallery(templates, state = {}) {
       <span class="fsep" aria-hidden="true"></span>
       ${PRICE_FILTERS.map(([slug, label]) => priceFilter(slug, label)).join('')}
       <span class="fsep" aria-hidden="true"></span>
-      ${sortFilter('newest', 'Newest')}
+      ${sortFilter('newest', 'Latest')}
       ${sortFilter('popular', 'Popular')}
+      ${sortFilter('price-asc', 'Price &darr;')}
+      ${sortFilter('price-desc', 'Price &uarr;')}
     </div>
 
     <!-- Mobile: clean select-based filters (one tap, no drawer) -->
@@ -102,6 +112,26 @@ function gallery(templates, state = {}) {
 
     <div class="cards cards--grid" id="tplGrid">
       ${list.map(t => templateCard(t)).join('')}
+    </div>
+
+    <!-- Quick preview modal: lightweight, muted, no navigation -->
+    <div class="qpm" id="quickPreview" role="dialog" aria-modal="true" aria-label="Quick preview" hidden>
+      <div class="qpm__backdrop" data-qpm-close></div>
+      <div class="qpm__panel">
+        <button type="button" class="qpm__close" data-qpm-close aria-label="Close preview">&times;</button>
+        <div class="qpm__frame" id="qpmFrame"></div>
+        <div class="qpm__meta">
+          <div>
+            <h3 id="qpmName"></h3>
+            <p id="qpmDesc"></p>
+          </div>
+          <div class="qpm__side">
+            <span class="qpm__price" id="qpmPrice"></span>
+            <a class="btn btn--primary" id="qpmCreate" href="#" data-track="template_create_clicked">Create this Paigaam &rarr;</a>
+            <a class="qpm__detail" id="qpmDetail" href="#">See full details</a>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div class="grid-empty" id="gridEmpty" hidden>
@@ -175,6 +205,46 @@ function gallery(templates, state = {}) {
   }
   if (mOcc) mOcc.addEventListener('change', syncSelects);
   if (mPrice) mPrice.addEventListener('change', syncSelects);
+
+  /* ---- funnel: collection viewed (once per load) ---- */
+  if (window.paTrack) window.paTrack('template_collection_viewed', { count: cards.length });
+
+  /* ---- quick preview modal ---- */
+  var qpm = document.getElementById('quickPreview');
+  var qpmFrame = document.getElementById('qpmFrame');
+  var qpmName = document.getElementById('qpmName');
+  var qpmDesc = document.getElementById('qpmDesc');
+  var qpmPrice = document.getElementById('qpmPrice');
+  var qpmCreate = document.getElementById('qpmCreate');
+  var qpmDetail = document.getElementById('qpmDetail');
+  function closeQpm() {
+    qpm.hidden = true;
+    qpmFrame.innerHTML = ''; // unloads the iframe → media stops, memory freed
+    document.body.style.overflow = '';
+  }
+  document.addEventListener('click', function (e) {
+    var btn = e.target && e.target.closest ? e.target.closest('[data-qp]') : null;
+    if (btn) {
+      e.preventDefault(); e.stopPropagation();
+      var d;
+      try { d = JSON.parse(btn.getAttribute('data-qp')); } catch (err) { return; }
+      qpmName.textContent = d.name || '';
+      qpmDesc.textContent = d.desc || '';
+      qpmPrice.textContent = d.price || '';
+      qpmPrice.classList.toggle('qpm__price--free', !!d.free);
+      qpmCreate.href = d.create || '#';
+      qpmCreate.setAttribute('data-template', d.slug || '');
+      qpmDetail.href = d.detail || '#';
+      // muted, playsinline miniature — never any sound
+      qpmFrame.innerHTML = '<iframe title="Preview of the ' + (d.name || '').replace(/[&<>\"]/g, '') + ' Paigaam" src="' + d.frame + '" scrolling="no" tabindex="-1" style="width:100%;height:100%;border:0" sandbox="allow-same-origin allow-scripts"></iframe>';
+      qpm.hidden = false;
+      document.body.style.overflow = 'hidden';
+      window.paTrack && window.paTrack('template_previewed', { template: d.slug });
+      return;
+    }
+    if (e.target && (e.target.hasAttribute && e.target.hasAttribute('data-qpm-close') || (e.target.closest && e.target.closest('[data-qpm-close]')))) closeQpm();
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !qpm.hidden) closeQpm(); });
 })();
 </script>`, { current: '/templates' });
 }

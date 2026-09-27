@@ -80,7 +80,7 @@ function templateDetail(tpl, { baseUrl = '' } = {}) {
     : `<div class="detail__price"><small>One Paigaam</small>&#8377;${esc(tpl.price)}</div>`);
 
   return page(tpl.name, `
-<main>
+<main data-topened="${esc(tpl.slug)}">
   <div class="wrap">
     <div class="detail">
       <div class="reveal in">

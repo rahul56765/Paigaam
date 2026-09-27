@@ -1,6 +1,6 @@
 'use strict';
 const { page, esc } = require('../lib/layout');
-const { templateCard } = require('./homeCards');
+const { templateCard, motifSVG } = require('./homeCards');
 const { OCCASIONS, occasionForCategory } = require('../lib/occasions');
 
 /** Decorative line-art marks for the occasion cards (ivory ink on dark). */
@@ -45,8 +45,40 @@ function occasionCard(o, i, countByOccasion) {
 </a>`;
 }
 
-function home(templates) {
+/**
+ * Trending card: whole card is one link to the template detail page.
+ * Live miniature (same engine as collection cards), muted by construction —
+ * template audio/video only ever plays after an explicit tap inside the
+ * template page itself.
+ */
+function trendingCard(t) {
+  const cfg = t.config || {};
+  const theme = cfg.theme || {};
+  const custom = cfg.custom || t.custom;
+  const frameSrc = custom ? (cfg.appPath || t.appPath || '/') : `/template-view/${esc(t.slug)}`;
+  const free = Number(t.price) === 0;
+  return `<a class="trend-card reveal" href="/templates/${esc(t.slug)}"
+     data-track="trending_template_clicked" data-template="${esc(t.slug)}"
+     aria-label="Open the ${esc(t.name)} Paigaam">
+  <span class="trend-card__frame" style="background:${esc(theme.bg || '#F4EADD')}">
+    <iframe class="tcard__live" src="${esc(frameSrc)}" title="Preview of the ${esc(t.name)} Paigaam" loading="lazy" scrolling="no" tabindex="-1" aria-hidden="true" sandbox="allow-same-origin allow-scripts"></iframe>
+    <span class="tcard__fallback" aria-hidden="true">${motifSVG(theme.motif, theme.accent || '#8F1018')}</span>
+    <span class="trend-card__flame" aria-hidden="true">&#128293;</span>
+  </span>
+  <span class="trend-card__meta">
+    <span class="trend-card__row">
+      <span class="trend-card__name">${esc(t.name)}</span>
+      ${free ? '<span class="tcard__price tcard__price--free">FREE</span>' : `<span class="tcard__price">&#8377;${esc(t.price)}</span>`}
+    </span>
+    <span class="trend-card__desc">${esc(t.description || t.category)}</span>
+    <span class="trend-card__occ">${esc(t.category)}</span>
+  </span>
+</a>`;
+}
+
+function home(templates, opts = {}) {
   const featured = templates.slice(0, 6);
+  const trending = Array.isArray(opts.trending) ? opts.trending : [];
   const counts = {};
   for (const t of templates) {
     const occ = occasionForCategory(t.category);
@@ -83,6 +115,21 @@ function home(templates) {
       </div>
     </div>
   </section>
+
+  <!-- TRENDING: what people are opening right now — exactly 2, side by side -->
+  ${trending.length >= 2 ? `
+  <section class="section section--dark" id="trending">
+    <div class="wrap">
+      <div class="section__head reveal">
+        <span class="kicker">Trending now</span>
+        <h2 class="section__title">The two everyone's opening</h2>
+        <p class="section__sub">Live from what people are creating and sharing this week.</p>
+      </div>
+      <div class="trend-grid">
+        ${trending.map(t => trendingCard(t)).join('')}
+      </div>
+    </div>
+  </section>` : ''}
 
   <!-- OCCASIONS: dark, immediate discovery -->
   <section class="section section--dark" id="occasions">
@@ -153,4 +200,4 @@ function home(templates) {
 </main>`, { current: '/' });
 }
 
-module.exports = { home, occasionCard, occArt };
+module.exports = { home, occasionCard, occArt, trendingCard };

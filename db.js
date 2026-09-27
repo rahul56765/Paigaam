@@ -146,9 +146,22 @@ const q = {
   },
   eventsRecent: (limit = 200) => db.prepare('SELECT * FROM events ORDER BY id DESC LIMIT ?').all(limit).map(r => ({ ...r, props: (() => { try { return JSON.parse(r.props); } catch { return {}; } })() })),
   eventsCountToday: () => db.prepare("SELECT COUNT(*) AS n FROM events WHERE created_at >= date('now')").get().n,
+  // Trending: engagement counts per tracked template over a window
+  // (created_at is ISO 'YYYY-MM-DD HH:MM:SS'; props JSON holds the template slug).
+  eventsTemplateCounts: (days) => db.prepare(`
+      SELECT props->>'$.template' AS slug, event, COUNT(*) AS n
+      FROM events
+      WHERE created_at >= datetime('now', '-' || ? || ' days')
+        AND event IN ('template_opened', 'template_viewed', 'template_previewed', 'template_create_clicked')
+        AND props IS NOT NULL
+      GROUP BY slug, event
+      HAVING slug IS NOT NULL AND slug != ''
+    `).all(Number(days)),
   // templates
   templatesAll:      () => db.prepare('SELECT * FROM templates ORDER BY created_at DESC').all().map(r => parse(r, ['config'])),
-  templatesPublished:() => db.prepare("SELECT * FROM templates WHERE status = 'published' ORDER BY created_at ASC").all().map(r => parse(r, ['config'])),
+  // Newest first: seeded templates share one created_at, so rowid (insert =
+  // registry order, newest first) breaks ties deterministically.
+  templatesPublished:() => db.prepare("SELECT * FROM templates WHERE status = 'published' ORDER BY created_at DESC, rowid ASC").all().map(r => parse(r, ['config'])),
   templateBySlug:    (slug) => parse(db.prepare('SELECT * FROM templates WHERE slug = ?').get(slug), ['config']),
   templateById:      (id) => parse(db.prepare('SELECT * FROM templates WHERE id = ?').get(id), ['config']),
   templateInsert:    (t) => {

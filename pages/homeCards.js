@@ -34,7 +34,12 @@ function templateCard(t, opts = {}) {
   const haystack = [t.name, t.category, t.description, (t.tags || []).join(' '), occ ? occ.aliases.join(' ') : ''].join(' ');
   // Live thumbnail: the template itself, in miniature. Falls back to static art if JS is off.
   const frameSrc = custom ? (cfg.appPath || t.appPath || '/') : `/template-view/${esc(t.slug)}`;
-  return `<article class="tcard reveal" data-occasion="${esc(String(t.category).toLowerCase())}" data-price="${esc(Number(t.price))}" data-search="${esc(haystack)}">
+  // Quick-preview payload: rendered into the modal on tap (no navigation).
+  const qp = JSON.stringify({
+    slug: t.slug, name: t.name, desc: t.description || '', price: free ? 'FREE' : `\u20B9${t.price}`,
+    frame: frameSrc, detail: previewHref, create: createHref, free,
+  }).replace(/</g, '\\u003c');
+  return `<article class="tcard reveal" data-occasion="${esc(String(t.category).toLowerCase())}" data-price="${esc(Number(t.price))}" data-search="${esc(haystack)}" data-slug="${esc(t.slug)}">
   <a class="tcard__frame" style="background:${esc(theme.bg || '#F4EADD')}" href="${previewHref}" aria-label="See the ${esc(t.name)} Paigaam">
     <iframe class="tcard__live" src="${esc(frameSrc)}" title="Preview of the ${esc(t.name)} Paigaam" loading="lazy" scrolling="no" tabindex="-1" aria-hidden="true" sandbox="allow-same-origin allow-scripts"></iframe>
     <span class="tcard__fallback"${custom ? ' style="display:none"' : ''} aria-hidden="true">${motifSVG(theme.motif, accent)}</span>
@@ -44,11 +49,15 @@ function templateCard(t, opts = {}) {
       ${free ? '<span class="pill pill--free">Free</span>' : ''}
       ${t.isNew ? '<span class="pill pill--gold">New</span>' : ''}
     </span>
+    <button type="button" class="tcard__quick" data-quick="${esc(t.slug)}" data-qp="${esc(qp)}" aria-label="Quick preview of the ${esc(t.name)} Paigaam" aria-haspopup="dialog">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M2 12s3.5-6.5 10-6.5S22 12 22 12s-3.5 6.5-10 6.5S2 12 2 12Z"/><circle cx="12" cy="12" r="2.8"/></svg>
+    </button>
   </a>
   <div class="tcard__meta">
     <span class="tcard__title">${esc(t.name)}</span>
     ${free ? '<span class="tcard__price tcard__price--free">FREE</span>' : `<span class="tcard__price">&#8377;${esc(t.price)}</span>`}
   </div>
+  <p class="tcard__desc">${esc(t.description || '')}</p>
   <div class="tcard__actions">
     <a class="tcard__create" href="${createHref}" data-track="template_create_clicked" data-template="${esc(t.slug)}" data-occasion="${esc(String(t.category).toLowerCase())}">Create</a>
     <a class="tcard__preview-link" href="${previewHref}" data-track="template_viewed" data-template="${esc(t.slug)}">Preview</a>

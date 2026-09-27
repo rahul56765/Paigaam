@@ -180,3 +180,97 @@ test('analytics: eventInsert stores events; the /api/track route validates names
   const src = fs.readFileSync(path.join(__dirname, '..', 'server.js'), 'utf8');
   assert.ok(src.includes('/^[a-z_]+$/'), 'route enforces event-name shape');
 });
+
+/* ============================================================
+   Frictionless update (2026-09-27): trending, compact grid,
+   quick preview, interactive builder.
+   ============================================================ */
+
+test('trending: picks the 2 most-engaged templates; falls back 7d → 30d → curated → newest', () => {
+  const { pickTrending } = require('../lib/trending');
+  const A = { slug: 'a', popularRank: 0 }, B = { slug: 'b', popularRank: 0 }, C = { slug: 'c', popularRank: 0 };
+  // no data at all → newest 2 (never empty)
+  assert.deepEqual(pickTrending([A, B, C]).map(t => t.slug), ['a', 'b'], 'newest fallback');
+  // single template → capped, no crash
+  assert.equal(pickTrending([A]).length, 1, 'single template');
+  assert.equal(pickTrending([]).length, 0, 'empty registry');
+  // 7-day signal wins, ordered by weighted score
+  const r7 = [{ slug: 'a', event: 'template_opened', n: 3 }, { slug: 'b', event: 'template_viewed', n: 8 }];
+  assert.deepEqual(pickTrending([A, B, C], r7, r7, r7).map(t => t.slug), ['b', 'a'], '7d ranking');
+  // 30-day fallback when 7-day has < 2 templates
+  const r7one = [{ slug: 'a', event: 'template_opened', n: 2 }];
+  const r30 = [{ slug: 'a', event: 'template_opened', n: 4 }, { slug: 'c', event: 'template_opened', n: 9 }];
+  assert.deepEqual(pickTrending([A, B, C], r7one, r30).map(t => t.slug), ['c', 'a'], '30d fallback');
+  // time-decay: a recent burst beats a steady bigger count
+  const steady = [{ slug: 'a', event: 'template_opened', n: 10 }];
+  const bursty = [{ slug: 'c', event: 'template_opened', n: 6 }];
+  const fresh = [{ slug: 'c', event: 'template_opened', n: 5 }];
+  const picked = pickTrending([A, B, C], steady, steady, fresh);
+  assert.equal(picked[0].slug, 'a', 'steady still leads (10 vs 9 weighted)');
+  // unpublished templates never rank
+  const ghost = [{ slug: 'ghost', event: 'template_opened', n: 99 }];
+  assert.ok(!pickTrending([A, B, C], ghost, ghost, ghost).some(t => t.slug === 'ghost'), 'unknown slugs ignored');
+});
+
+test('trending: exactly 2 cards on the homepage, side by side, direct to template page', () => {
+  const { pickTrending } = require('../lib/trending');
+  const tpls = TEMPLATES.map(t => ({ ...t, config: { name: t.name, fields: t.fields, theme: t.theme } }));
+  const rows = [{ slug: tpls[0].slug, event: 'template_opened', n: 7 }, { slug: tpls[1].slug, event: 'template_viewed', n: 4 }];
+  const trending = pickTrending(tpls, rows, rows, rows);
+  const html = home(tpls, { trending });
+  assert.equal((html.match(/trend-card__name/g) || []).length, 2, 'exactly 2 trending cards');
+  assert.ok(html.includes('id="trending"'), 'trending section present');
+  assert.ok(html.includes('data-track="trending_template_clicked"'), 'trending click tracked');
+  assert.ok(html.includes(`href="/templates/${tpls[0].slug}"`), 'card links directly to template page');
+  // no data → section falls back to newest (still renders 2)
+  const html2 = home(tpls, { trending: pickTrending(tpls, [], [], []) });
+  assert.equal((html2.match(/trend-card__name/g) || []).length, 2, 'fallback still renders 2 cards');
+});
+
+test('collection: 2-up grid markup, newest first, price + description on card, sort options', () => {
+  const tpls = TEMPLATES.map(t => ({ ...t, config: { name: t.name, fields: t.fields, theme: t.theme } }));
+  const html = gallery(tpls, {});
+  assert.ok(html.includes('cards--grid'), 'compact grid class');
+  assert.ok(html.includes('tcard__desc'), 'one-line description on card');
+  assert.ok(html.includes('data-slug="' + tpls[0].slug + '"'), 'newest template first (created_at DESC)');
+  // sort options present
+  assert.ok(html.includes('sort=price-asc') && html.includes('sort=price-desc') && html.includes('sort=popular'), 'sort options');
+  // quick preview modal + tracking
+  assert.ok(html.includes('id="quickPreview"'), 'quick preview modal');
+  assert.ok(html.includes('data-qp='), 'cards carry quick-preview payload');
+  assert.ok(html.includes('template_collection_viewed'), 'collection viewed event');
+  assert.ok(html.includes('Create this Paigaam'), 'modal primary CTA');
+});
+
+test('builder: one field per step from schema, friendly prompts, no legacy form', () => {
+  const { createPage } = require('../pages/create');
+  const tpl = { ...TEMPLATES.find(t => t.slug === 'noor'), config: { name: 'Noor', fields: TEMPLATES.find(t => t.slug === 'noor').fields, theme: TEMPLATES.find(t => t.slug === 'noor').theme } };
+  const html = createPage(tpl, null, null);
+  const fields = tpl.config.fields;
+  assert.equal((html.match(/bstep__q/g) || []).length, fields.length, 'one step per field');
+  assert.ok(html.includes('STEP 01 OF 0' + fields.length), 'step counter');
+  assert.ok(/Who is this Paigaam for\?/.test(html) || /What&#39;s the bride&#39;s name\?/.test(html), 'friendly prompt');
+  assert.ok(html.includes('Preview my Paigaam') || html.includes('builder.js'), 'final CTA copy (set client-side)');
+  assert.ok(!html.includes('stepbar'), 'legacy group stepbar gone');
+  assert.ok(html.includes('/js/builder.js'), 'builder engine loaded');
+  assert.ok(html.includes('localStorage') === false, 'no server-side localStorage assumptions');
+  // boot payload carries the schema for the client
+  assert.ok(html.includes('PAIGAAM_BOOT'), 'boot payload');
+  // required marker only where required
+  assert.ok(html.includes('(optional)'), 'optional fields marked');
+});
+
+test('builder: autosave keys + draft restore round-trip', () => {
+  const { createPage } = require('../pages/create');
+  const tpl = { ...TEMPLATES.find(t => t.slug === 'meher'), config: { name: 'Meher', fields: TEMPLATES.find(t => t.slug === 'meher').fields, theme: {} } };
+  const draft = { recipientName: 'Meher' };
+  const html = createPage(tpl, draft, 'draft123');
+  assert.ok(html.includes('draft123'), 'draft id threaded');
+  assert.ok(html.includes('"recipientName":"Meher"') || html.includes('Meher'), 'draft values prefilled');
+});
+
+test('builder: db has the trending aggregate query; events feed it', () => {
+  q.eventInsert('template_opened', { template: 'noor' }, '/', '');
+  const rows = q.eventsTemplateCounts(7);
+  assert.ok(rows.some(r => r.slug === 'noor'), 'aggregate sees new events');
+});

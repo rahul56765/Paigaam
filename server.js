@@ -13,6 +13,7 @@ const { renderPaigaamPage, shareTitle } = require('./lib/renderPaigaam');
 const { templateSampleView } = require('./lib/templateView');
 const { page, errorPage, esc } = require('./lib/layout');
 const { home } = require('./pages/home');
+const { pickTrending } = require('./lib/trending');
 const { gallery } = require('./pages/gallery');
 const { templateDetail } = require('./pages/templateDetail');
 const { occasionPage, occasionsIndex } = require('./pages/occasionPage');
@@ -206,7 +207,13 @@ const server = http.createServer(async (req, res) => {
 
     /* ---------- public ---------- */
     if (method === 'GET' && p === '/') {
-      return send(res, 200, home(q.templatesPublished()));
+      const tpls = q.templatesPublished();
+      // Trending: real engagement from the events table, with fallbacks so the
+      // section is never empty. Fresh window = 3 days (drives the decay boost).
+      const rows7 = q.eventsTemplateCounts(7);
+      const rows30 = q.eventsTemplateCounts(30);
+      const rows7Fresh = q.eventsTemplateCounts(3);
+      return send(res, 200, home(tpls, { trending: pickTrending(tpls, rows7, rows30, rows7Fresh) }));
     }
     if (method === 'GET' && p === '/occasions') {
       const counts = {};
@@ -217,12 +224,15 @@ const server = http.createServer(async (req, res) => {
       return send(res, 200, occasionsIndex(counts));
     }
     if (method === 'GET' && p === '/templates') {
+      const rows30 = q.eventsTemplateCounts(30);
+      const scores = {};
+      for (const r of rows30) scores[r.slug] = (scores[r.slug] || 0) + r.n;
       return send(res, 200, gallery(q.templatesPublished(), {
         q: u.searchParams.get('q') || '',
         occasion: u.searchParams.get('occasion') || 'all',
         price: u.searchParams.get('price') || 'all',
         sort: u.searchParams.get('sort') || 'newest',
-      }));
+      }, { popularScores: scores }));
     }
     /* Occasion landing pages first (SEO), then real template slugs — existing
        /templates/<slug> URLs are untouched because occasion slugs are reserved
