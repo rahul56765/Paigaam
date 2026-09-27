@@ -508,6 +508,11 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
   /* collection grid stays 2-up on mobile — scanning beats scrolling */
   .cards--grid { gap: 16px 10px; }
   .cards--grid .tcard__desc { display: none; }
+  /* small phones: static art (motif + name) beats a 3x live iframe — lighter,
+     legible, no accidental taps. Quick-preview still gives the live look. */
+  @media (max-width: 560px) {
+    .cards--grid .tcard__frame:not(.tcard__frame--custom) .tcard__live { display: none; }
+  }
   .steps { gap: 48px; }
   .nav__links {
     display: none; position: absolute; top: 78px; left: 0; right: 0;
@@ -837,8 +842,8 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
   .occ-grid { grid-template-columns: 1fr; gap: 18px; }
   .occ-card { aspect-ratio: 16 / 10; }
   .hero--dark .hero__micro { gap: 16px; font-size: 10.5px; }
-  .hero__device .phone { width: min(280px, 78vw); }
-  .hero__device .phone__screen { height: 520px; }
+  /* owner ask: the hero phone mockup pushes everything down on phones — off it goes */
+  .hero__device { display: none; }
   .section--dark, .occ-land { padding-top: 70px; padding-bottom: 70px; }
   .final-cta { padding: 90px 24px; }
   .cards { gap: 30px; }

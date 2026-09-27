@@ -135,6 +135,12 @@ function sauwajahCreatePage() {
         </nav>
       </form>
     </div>
+
+    <aside class="livepane" aria-label="Live preview">
+      <p class="eyebrow">Live preview</p>
+      <div class="livepane__frame"><iframe id="liveFrame" title="Sau Wajah live preview" loading="lazy"></iframe></div>
+      <p class="aside-note">Updates as you type — exactly as they will see it.</p>
+    </aside>
   </div>
 </main>
 

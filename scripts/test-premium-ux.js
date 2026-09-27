@@ -274,3 +274,34 @@ test('builder: db has the trending aggregate query; events feed it', () => {
   const rows = q.eventsTemplateCounts(7);
   assert.ok(rows.some(r => r.slug === 'noor'), 'aggregate sees new events');
 });
+
+test('audio: bgm chip is hidden in preview contexts (no background sound on /templates)', () => {
+  const css = fs.readFileSync(path.join(__dirname, '..', 'public', 'bfday', 'bgm.css'), 'utf8');
+  assert.ok(css.includes('body[data-preview="true"] .bgm'), 'chip hidden when body[data-preview=true]');
+  // every family render that emits the chip also emits data-preview
+  const renders = fs.readdirSync(path.join(__dirname, '..', 'templates')).filter(d => fs.existsSync(path.join(__dirname, '..', 'templates', d, 'render.js')));
+  for (const d of renders) {
+    const src = fs.readFileSync(path.join(__dirname, '..', 'templates', d, 'render.js'), 'utf8');
+    if (src.includes('bgmMarkup')) assert.ok(src.includes('data-preview'), `${d} render must emit data-preview`);
+  }
+});
+
+test('wizards: every bespoke create page has an always-visible live preview pane', () => {
+  const pages = ['valentineCreate', 'lavenderCreate', 'loveCreate', 'saalgirahCreate', 'loveAwaitsCreate', 'sauwajahCreate', 'maafiCreate', 'sawaalCreate', 'bfdayCreate'];
+  for (const p of pages) {
+    const src = fs.readFileSync(path.join(__dirname, '..', 'pages', p + '.js'), 'utf8');
+    assert.ok(src.includes('liveFrame'), `${p} must render a live preview pane`);
+  }
+  // the 6 new endpoints exist and are guarded
+  for (const routes of ['valentineRoutes', 'lavenderRoutes', 'saalgirahRoutes', 'loveRoutes', 'loveAwaitsRoutes', 'sauwajahRoutes']) {
+    const src = fs.readFileSync(path.join(__dirname, '..', 'lib', routes + '.js'), 'utf8');
+    assert.ok(src.includes('preview-frame'), `${routes} must serve preview-frame`);
+  }
+});
+
+test('mobile: hero mockup hidden on phones; collection grid switches to static art ≤560px', () => {
+  const css = fs.readFileSync(path.join(__dirname, '..', 'public', 'css', 'paigaam.css'), 'utf8');
+  assert.ok(css.includes('.hero__device { display: none; }'), 'hero mockup hidden on mobile');
+  assert.ok(css.includes(".cards--grid .tcard__frame:not(.tcard__frame--custom) .tcard__live { display: none; }"), 'live iframes off on small phones');
+  assert.ok(css.includes('tcard__frame--custom'), 'custom webapp cards keep their live iframe');
+});

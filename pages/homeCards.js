@@ -40,7 +40,7 @@ function templateCard(t, opts = {}) {
     frame: frameSrc, detail: previewHref, create: createHref, free,
   }).replace(/</g, '\\u003c');
   return `<article class="tcard reveal" data-occasion="${esc(String(t.category).toLowerCase())}" data-price="${esc(Number(t.price))}" data-search="${esc(haystack)}" data-slug="${esc(t.slug)}">
-  <a class="tcard__frame" style="background:${esc(theme.bg || '#F4EADD')}" href="${previewHref}" aria-label="See the ${esc(t.name)} Paigaam">
+  <a class="tcard__frame${custom ? ' tcard__frame--custom' : ''}" style="background:${esc(theme.bg || '#F4EADD')}" href="${previewHref}" aria-label="See the ${esc(t.name)} Paigaam">
     <iframe class="tcard__live" src="${esc(frameSrc)}" title="Preview of the ${esc(t.name)} Paigaam" loading="lazy" scrolling="no" tabindex="-1" aria-hidden="true" sandbox="allow-same-origin allow-scripts"></iframe>
     <span class="tcard__fallback"${custom ? ' style="display:none"' : ''} aria-hidden="true">${motifSVG(theme.motif, accent)}</span>
     <span class="tcard__name" style="color:${esc(accent)}">${esc(t.name.toUpperCase())}</span>

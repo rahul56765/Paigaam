@@ -27,6 +27,12 @@
 }
 .bgm-host { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 .bgm-host iframe { width: 1px; height: 1px; border: 0; }
+
+/* Preview contexts (template miniatures, live-preview panes, preview dialogs):
+   the chip is design furniture for the RECIPIENT page, not the editor — and
+   at 3x card scale it's a giant accidental tap target that starts music.
+   Hide it anywhere body[data-preview=true]. Published pages keep it. */
+body[data-preview="true"] .bgm { display: none !important; }
 @media (prefers-reduced-motion: reduce) {
   .bgm.on .bgm-btn { animation: none; }
 }

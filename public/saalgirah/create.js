@@ -269,5 +269,29 @@
     });
   });
 
+  
+  /* ---- live preview pane: follows every keystroke (350ms debounce) ---- */
+  var liveFrame = el('liveFrame');
+  var liveTimer = 0;
+  function refreshLive() {
+    if (!liveFrame) return;
+    liveFrame.src = '/saalgirah/preview-frame?t=' + Date.now() +
+      '&d=' + encodeURIComponent(JSON.stringify(collect()));
+  }
+  function scheduleLive() {
+    if (!liveFrame) return;
+    clearTimeout(liveTimer);
+    liveTimer = setTimeout(refreshLive, 350);
+  }
+  if (liveFrame) {
+    FIELDS.forEach(function (name) {
+      var node = el(name);
+      if (!node) return;
+      node.addEventListener('input', scheduleLive);
+      node.addEventListener('change', scheduleLive);
+    });
+    refreshLive();
+  }
+
   show(0);
 })();
