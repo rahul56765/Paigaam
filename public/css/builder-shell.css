@@ -1,0 +1,213 @@
+/*
+ * The immersive Paigaam builder shell — chromeless, one screen at a time.
+ * Hosts any wizard: the shell owns the stage, the wizard owns its steps.
+ * Wizards' existing IDs (.step[data-step], #back, #next, #liveFrame,
+ * #publishedResult, #progress, #stepCounter) are restyled here into the
+ * immersive layout. Their own create.css still loads AFTER this file for
+ * per-template accents, but shell layout wins where they overlap.
+ */
+
+:root {
+  --shell-accent: #8F1018;
+  --shell-soft: #F7F1E6;
+  --shell-ivory: #FBF4ED;
+  --shell-ink: #2B211A;
+  --shell-muted: #8A7A6E;
+  --shell-line: rgba(43, 33, 26, 0.12);
+  --shell-gold: #C9A25E;
+}
+
+html, body { height: 100%; }
+body.shell {
+  margin: 0;
+  background:
+    radial-gradient(120% 60% at 50% -10%, #FFF9F0 0%, transparent 60%),
+    var(--shell-ivory);
+  color: var(--shell-ink);
+  font-family: 'DM Sans', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+/* ---------- top bar: back circle · brand · dots ---------- */
+.shell__top {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  display: flex; align-items: center; gap: 14px;
+  padding: calc(10px + env(safe-area-inset-top)) 18px 10px;
+  background: linear-gradient(var(--shell-ivory) 70%, transparent);
+  pointer-events: none;
+}
+.shell__top > * { pointer-events: auto; }
+.shell__back {
+  width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0;
+  border: 1px solid var(--shell-line); background: rgba(255, 253, 248, 0.9);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--shell-ink); text-decoration: none; cursor: pointer;
+  transition: background 0.25s;
+}
+.shell__back:hover { background: #fff; }
+.shell__back svg { width: 18px; height: 18px; }
+.shell__brand {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 17px; letter-spacing: 0.24em; text-transform: uppercase;
+  color: var(--shell-ink);
+}
+.shell__dots { display: flex; gap: 6px; margin-left: auto; align-items: center; }
+.shell__dots .dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--shell-line); transition: all 0.35s ease;
+}
+.shell__dots .dot.on { background: var(--shell-accent); transform: scale(1.25); }
+.shell__dots .dot.done { background: var(--shell-gold); }
+
+/* ---------- stage: preview + question share one screen ---------- */
+.shell main, body.shell main {
+  padding-top: 64px;
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+/* the wizard's own wrappers become transparent inside the shell */
+.shell .workspace,
+.shell .intro,
+.shell .masthead,
+.shell footer:not(.shell-final),
+.shell .journey .aside-note,
+.shell .livepane .aside-note,
+.shell .livepane .eyebrow,
+.shell .journey .eyebrow { display: none !important; }
+
+/* preview slot: smaller phone, anchored top */
+.shell .livepane { position: static; margin: 4px auto 0; padding: 0; width: auto; }
+.shell .livepane__frame {
+  border: 0; border-radius: 22px; overflow: hidden;
+  box-shadow: 0 24px 50px -28px rgba(43, 33, 26, 0.5), 0 0 0 1px var(--shell-line);
+  background: var(--shell-soft);
+}
+.shell .livepane__frame iframe { height: min(44svh, 400px); }
+
+/* the paper (form card) becomes a floating question panel */
+.shell .paper {
+  border: 0; border-radius: 0; box-shadow: none; background: transparent;
+  padding: 10px 20px calc(30px + env(safe-area-inset-bottom));
+  width: min(560px, 100%);
+  margin: 0 auto;
+}
+
+/* step counter + question typography */
+.shell #stepCounter, .shell .bstep__no {
+  font-size: 11px; letter-spacing: 0.3em; text-transform: uppercase;
+  color: var(--shell-gold); font-weight: 700;
+}
+.shell .step h2, .shell .bstep__q {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: clamp(24px, 5vw, 34px); line-height: 1.2;
+  margin: 8px 0 6px; color: var(--shell-ink);
+}
+.shell .step > p, .shell .bstep__sub {
+  color: var(--shell-muted); font-size: 14px; margin: 0 0 14px;
+}
+
+/* inputs: quiet, generous */
+.shell .field > label, .shell .field > .label { font-size: 13px; color: var(--shell-muted); }
+.shell input:not([type='file']), .shell textarea, .shell select {
+  border-radius: 12px; border: 1px solid var(--shell-line);
+  background: #FFFDF8; padding: 13px 15px; min-height: 48px; font-size: 15px;
+}
+.shell input:focus, .shell textarea:focus { outline: none; border-color: var(--shell-accent); box-shadow: 0 0 0 3px rgba(143, 16, 24, 0.08); }
+
+/* nav: back circle + big Next bar */
+.shell .step-nav, .shell .builder__nav {
+  display: flex; align-items: center; justify-content: center; gap: 14px;
+  margin-top: 20px; padding-top: 0; border: 0;
+}
+.shell .step-nav #back, .shell .builder__nav #btnBack {
+  width: 48px; height: 48px; border-radius: 50%; padding: 0;
+  border: 1px solid var(--shell-line); background: #FFFDF8;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 0; /* text hidden — arrow glyph injected by shell.js */
+  flex-shrink: 0;
+}
+.shell .step-nav #back::before, .shell .builder__nav #btnBack::before {
+  content: '\2190'; font-size: 18px; color: var(--shell-ink);
+}
+.shell .step-nav #next, .shell .builder__nav #btnNext {
+  flex: 0 1 300px; min-height: 54px; border-radius: 27px;
+  background: var(--shell-ink); color: var(--shell-ivory);
+  border: 0; font-size: 15px; font-weight: 600; letter-spacing: 0.02em;
+  cursor: pointer; transition: transform 0.2s ease, background 0.2s;
+}
+.shell .step-nav #next:hover, .shell .builder__nav #btnNext:hover { background: #3a2c22; transform: translateY(-1px); }
+.shell .step-nav #next:disabled, .shell .builder__nav #btnNext:disabled { opacity: 0.6; cursor: default; transform: none; }
+
+/* step transition: fade + slide */
+@media (prefers-reduced-motion: no-preference) {
+  .shell .step:not([hidden]), .shell .bstep:not([hidden]) { animation: shellStepIn 0.32s ease; }
+  @keyframes shellStepIn {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: none; }
+  }
+}
+
+/* ---------- final result: inline, celebratory ---------- */
+.shell #publishedResult, .shell .result {
+  position: fixed; inset: 0; z-index: 200;
+  background:
+    radial-gradient(120% 60% at 50% -10%, #FFF9F0 0%, transparent 60%),
+    var(--shell-ivory);
+  margin: 0; max-width: none; padding: calc(70px + env(safe-area-inset-top)) 22px 30px;
+  overflow-y: auto;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  text-align: center;
+}
+.shell #publishedResult[hidden] { display: none; }
+.shell #publishedResult h1, .shell .result h1 {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: clamp(30px, 6vw, 44px); margin: 10px 0 6px; color: var(--shell-ink);
+}
+.shell #publishedResult .shell-ready {
+  display: inline-flex; align-items: center; gap: 8px;
+  color: #3E6B40; font-weight: 700; font-size: 14px;
+}
+.shell #publishedResult .shell-ready::before { content: '\2714'; }
+.shell .result-actions, .shell #publishedResult .result-actions {
+  display: flex; flex-direction: column; gap: 12px; width: min(340px, 100%);
+  margin-top: 22px;
+}
+.shell .result-actions .button, .shell .result-actions .btn { min-height: 52px; border-radius: 27px; }
+.shell .result-actions .button.primary, .shell .result-actions .btn--whatsapp {
+  background: #1FA855; color: #fff; border: 0; font-weight: 700;
+}
+.shell .result-actions .button.secondary { border: 1px solid var(--shell-line); background: #FFFDF8; color: var(--shell-ink); }
+.shell #publishedResult .qr img, .shell .result .qr img { border-radius: 12px; }
+.shell #publishedResult label, .shell .result label { display: none; }
+.shell #publishedResult input, .shell .result input {
+  width: min(340px, 100%); text-align: center; color: var(--shell-muted); font-size: 13px;
+}
+
+/* ---------- mobile: preview + question + Next in ONE viewport ---------- */
+@media (max-width: 720px) {
+  body.shell main { padding-top: 56px; }
+  .shell__top { padding: calc(8px + env(safe-area-inset-top)) 14px 8px; }
+  .shell__brand { display: none; }
+  .shell .livepane__frame iframe { height: min(36svh, 330px); }
+  .shell .livepane__frame { border-radius: 16px; max-width: min(240px, 62vw); margin: 0 auto; }
+  .shell .paper { padding: 8px 18px calc(20px + env(safe-area-inset-bottom)); }
+  .shell .step h2, .shell .bstep__q { font-size: 22px; margin-bottom: 4px; }
+  .shell .step > p { font-size: 13px; margin-bottom: 10px; }
+  .shell .step-nav #next, .shell .builder__nav #btnNext { min-height: 50px; flex-basis: 240px; }
+  .shell .step-nav #back, .shell .builder__nav #btnBack { width: 46px; height: 46px; }
+}
+
+/* Desktop refinement: side-by-side preview + question when there's room */
+@media (min-width: 861px) and (min-height: 700px) {
+  body.shell main {
+    flex-direction: row; justify-content: center; align-items: center;
+    gap: clamp(40px, 6vw, 90px); padding: 80px 40px 40px;
+  }
+  .shell .livepane { order: 1; }
+  .shell .paper { order: 2; width: min(480px, 44vw); }
+  .shell .livepane__frame iframe { height: min(66svh, 620px); }
+  .shell .livepane__frame { width: min(300px, 24vw); }
+}

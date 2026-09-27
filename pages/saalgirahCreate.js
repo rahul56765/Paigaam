@@ -7,6 +7,7 @@
  * letter. Copy lives here, behaviour lives in /saalgirah/create.js.
  */
 const { logoFull } = require('../lib/brand');
+const { builderShell } = require('../lib/builderShell');
 
 const STEPS = [
   { key: 'design', title: 'The letter' },
@@ -27,22 +28,10 @@ function field({ id, label, hint, max, type = 'text', rows = 3, placeholder = ''
 }
 
 function saalgirahCreatePage() {
-  return `<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="theme-color" content="#fbf4ed">
-<title>Saalgirah · Make a birthday Paigaam</title>
-<meta name="robots" content="noindex">
-<link rel="icon" href="/brand/favicon-512.png" type="image/png">
+    return builderShell('Saalgirah', `
 <link rel="stylesheet" href="/saalgirah/create.css">
 <script src="/saalgirah/create.js" defer></script>
 <script src="/js/qr-card.js" defer></script>
-</head>
-<body>
-<header class="masthead"><a href="/" aria-label="Paigaam">${logoFull(128)}</a><a class="text-link" href="/templates">All templates</a></header>
-
 <main id="wizard">
   <section class="intro">
     <p class="eyebrow">Saalgirah</p>
@@ -167,7 +156,7 @@ function saalgirahCreatePage() {
 
 <noscript><p class="error">Please enable JavaScript to write your letter.</p></noscript>
 </body>
-</html>`;
+`);
 }
 
 module.exports = { saalgirahCreatePage, STEPS };

@@ -7,6 +7,7 @@
  * behaviour lives in /love-album/create.js.
  */
 const { logoFull } = require('../lib/brand');
+const { builderShell } = require('../lib/builderShell');
 
 const STEPS = [
   { key: 'design', title: 'The intro' },
@@ -29,22 +30,10 @@ function field({ id, label, hint, max, type = 'text', rows = 4, placeholder = ''
 }
 
 function loveCreatePage() {
-  return `<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="theme-color" content="#FFD1E3">
-<title>Love Album · Make a Paigaam</title>
-<meta name="robots" content="noindex">
-<link rel="icon" href="/brand/favicon-512.png" type="image/png">
+    return builderShell('Love Album', `
 <link rel="stylesheet" href="/love-album/create.css">
 <script src="/love-album/create.js" defer></script>
 <script src="/js/qr-card.js" defer></script>
-</head>
-<body>
-<header class="masthead"><a href="/" aria-label="Paigaam">${logoFull(128)}</a><a class="text-link" href="/templates">All templates</a></header>
-
 <main id="wizard">
   <section class="intro">
     <p class="eyebrow">Love Album</p>
@@ -172,7 +161,7 @@ function loveCreatePage() {
 
 <noscript><p class="error">Please enable JavaScript to build your album.</p></noscript>
 </body>
-</html>`;
+`);
 }
 
 module.exports = { loveCreatePage, STEPS };

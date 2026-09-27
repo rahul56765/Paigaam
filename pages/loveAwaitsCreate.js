@@ -7,6 +7,7 @@
  * proposal. Copy lives here, behaviour lives in /love-awaits/create.js.
  */
 const { logoFull } = require('../lib/brand');
+const { builderShell } = require('../lib/builderShell');
 
 const STEPS = [
   { key: 'design', title: 'The proposal' },
@@ -29,21 +30,10 @@ function field({ id, label, hint, max, type = 'text', rows = 4, placeholder = ''
 }
 
 function loveAwaitsCreatePage() {
-  return `<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="theme-color" content="#0a0206">
-<title>Love Awaits · Make a Paigaam</title>
-<meta name="robots" content="noindex">
-<link rel="icon" href="/brand/favicon-512.png" type="image/png">
+    return builderShell('Love Awaits', `
 <link rel="stylesheet" href="/love-awaits/create.css">
 <script src="/love-awaits/create.js" defer></script>
-</head>
-<body>
-<header class="masthead"><a href="/" aria-label="Paigaam">${logoFull(128)}</a><a class="text-link" href="/templates">All templates</a></header>
-
+<script src="/js/qr-card.js" defer></script>
 <main id="wizard">
   <section class="intro">
     <p class="eyebrow">Love Awaits</p>
@@ -157,7 +147,7 @@ function loveAwaitsCreatePage() {
 
 <noscript><p class="error">Please enable JavaScript to build your proposal.</p></noscript>
 </body>
-</html>`;
+`);
 }
 
 module.exports = { loveAwaitsCreatePage, STEPS };

@@ -10,6 +10,7 @@
  * /preview/:id publish flow — nothing about publishing changes.
  */
 const { page, esc } = require('../lib/layout');
+const { builderShell } = require('../lib/builderShell');
 
 /* One friendly question per field. Labels come from the template schema;
    these prompts frame them conversationally, keyed by field id. */
@@ -76,30 +77,22 @@ function createPage(tpl, draft, draftId) {
     <p class="bstep__err" id="err_${esc(f.id)}" hidden></p>
   </fieldset>`).join('');
 
-  return page(`Make your ${tpl.name} Paigaam`, `
+  return builderShell(tpl.name, `
 <main class="builder">
-  <div class="wrap">
-    <div class="builder__grid">
-      <div class="builder__panel">
-        <a class="builder__back-crumb" href="/templates/${esc(tpl.slug)}">&larr; ${esc(tpl.name)}</a>
-
-        <div class="builder__phone-wrap">
-          <div class="phone phone--builder">
-            <div class="phone__screen">
-              <iframe id="liveFrame" title="Live preview" style="width:100%;height:100%;border:0"></iframe>
-            </div>
-          </div>
-        </div>
-
-        <form id="createForm" novalidate data-total="${totalSteps}" data-template="${esc(tpl.slug)}" data-draft="${esc(draftId || '')}">
-          ${stepsHTML}
-          <div class="builder__nav">
-            <button type="button" class="btn btn--ghost" id="btnBack" hidden>Back</button>
-            <button type="button" class="btn btn--primary" id="btnNext">Next &rarr;</button><!-- label becomes "Preview my Paigaam →" on the final step (builder.js) -->
-          </div>
-        </form>
-      </div>
+  <aside class="livepane" aria-label="Live preview">
+    <div class="livepane__frame">
+      <iframe id="liveFrame" title="Live preview" style="width:100%;border:0"></iframe>
     </div>
+  </aside>
+
+  <div class="paper">
+    <form id="createForm" novalidate data-total="${totalSteps}" data-template="${esc(tpl.slug)}" data-draft="${esc(draftId || '')}">
+      ${stepsHTML}
+      <div class="builder__nav">
+        <button type="button" class="btn" id="btnBack" hidden>Back</button>
+        <button type="button" class="btn" id="btnNext">Next &rarr;</button><!-- becomes "Preview my Paigaam →" on the final step (builder.js) -->
+      </div>
+    </form>
   </div>
 </main>
 <script>
@@ -110,7 +103,11 @@ window.PAIGAAM_BOOT = ${JSON.stringify({
     fields: fields.map(f => ({ id: f.id, type: f.type, required: !!f.required, label: f.label })),
   }).replace(/</g, '\\u003c')};
 </script>
-<script src="/js/builder.js" defer></script>`);
+<script src="/js/builder.js" defer></script>`, {
+    accent: (tpl.config.theme && tpl.config.theme.accent) || '#8F1018',
+    soft: (tpl.config.theme && tpl.config.theme.soft) || '#F7F1E6',
+    backHref: `/templates/${esc(tpl.slug)}`,
+  });
 }
 
 module.exports = { createPage, promptFor };

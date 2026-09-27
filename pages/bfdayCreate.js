@@ -13,6 +13,7 @@
  * as JSON. Behaviour lives in /bfday/create.js, styling in /bfday/create.css.
  */
 const { logoFull } = require('../lib/brand');
+const { builderShell } = require('../lib/builderShell');
 const { escape, jsonPayload } = require('../lib/bfday/page');
 
 /** Relative luminance of a #rrggbb hex colour (0 = black, 1 = white). */
@@ -134,27 +135,10 @@ function bfdayCreatePage(t) {
   };
   const S = escape(t.slug);
 
-  return `<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="theme-color" content="${escape(theme.bg)}">
-<title>${escape(c.name)} · Make a Paigaam</title>
-<meta name="robots" content="noindex">
-<link rel="icon" href="/brand/favicon-512.png" type="image/png">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/bfday/create.css">
-<style>:root { --bg: ${escape(theme.bg)}; --ink: ${escape(theme.ink)}; --accent: ${escape(theme.accent)}; --soft: ${escape(theme.soft)}; }${darkThemeOverride(theme)}</style>
-<script src="/bfday/create.js" defer></script>
-<script src="/js/qr-card.js" defer></script>
-</head>
-<body data-slug="${S}">
+  return builderShell(c.name, `
 ${jsonPayload('bfSpec', spec)}
-<header class="masthead"><a href="/" aria-label="Paigaam">${logoFull(128)}</a><a class="text-link" href="/templates">All templates</a></header>
-
+<style>:root { --bg: ${escape(theme.bg)}; --ink: ${escape(theme.ink)}; --accent: ${escape(theme.accent)}; --soft: ${escape(theme.soft)}; }${darkThemeOverride(theme)}</style>
+<script src="/js/qr-card.js" defer></script>
 <main id="wizard">
   <section class="intro">
     <p class="eyebrow">${escape(create.eyebrow || c.name)}</p>
@@ -252,8 +236,9 @@ ${jsonPayload('bfSpec', spec)}
 </dialog>
 
 <noscript><p class="error">Please enable JavaScript to build your Paigaam.</p></noscript>
-</body>
-</html>`;
+`, {
+    accent: theme.accent, soft: theme.soft, backHref: '/templates/' + S,
+  });
 }
 
 module.exports = { bfdayCreatePage };
