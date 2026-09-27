@@ -37,7 +37,7 @@ function previewPage(paigaam, settings, opts = {}) {
       </div>
     </div>`
     : `
-    <a class="btn btn--whatsapp" href="/go/whatsapp/${esc(paigaam.id)}">Continue on WhatsApp</a>
+    <a class="btn btn--whatsapp" href="/go/whatsapp/${esc(paigaam.id)}" data-track="purchase_started" data-template="${esc(paigaam.template_slug)}">Continue on WhatsApp</a>
     <a class="btn btn--ghost" href="/create/${esc(paigaam.template_slug)}?draft=${esc(paigaam.id)}">Edit Paigaam</a>`;
 
   const sub = isFree
@@ -72,6 +72,7 @@ ${isFree ? `<script src="/js/qr-card.js" defer></script>
 <script>
 (function () {
   var btn = document.getElementById('publishFree');
+  if (window.paTrack) window.paTrack('preview_opened', { template: '${esc(paigaam.template_slug)}', free: true });
   btn.addEventListener('click', function () {
     btn.disabled = true; btn.textContent = 'Publishing…';
     fetch('/api/free-publish', {
@@ -79,6 +80,7 @@ ${isFree ? `<script src="/js/qr-card.js" defer></script>
       body: JSON.stringify({ id: btn.dataset.id })
     }).then(function (r) { return r.json(); }).then(function (res) {
       if (!res || !res.url) { btn.disabled = false; btn.textContent = 'Publish my Paigaam'; alert('Something went quiet. Please try again.'); return; }
+      if (window.paTrack) window.paTrack('paigaam_generated', { template: '${esc(paigaam.template_slug)}', free: true });
       var url = res.url, short = url.replace(/^https?:\\/\\//, '');
       document.getElementById('freeArea').hidden = true;
       document.getElementById('freeDone').hidden = false;
@@ -90,6 +92,7 @@ ${isFree ? `<script src="/js/qr-card.js" defer></script>
       });
       document.getElementById('freeCopy').addEventListener('click', function () {
         var b = this;
+        if (window.paTrack) window.paTrack('copy_link_clicked', { template: '${esc(paigaam.template_slug)}' });
         if (navigator.clipboard) navigator.clipboard.writeText(url).then(function () {
           b.textContent = 'Copied'; setTimeout(function () { b.textContent = 'Copy link'; }, 1500);
         });
