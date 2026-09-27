@@ -5,7 +5,7 @@
  */
 (function () {
   var FIELDS = ['recipientName', 'senderName', 'line1', 'line2', 'line3', 'attentionLine', 'wishLine', 'closingLine', 'note'];
-  var LAST_STEP = 5;
+  var LAST_STEP = 4;
 
   var form = document.getElementById('saalgirahForm');
   if (!form) return;
@@ -210,10 +210,10 @@
 
   if (publishBtn) {
     publishBtn.addEventListener('click', function () {
-      if (!draftId) { setError('Save a preview first.'); return; }
       publishBtn.disabled = true;
       say('Publishing…');
-      request('/api/saalgirah/publish', { id: draftId })
+      saveDraft() // one tap: the latest typing goes with it
+        .then(function () { return request('/api/saalgirah/publish', { id: draftId }); })
         .then(function (body) { showResult(body.url); })
         .catch(function (err) {
           publishBtn.disabled = false;
@@ -262,10 +262,6 @@
     var node = el(name);
     if (!node) return;
     node.addEventListener('input', function () {
-      if (publishBtn && !publishBtn.disabled) {
-        publishBtn.disabled = true;
-        if (previewState) previewState.textContent = 'You changed something — save a preview again before sending.';
-      }
     });
   });
 

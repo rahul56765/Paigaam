@@ -5,7 +5,7 @@
  */
 (function () {
   var FIELDS = ['recipientName', 'senderName', 'introTitle', 'question', 'questionNote', 'yesLabel', 'noLabel', 'finaleTitle', 'finaleLine'];
-  var LAST_STEP = 3;
+  var LAST_STEP = 2;
 
   var form = document.getElementById('awaitsForm');
   if (!form) return;
@@ -201,7 +201,6 @@
 
   if (publishBtn) {
     publishBtn.addEventListener('click', function () {
-      if (!draftId) { if (!validateStepOne()) return; }
       publishBtn.disabled = true;
       say('Publishing…');
       saveDraft()

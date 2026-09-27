@@ -83,4 +83,95 @@
       if (next && !next.hidden) next.click();
     }
   });
+
+  /* ---- whole-paigaam preview: scale-to-fit the ENTIRE page in the frame ---- */
+  var liveFrame = document.getElementById('liveFrame');
+  var fitPending = false;
+
+  function fitPreview() {
+    if (fitPending || !liveFrame) return;
+    fitPending = true;
+    requestAnimationFrame(function () {
+      fitPending = false;
+      if (!liveFrame) return;
+      var doc;
+      try { doc = liveFrame.contentDocument; } catch (e) { return; }
+      if (!doc || !doc.body) return;
+      var naturalH = Math.max(doc.documentElement.scrollHeight, doc.body.scrollHeight, 1);
+      var naturalW = liveFrame.contentWindow ? liveFrame.contentWindow.innerWidth : 390;
+      if (naturalW < 100) naturalW = 390;
+      var box = liveFrame.parentElement; // .livepane__frame
+      if (!box) return;
+      var fitW = box.clientWidth || 300;
+      var fitH = window.innerHeight * (window.innerWidth <= 720 ? 0.36 : 0.62);
+      fitH = Math.min(fitH, window.innerWidth <= 720 ? 330 : 620);
+      var scale = Math.min(fitW / naturalW, fitH / naturalH);
+      if (!isFinite(scale) || scale <= 0) scale = 1;
+      liveFrame.style.width = naturalW + 'px';
+      liveFrame.style.height = naturalH + 'px';
+      liveFrame.style.transformOrigin = '0 0';
+      liveFrame.style.transform = 'scale(' + scale + ')';
+      // the box keeps the FIT size; the iframe's layout size is scaled away
+      box.style.width = Math.round(naturalW * scale) + 'px';
+      box.style.height = Math.round(naturalH * scale) + 'px';
+      box.style.maxWidth = 'none';
+      liveFrame.dataset.fitScale = String(scale);
+    });
+  }
+
+  if (liveFrame) {
+    liveFrame.addEventListener('load', function () { fitPreview(); setTimeout(fitPreview, 350); });
+    window.addEventListener('resize', fitPreview);
+    // wizard engines swap srcdoc/src asynchronously — watch for it
+    new MutationObserver(fitPreview).observe(liveFrame, { attributes: true, attributeFilter: ['src', 'srcdoc'] });
+    setTimeout(fitPreview, 800);
+  }
+
+  /* ---- highlight the section being edited inside the preview ---- */
+  var highlightStyle = null;
+  function highlightForStep() {
+    if (!liveFrame) return;
+    var doc;
+    try { doc = liveFrame.contentDocument; } catch (e) { return; }
+    if (!doc || !doc.body) return;
+    if (!highlightStyle) {
+      highlightStyle = doc.createElement('style');
+      highlightStyle.textContent = '.pa-shell-hl{outline:3px solid rgba(201,162,94,.9);outline-offset:-3px;border-radius:6px;transition:outline-color .8s ease 1.2s}';
+      doc.head.appendChild(highlightStyle);
+    }
+    // which field is the visible step editing?
+    var step = document.querySelector('.step:not([hidden]), .bstep:not([hidden])');
+    if (!step) return;
+    var input = step.querySelector('[data-field]');
+    var fid = input ? (input.getAttribute('data-field') || input.id || '').replace(/^f-/, '') : '';
+    if (!fid) return;
+    // find the anchor: renderer marks data-field-anchor, else probe for the current value text
+    var target = doc.querySelector('[data-field-anchor="' + fid + '"]');
+    if (!target) {
+      var val = (input.value || '').trim();
+      if (val.length > 1) {
+        var all = doc.querySelectorAll('h1,h2,h3,p,span,div,td,li');
+        for (var i = 0; i < all.length; i++) {
+          if (all[i].children.length === 0 && all[i].textContent && all[i].textContent.indexOf(val) !== -1) { target = all[i]; break; }
+        }
+      }
+    }
+    if (!target) return;
+    var prev = doc.querySelector('.pa-shell-hl');
+    if (prev) prev.classList.remove('pa-shell-hl');
+    target.classList.add('pa-shell-hl');
+    setTimeout(function () { target.classList.remove('pa-shell-hl'); }, 2200);
+  }
+
+  // watch step changes: the wizards toggle hidden on .step sections
+  var stepObserver = new MutationObserver(function () {
+    fitPreview();
+    setTimeout(highlightForStep, 250);
+  });
+  stepObserver.observe(document.body, { subtree: true, attributes: true, attributeFilter: ['hidden'] });
+  document.addEventListener('click', function (e) {
+    if (e.target && (e.target.id === 'next' || e.target.id === 'back' || (e.target.closest && e.target.closest('#next, #back, #progress')))) {
+      setTimeout(function () { fitPreview(); highlightForStep(); }, 350);
+    }
+  });
 })();

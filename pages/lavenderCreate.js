@@ -10,7 +10,7 @@ const { logoFull } = require('../lib/brand');
 const { builderShell } = require('../lib/builderShell');
 
 const STEPS = [
-  { key: 'design', title: 'The surprise' },
+  
   { key: 'who', title: 'Who it’s for' },
   { key: 'words', title: 'The words' },
   { key: 'colour', title: 'The colour' },
@@ -56,26 +56,13 @@ function lavenderCreatePage() {
       <p id="stepCounter" class="eyebrow"></p>
       <form id="lavenderForm" novalidate>
 
-        <section data-step="0" class="step">
-          <h2 tabindex="-1">Four little scenes, one small surprise</h2>
-          <p>It opens with an envelope they have to tap. Then a game of tic-tac-toe — they are the blue crosses, and the game is quietly on their side. Then a gift box, and then the flowers grow.</p>
-          <ul class="scene-list">
-            <li><b>One ·</b> the envelope, sealed with “open when you miss me”</li>
-            <li><b>Two ·</b> the game — they win, always</li>
-            <li><b>Three ·</b> the gift, tapped open in confetti</li>
-            <li><b>Four ·</b> the bloom, and your words underneath</li>
-          </ul>
-          <p class="hint">Every drawing is made in the browser — nothing to download, nothing to load.</p>
-          <a class="button secondary" href="/lavender-bloom/demo" target="_blank" rel="noopener">Watch the demo <span aria-hidden="true">↗</span></a>
-        </section>
-
-        <section data-step="1" class="step" hidden>
+        <section data-step="0" class="step" hidden>
           <h2 tabindex="-1">Who is it for?</h2>
           <p>Their name is all the surprise truly needs.</p>
           ${field({ id: 'recipientName', label: 'Their name', max: 60, placeholder: 'Yashika', required: true, hint: 'Just the name you actually call them.' })}
         </section>
 
-        <section data-step="2" class="step" hidden>
+        <section data-step="1" class="step" hidden>
           <h2 tabindex="-1">The words at the end</h2>
           <p>Once the lavender blooms, this is what appears beneath it. Leave them as they are if they already sound like you.</p>
           ${field({ id: 'title', label: 'The title', max: 90, placeholder: 'For You!' })}
@@ -83,7 +70,7 @@ function lavenderCreatePage() {
           ${field({ id: 'senderName', label: 'Sign it', max: 60, placeholder: 'Rahul', hint: 'Appears as a small signature at the very end.' })}
         </section>
 
-        <section data-step="3" class="step" hidden>
+        <section data-step="2" class="step" hidden>
           <h2 tabindex="-1">The colour of the bloom</h2>
           <p>Lavender is the original. Rose and sunbeam are there if they suit them better.</p>
           ${field({ id: 'flowerColor', label: 'Flower colour', type: 'select', options: [
@@ -93,17 +80,12 @@ function lavenderCreatePage() {
           ] })}
         </section>
 
-        <section data-step="4" class="step" hidden>
+        <section data-step="3" class="step" hidden>
           <h2 tabindex="-1">Ready to send</h2>
           <p>Have one last look, then publish. You will get a link and a QR card you can send anywhere.</p>
           <div id="review" class="review"></div>
-          <div class="preview-callout">
-            <span aria-hidden="true">✦</span>
-            <p>Open the surprise exactly as they will see it.</p>
-            <button type="button" id="savePreview" class="button primary">Save &amp; preview</button>
-          </div>
-          <p id="previewState" class="hint" aria-live="polite"></p>
-          <button type="button" id="publish" class="button publish" disabled>Publish this Paigaam</button>
+<p id="previewState" class="hint" aria-live="polite"></p>
+          <button type="button" id="publish" class="button publish">Publish this Paigaam</button>
           <p class="hint">Free. The link stays live; only you can edit it before publishing.</p>
         </section>
 

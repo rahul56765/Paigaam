@@ -74,10 +74,6 @@
 
   function changed() {
     scheduleLivePreview();
-    if (publishBtn && !publishBtn.disabled) {
-      publishBtn.disabled = true;
-      if (previewState) previewState.textContent = 'You changed something — save a preview again before sending.';
-    }
   }
 
   function counterFor(input, max) {
@@ -620,10 +616,10 @@
 
   if (publishBtn) {
     publishBtn.addEventListener('click', function () {
-      if (!draftId) { setError('Save a preview first.'); return; }
       publishBtn.disabled = true;
       say('Publishing…');
-      request('/api/' + SLUG + '/publish', { id: draftId })
+      saveDraft() // one tap: the latest typing goes with it
+        .then(function () { return request('/api/' + SLUG + '/publish', { id: draftId }); })
         .then(function (body) { showResult(body.url); })
         .catch(function (err) {
           publishBtn.disabled = false;

@@ -7,7 +7,7 @@
  */
 (function () {
   var FIELDS = ['recipientName', 'senderName', 'headline', 'yesLabel', 'noLabel', 'celebration'];
-  var LAST_STEP = 3;
+  var LAST_STEP = 2;
 
   var form = document.getElementById('maafiForm');
   if (!form) return;
@@ -148,10 +148,6 @@
     if (!node) return;
     node.addEventListener('input', function () {
       scheduleLivePreview();
-      if (publishBtn && !publishBtn.disabled) {
-        publishBtn.disabled = true;
-        if (previewState) previewState.textContent = 'You changed something — save a preview again before sending.';
-      }
     });
   });
 
@@ -239,10 +235,10 @@
 
   if (publishBtn) {
     publishBtn.addEventListener('click', function () {
-      if (!draftId) { setError('Save a preview first.'); return; }
       publishBtn.disabled = true;
       say('Publishing…');
-      request('/api/maafi/publish', { id: draftId })
+      saveDraft() // one tap: the latest typing goes with it
+        .then(function () { return request('/api/maafi/publish', { id: draftId }); })
         .then(function (body) { showResult(body.url); })
         .catch(function (err) {
           publishBtn.disabled = false;

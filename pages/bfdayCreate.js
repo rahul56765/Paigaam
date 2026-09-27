@@ -118,7 +118,6 @@ function bfdayCreatePage(t) {
   const c = t.config, create = c.create || {};
   const byId = new Map(t.fields.map(f => [f.id, f]));
   const steps = [
-    { title: create.designTitle || 'The design' },
     ...c.steps.map(s => ({ title: s.title })),
     { title: 'Look it over' },
     { title: 'Send it' },
@@ -130,7 +129,7 @@ function bfdayCreatePage(t) {
     name: c.name,
     fields: t.fields,
     lastStep: lastFormStep,
-    stepFields: [[], ...c.steps.map(s => s.fields), []],
+    stepFields: [...c.steps.map(s => s.fields), []],
     noun: create.noun || 'Paigaam',
   };
   const S = escape(t.slug);
@@ -161,17 +160,7 @@ ${jsonPayload('bfSpec', spec)}
       <p id="stepCounter" class="eyebrow"></p>
       <form id="bfForm" novalidate>
 
-        <section data-step="0" class="step">
-          <h2 tabindex="-1">${escape(create.designHeading || 'How it plays')}</h2>
-          ${create.designIntro ? `<p>${escape(create.designIntro)}</p>` : ''}
-          ${Array.isArray(create.scenes) && create.scenes.length ? `<ul class="scene-list">
-            ${create.scenes.map((s, i) => `<li><b>${['One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight'][i] || i + 1} ·</b> ${escape(s)}</li>`).join('\n            ')}
-          </ul>` : ''}
-          <p class="hint">Every line is already written — change as much or as little as you like.</p>
-          <a class="button secondary" href="/${S}/demo" target="_blank" rel="noopener">Try the demo <span aria-hidden="true">↗</span></a>
-        </section>
-
-        ${c.steps.map((s, i) => `<section data-step="${i + 1}" class="step" hidden>
+        ${c.steps.map((s, i) => `<section data-step="${i}" class="step" ${i > 0 ? 'hidden' : ''}>
           <h2 tabindex="-1">${escape(s.heading || s.title)}</h2>
           ${s.intro ? `<p>${escape(s.intro)}</p>` : ''}
           ${s.fields.map(id => fieldHTML(byId.get(id))).join('\n          ')}
@@ -179,15 +168,10 @@ ${jsonPayload('bfSpec', spec)}
 
         <section data-step="${lastFormStep}" class="step" hidden>
           <h2 tabindex="-1">Ready to send</h2>
-          <p>Have one last look, then publish. You will get a link and a QR card you can send anywhere.</p>
+          <p>Publish and share — it takes one tap.</p>
           <div id="review" class="review"></div>
-          <div class="preview-callout">
-            <span aria-hidden="true">✦</span>
-            <p>${escape(create.previewCta || 'See it exactly as they will.')}</p>
-            <button type="button" id="savePreview" class="button primary">Save &amp; preview</button>
-          </div>
           <p id="previewState" class="hint" aria-live="polite"></p>
-          <button type="button" id="publish" class="button publish" disabled>Publish this Paigaam</button>
+          <button type="button" id="publish" class="button publish">Publish this Paigaam</button>
           <p class="hint">Free. The link stays live; only you can edit it before publishing.</p>
         </section>
 

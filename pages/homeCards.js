@@ -58,6 +58,7 @@ function templateCard(t, opts = {}) {
     ${free ? '<span class="tcard__price tcard__price--free">FREE</span>' : `<span class="tcard__price">&#8377;${esc(t.price)}</span>`}
   </div>
   <p class="tcard__desc">${esc(t.description || '')}</p>
+  <span class="tcard__occ-label">${esc(t.category)}</span>
   <div class="tcard__actions">
     <a class="tcard__create" href="${createHref}" data-track="template_create_clicked" data-template="${esc(t.slug)}" data-occasion="${esc(String(t.category).toLowerCase())}">Create</a>
     <a class="tcard__preview-link" href="${previewHref}" data-track="template_viewed" data-template="${esc(t.slug)}">Preview</a>

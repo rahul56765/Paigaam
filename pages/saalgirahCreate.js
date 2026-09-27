@@ -10,7 +10,7 @@ const { logoFull } = require('../lib/brand');
 const { builderShell } = require('../lib/builderShell');
 
 const STEPS = [
-  { key: 'design', title: 'The letter' },
+  
   { key: 'who', title: 'Who it’s for' },
   { key: 'opening', title: 'The opening' },
   { key: 'wish', title: 'The wish' },
@@ -52,26 +52,13 @@ function saalgirahCreatePage() {
       <p id="stepCounter" class="eyebrow"></p>
       <form id="saalgirahForm" novalidate>
 
-        <section data-step="0" class="step">
-          <h2 tabindex="-1">Four scenes, one small letter</h2>
-          <p>It opens with an envelope they have to tap. Then three lines of the thing you never quite say. Then a cake with candles they blow out themselves — and the last words, once the room is quiet.</p>
-          <ul class="scene-list">
-            <li><b>One ·</b> the envelope, sealed with wax</li>
-            <li><b>Two ·</b> three lines, in your voice</li>
-            <li><b>Three ·</b> the cake, and the wish</li>
-            <li><b>Four ·</b> what you actually wanted to say</li>
-          </ul>
-          <p class="hint">Music and every sound are made in the browser — nothing to download, nothing to load.</p>
-          <a class="button secondary" href="/saalgirah/demo" target="_blank" rel="noopener">Watch the demo <span aria-hidden="true">↗</span></a>
-        </section>
-
-        <section data-step="1" class="step" hidden>
+        <section data-step="0" class="step" hidden>
           <h2 tabindex="-1">Who is it for?</h2>
           <p>Their name goes on the envelope, and into the birthday line itself.</p>
           ${field({ id: 'recipientName', label: 'Their name', max: 60, placeholder: 'Meher', required: true, hint: 'Just the name you actually call them.' })}
         </section>
 
-        <section data-step="2" class="step" hidden>
+        <section data-step="1" class="step" hidden>
           <h2 tabindex="-1">The opening</h2>
           <p>Three lines, revealed one at a time, before anything else happens. Leave them as they are if they already sound like you.</p>
           ${field({ id: 'line1', label: 'First line', max: 160, placeholder: 'I was going to write something normal…' })}
@@ -79,14 +66,14 @@ function saalgirahCreatePage() {
           ${field({ id: 'line3', label: 'Third line', max: 160, placeholder: 'So… I made you this.' })}
         </section>
 
-        <section data-step="3" class="step" hidden>
+        <section data-step="2" class="step" hidden>
           <h2 tabindex="-1">The wish</h2>
           <p>The cake arrives, the candles are lit, and this is what appears above them.</p>
           ${field({ id: 'attentionLine', label: 'The line before the cake', max: 160, placeholder: 'Okay… now that I have your attention.' })}
           ${field({ id: 'wishLine', label: 'The birthday line', max: 90, placeholder: 'HAPPY BIRTHDAY, MEHER.', hint: 'Left empty, it becomes “HAPPY BIRTHDAY, ” and their name.' })}
         </section>
 
-        <section data-step="4" class="step" hidden>
+        <section data-step="3" class="step" hidden>
           <h2 tabindex="-1">The last words</h2>
           <p>The final scene: the bear holds a small heart, and this is all that is left on screen.</p>
           ${field({ id: 'closingLine', label: 'The declaration', max: 90, placeholder: 'I LOVE YOU.' })}
@@ -94,17 +81,12 @@ function saalgirahCreatePage() {
           ${field({ id: 'senderName', label: 'Sign it', max: 60, placeholder: 'Rahul', hint: 'Appears as a signature at the very end.' })}
         </section>
 
-        <section data-step="5" class="step" hidden>
+        <section data-step="4" class="step" hidden>
           <h2 tabindex="-1">Ready to send</h2>
           <p>Have one last look, then publish. You will get a link and a QR card you can send anywhere.</p>
           <div id="review" class="review"></div>
-          <div class="preview-callout">
-            <span aria-hidden="true">✦</span>
-            <p>Open the letter exactly as they will see it.</p>
-            <button type="button" id="savePreview" class="button primary">Save &amp; preview</button>
-          </div>
-          <p id="previewState" class="hint" aria-live="polite"></p>
-          <button type="button" id="publish" class="button publish" disabled>Publish this Paigaam</button>
+<p id="previewState" class="hint" aria-live="polite"></p>
+          <button type="button" id="publish" class="button publish">Publish this Paigaam</button>
           <p class="hint">Free. The link stays live; only you can edit it before publishing.</p>
         </section>
 

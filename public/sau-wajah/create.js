@@ -10,7 +10,7 @@
 (function () {
   var FIELDS = ['recipientName', 'senderName', 'heroTitle', 'heroSubtitle', 'galleryHeading', 'reasonsHeading', 'reasons', 'letterTitle', 'letterBody', 'signature'];
   var MAX_PHOTOS = 9;
-  var LAST_STEP = 4;
+  var LAST_STEP = 3;
 
   var form = document.getElementById('sauwajahForm');
   if (!form) return;
@@ -348,7 +348,7 @@
       publishing = true;
       publishBtn.disabled = true;
       say('Publishing…');
-      var ensureSaved = draftId ? Promise.resolve() : saveDraft().then(function () { return uploadPending(); });
+      var ensureSaved = saveDraft().then(function () { return uploadPending(); }); // always save the latest
       ensureSaved
         .then(function () {
           if (photos.length && photos.some(function (p) { return !p.url; })) return uploadPending();
@@ -406,10 +406,6 @@
     var node = el(name);
     if (!node) return;
     node.addEventListener('input', function () {
-      if (publishBtn && !publishBtn.disabled) {
-        publishBtn.disabled = true;
-        if (previewState) previewState.textContent = 'You changed something — the next publish saves the latest words.';
-      }
     });
   });
 

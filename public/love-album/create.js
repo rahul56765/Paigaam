@@ -8,7 +8,7 @@
  */
 (function () {
   var FIELDS = ['recipientName', 'senderName', 'introLine', 'continueLabel', 'message1', 'message2', 'message3', 'letterTitle', 'letterBody', 'finalLabel'];
-  var MIN_PHOTOS = 3, MAX_PHOTOS = 9, LAST_STEP = 4;
+  var MIN_PHOTOS = 3, MAX_PHOTOS = 9, LAST_STEP = 3;
 
   var form = document.getElementById('loveForm');
   if (!form) return;
@@ -331,10 +331,10 @@
 
   if (publishBtn) {
     publishBtn.addEventListener('click', function () {
-      if (!draftId) { setError('Save a preview first.'); return; }
       publishBtn.disabled = true;
       say('Publishing…');
-      request('/api/love-album/publish', { id: draftId })
+      saveDraft() // one tap: the latest typing goes with it
+        .then(function () { return request('/api/love-album/publish', { id: draftId }); })
         .then(function (body) { showResult(body.url); })
         .catch(function (err) {
           publishBtn.disabled = false;
@@ -383,10 +383,6 @@
     var node = el(name);
     if (!node) return;
     node.addEventListener('input', function () {
-      if (publishBtn && !publishBtn.disabled) {
-        publishBtn.disabled = true;
-        if (previewState) previewState.textContent = 'You changed something — save a preview again before sending.';
-      }
     });
   });
 

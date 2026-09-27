@@ -10,7 +10,7 @@ const { logoFull } = require('../lib/brand');
 const { builderShell } = require('../lib/builderShell');
 
 const STEPS = [
-  { key: 'design', title: 'The question' },
+  
   { key: 'who', title: 'Who it’s for' },
   { key: 'words', title: 'The words' },
   { key: 'review', title: 'Look it over' },
@@ -54,25 +54,13 @@ function valentineCreatePage() {
       <p id="stepCounter" class="eyebrow"></p>
       <form id="valentineForm" novalidate>
 
-        <section data-step="0" class="step">
-          <h2 tabindex="-1">One page, one question</h2>
-          <p>It opens on a kitten, a question and two buttons. Pressing “No” earns them a sadder kitten, a bigger “Yes”, and a plea they will find harder to refuse. Pressing “Yes” bursts the screen in hearts.</p>
-          <ul class="scene-list">
-            <li><b>One ·</b> the question, with a kitten and two buttons</li>
-            <li><b>Two ·</b> every “No” — the plea ladder, five rungs deep</li>
-            <li><b>Three ·</b> the “Yes” — hearts everywhere, and your words</li>
-          </ul>
-          <p class="hint">The kittens load with the page — nothing to download, nothing to wait for.</p>
-          <a class="button secondary" href="/valentine-say-yes/demo" target="_blank" rel="noopener">Try the demo <span aria-hidden="true">↗</span></a>
-        </section>
-
-        <section data-step="1" class="step" hidden>
+        <section data-step="0" class="step" hidden>
           <h2 tabindex="0">Who is it for?</h2>
           <p>Their name is all the question truly needs.</p>
           ${field({ id: 'recipientName', label: 'Their name', max: 60, placeholder: 'Meher', required: true, hint: 'Just the name you actually call them.' })}
         </section>
 
-        <section data-step="2" class="step" hidden>
+        <section data-step="1" class="step" hidden>
           <h2 tabindex="0">The words</h2>
           <p>Leave them as they are if they already sound like you.</p>
           ${field({ id: 'question', label: 'The big question', max: 120, placeholder: 'Will you be my Valentine?' })}
@@ -82,17 +70,12 @@ function valentineCreatePage() {
           ${field({ id: 'senderName', label: 'Sign it', max: 60, placeholder: 'Rahul', hint: 'Appears as a small signature at the very end.' })}
         </section>
 
-        <section data-step="3" class="step" hidden>
+        <section data-step="2" class="step" hidden>
           <h2 tabindex="0">Ready to send</h2>
           <p>Have one last look, then publish. You will get a link and a QR card you can send anywhere.</p>
           <div id="review" class="review"></div>
-          <div class="preview-callout">
-            <span aria-hidden="true">✦</span>
-            <p>Open the question exactly as they will see it.</p>
-            <button type="button" id="savePreview" class="button primary">Save &amp; preview</button>
-          </div>
-          <p id="previewState" class="hint" aria-live="polite"></p>
-          <button type="button" id="publish" class="button publish" disabled>Publish this Paigaam</button>
+<p id="previewState" class="hint" aria-live="polite"></p>
+          <button type="button" id="publish" class="button publish">Publish this Paigaam</button>
           <p class="hint">Free. The link stays live; only you can edit it before publishing.</p>
         </section>
 

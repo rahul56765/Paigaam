@@ -10,7 +10,7 @@ const { logoFull } = require('../lib/brand');
 const { builderShell } = require('../lib/builderShell');
 
 const STEPS = [
-  { key: 'design', title: 'The proposal' },
+  
   { key: 'who', title: 'Who it’s for' },
   { key: 'words', title: 'The words' },
   { key: 'review', title: 'Look it over' },
@@ -54,25 +54,13 @@ function loveAwaitsCreatePage() {
       <p id="stepCounter" class="eyebrow"></p>
       <form id="awaitsForm" novalidate>
 
-        <section data-step="0" class="step">
-          <h2 tabindex="-1">One tap, one question</h2>
-          <p>It opens on a tap-to-begin gate, a field of stars becoming a heart, and a question with two buttons. Pressing “No” walks the plea ladder — five rungs, each with a more desperate cat — until the No button itself gives up and dodges. Pressing “Yes” bursts the screen in celebration, and stays remembered.</p>
-          <ul class="scene-list">
-            <li><b>One ·</b> the tap-to-begin gate, music rising</li>
-            <li><b>Two ·</b> the question, with the cat and the plea ladder</li>
-            <li><b>Three ·</b> the “Yes” — Forever &amp; Always, remembered</li>
-          </ul>
-          <p class="hint">The cats load with the page — nothing to download, nothing to wait for. Music is a soft generative score; a mute button sits in the corner.</p>
-          <a class="button secondary" href="/love-awaits/demo" target="_blank" rel="noopener">Try the demo <span aria-hidden="true">↗</span></a>
-        </section>
-
-        <section data-step="1" class="step" hidden>
+        <section data-step="0" class="step" hidden>
           <h2 tabindex="0">Who is it for?</h2>
           <p>Their name is all the proposal truly needs.</p>
           ${field({ id: 'recipientName', label: 'Their name', max: 60, placeholder: 'Meher', required: true, hint: 'Just the name you actually call them.' })}
         </section>
 
-        <section data-step="2" class="step" hidden>
+        <section data-step="1" class="step" hidden>
           <h2 tabindex="0">The words</h2>
           <p>Leave them as they are if they already sound like you.</p>
           ${field({ id: 'introTitle', label: 'The opening title', max: 40, placeholder: 'Love Awaits', hint: 'The big script heading on the tap-to-begin gate.' })}
@@ -85,17 +73,12 @@ function loveAwaitsCreatePage() {
           ${field({ id: 'senderName', label: 'Sign it', max: 60, placeholder: 'Rahul', hint: 'Appears as a small signature beneath the buttons.' })}
         </section>
 
-        <section data-step="3" class="step" hidden>
+        <section data-step="2" class="step" hidden>
           <h2 tabindex="0">Ready to send</h2>
           <p>Have one last look, then publish. You will get a link and a QR card you can send anywhere.</p>
           <div id="review" class="review"></div>
-          <div class="preview-callout">
-            <span aria-hidden="true">✦</span>
-            <p>Open the proposal exactly as they will see it.</p>
-            <button type="button" id="savePreview" class="button primary">Save &amp; preview</button>
-          </div>
-          <p id="previewState" class="hint" aria-live="polite"></p>
-          <button type="button" id="publish" class="button publish" disabled>Publish this Paigaam</button>
+<p id="previewState" class="hint" aria-live="polite"></p>
+          <button type="button" id="publish" class="button publish">Publish this Paigaam</button>
           <p class="hint">Free. The link stays live; only you can edit it before publishing.</p>
         </section>
 

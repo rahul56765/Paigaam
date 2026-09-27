@@ -11,7 +11,7 @@ const { logoFull } = require('../lib/brand');
 const { builderShell } = require('../lib/builderShell');
 
 const STEPS = [
-  { key: 'design', title: 'The experience' },
+  
   { key: 'who', title: 'Who it’s for' },
   { key: 'words', title: 'The words' },
   { key: 'photos', title: 'Your photos' },
@@ -56,27 +56,14 @@ function sauwajahCreatePage() {
       <p id="stepCounter" class="eyebrow"></p>
       <form id="sauwajahForm" novalidate>
 
-        <section data-step="0" class="step">
-          <h2 tabindex="-1">Four little scenes</h2>
-          <p>A greeting with floating hearts, a photo slideshow, the reasons list scrolling like film credits, and the typewriter letter with confetti. Music and a note button follow them everywhere.</p>
-          <ul class="scene-list">
-            <li><b>One ·</b> the greeting — your words, a cake, floating hearts</li>
-            <li><b>Two ·</b> the gallery — your photos as polaroids</li>
-            <li><b>Three ·</b> the reasons — a clothesline and a slow-scrolling list</li>
-            <li><b>Four ·</b> the letter — typewriter, confetti, your signature</li>
-          </ul>
-          <p class="hint">Everything is drawn in the browser — the cake, the bear, the confetti, the sparkles.</p>
-          <a class="button secondary" href="/sau-wajah/demo" target="_blank" rel="noopener">Watch the demo <span aria-hidden="true">↗</span></a>
-        </section>
-
-        <section data-step="1" class="step" hidden>
+        <section data-step="0" class="step" hidden>
           <h2 tabindex="0">Who is it for?</h2>
           <p>Their name is all this Paigaam truly needs — the rest already has words waiting.</p>
           ${field({ id: 'recipientName', label: 'Their name', max: 60, placeholder: 'Meher', required: true, hint: 'Just the name you actually call them.' })}
           ${field({ id: 'senderName', label: 'Sign it', max: 60, placeholder: 'Rahul', hint: 'Appears on the letter, after your signature line.' })}
         </section>
 
-        <section data-step="2" class="step" hidden>
+        <section data-step="1" class="step" hidden>
           <h2 tabindex="0">The words</h2>
           <p>Leave them as they are if they already sound like you.</p>
           ${field({ id: 'heroTitle', label: 'The big line', max: 120, placeholder: 'happy birthday my girlfriend!!' })}
@@ -88,7 +75,7 @@ function sauwajahCreatePage() {
           ${field({ id: 'signature', label: 'The signature line', max: 80, placeholder: '— your biggest fan' })}
         </section>
 
-        <section data-step="3" class="step" hidden>
+        <section data-step="2" class="step" hidden>
           <h2 tabindex="0">The reasons (and photos)</h2>
           <p>The list starts with ten starter reasons — replace them with as many as you like, one per line. Photos are optional: upload up to 9 and they fill the gallery polaroids and the clothesline.</p>
           ${field({ id: 'reasons', label: 'Your reasons — one per line', type: 'textarea', rows: 7, max: 8000, placeholder: 'the way you laugh at your own jokes\nhow you scrunch your nose when you smile\n…' })}
@@ -102,16 +89,11 @@ function sauwajahCreatePage() {
           <p class="hint">Photos stay private: the link is unguessable, and only published Paigaams serve their photos.</p>
         </section>
 
-        <section data-step="4" class="step" hidden>
+        <section data-step="3" class="step" hidden>
           <h2 tabindex="0">Ready to send</h2>
           <p>Publish straight away, or have one last look first — either way you will get a link and a QR card you can send anywhere.</p>
           <div id="review" class="review"></div>
-          <div class="preview-callout">
-            <span aria-hidden="true">✦</span>
-            <p>Open the experience exactly as they will see it — scenes, song and all.</p>
-            <button type="button" id="savePreview" class="button primary">Save &amp; preview</button>
-          </div>
-          <p id="previewState" class="hint" aria-live="polite"></p>
+<p id="previewState" class="hint" aria-live="polite"></p>
           <button type="button" id="publish" class="button publish">Publish this Paigaam</button>
           <p class="hint">Free, and previewing is optional — publishing saves everything as it is. The link stays live; only you can edit it before publishing.</p>
         </section>

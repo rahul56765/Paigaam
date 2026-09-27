@@ -9,7 +9,7 @@ const { logoFull } = require('../lib/brand');
 const { builderShell } = require('../lib/builderShell');
 
 const STEPS = [
-  { key: 'design', title: 'The invitation' },
+  
   { key: 'who', title: 'Who it’s for' },
   { key: 'words', title: 'The words' },
   { key: 'days', title: 'Your free days' },
@@ -51,26 +51,14 @@ function sawaalCreatePage() {
       <p id="stepCounter" class="eyebrow"></p>
       <form id="sawaalForm" novalidate>
 
-        <section data-step="0" class="step">
-          <h2 tabindex="-1">Eight scenes, one ending you choose</h2>
-          <p>They agree to a date, survive the “do you like me” trap, pick the vibe (or type their own idea), choose from <em>your</em> real free days, sit a four-question quiz that is actually scored, surrender a selfie — and answer the final kiss question, which decides how the story ends.</p>
-          <ul class="scene-list">
-            <li><b>One ·</b> the invitation, on a dreamy pink dreamscape</li>
-            <li><b>Two ·</b> choices, traps, the day picker and the scored quiz</li>
-            <li><b>Three ·</b> the final question — three answers, two endings, one celebration</li>
-          </ul>
-          <p class="hint">Everything they pick — including the selfie — waits for you on a private responses page.</p>
-          <a class="button secondary" href="/sawaal/demo" target="_blank" rel="noopener">Try the demo <span aria-hidden="true">↗</span></a>
-        </section>
-
-        <section data-step="1" class="step" hidden>
+        <section data-step="0" class="step" hidden>
           <h2 tabindex="0">Who is it for?</h2>
           <p>Their name is all the questionnaire truly needs.</p>
           ${field({ id: 'recipientName', label: 'Their name', max: 60, placeholder: 'Meher', required: true, hint: 'Just the name you actually call them.' })}
           ${field({ id: 'senderName', label: 'Your name', max: 60, placeholder: 'Rahul', hint: 'Used across the questions and signed in the footer.' })}
         </section>
 
-        <section data-step="2" class="step" hidden>
+        <section data-step="1" class="step" hidden>
           <h2 tabindex="0">The words</h2>
           <p>Leave them as they are if they already sound like you. The preview on the right follows every keystroke.</p>
           ${field({ id: 'inviteTitle', label: 'The invitation headline', max: 90, placeholder: 'Let’s schedule a date!' })}
@@ -80,7 +68,7 @@ function sawaalCreatePage() {
           ${field({ id: 'vibeOptions', label: 'Vibe options', max: 160, placeholder: 'Dinner & Chill, Coffee & Walking', hint: 'Comma-separated, up to 4 — they can also type their own idea.' })}
         </section>
 
-        <section data-step="3" class="step" hidden>
+        <section data-step="2" class="step" hidden>
           <h2 tabindex="0">Your free days</h2>
           <p>The day-picker scene shows only days you actually offer — each is checked as a real date.</p>
           ${field({ id: 'availableDays', label: 'Days you’re free', max: 200, placeholder: '2026-10-01, 2026-10-02, 2026-10-03', hint: 'Comma-separated YYYY-MM-DD, up to 8. Leave empty to skip the picker.' })}
@@ -88,7 +76,7 @@ function sawaalCreatePage() {
           ${field({ id: 'quizIntro', label: 'The quiz intro line', max: 140, placeholder: 'Answer the following questions. They should be easy, I swear to god!' })}
         </section>
 
-        <section data-step="4" class="step" hidden>
+        <section data-step="3" class="step" hidden>
           <h2 tabindex="0">The ending</h2>
           <p>The final question has three answers and two endings. Name both.</p>
           ${field({ id: 'kissTitle', label: 'The final question headline', max: 90, placeholder: 'What if...?' })}
@@ -98,17 +86,12 @@ function sawaalCreatePage() {
           ${field({ id: 'shyOutcomeLine', label: 'The shy ending line', max: 140, placeholder: 'But I will be holding your hands, no questions asked!' })}
         </section>
 
-        <section data-step="5" class="step" hidden>
+        <section data-step="4" class="step" hidden>
           <h2 tabindex="0">Ready to send</h2>
           <p>Have one last look, then publish. You will get a link, a QR card — and the private responses page where their answers land.</p>
           <div id="review" class="review"></div>
-          <div class="preview-callout">
-            <span aria-hidden="true">✦</span>
-            <p>Play the whole questionnaire exactly as they will.</p>
-            <button type="button" id="savePreview" class="button primary">Save &amp; preview</button>
-          </div>
-          <p id="previewState" class="hint" aria-live="polite"></p>
-          <button type="button" id="publish" class="button publish" disabled>Publish this Paigaam</button>
+<p id="previewState" class="hint" aria-live="polite"></p>
+          <button type="button" id="publish" class="button publish">Publish this Paigaam</button>
           <p class="hint">Free. The link stays live; only you can edit it before publishing.</p>
         </section>
 

@@ -9,7 +9,7 @@ const { logoFull } = require('../lib/brand');
 const { builderShell } = require('../lib/builderShell');
 
 const STEPS = [
-  { key: 'design', title: 'The apology' },
+  
   { key: 'who', title: 'Who it’s for' },
   { key: 'words', title: 'The words' },
   { key: 'review', title: 'Look it over' },
@@ -50,25 +50,13 @@ function maafiCreatePage() {
       <p id="stepCounter" class="eyebrow"></p>
       <form id="maafiForm" novalidate>
 
-        <section data-step="0" class="step">
-          <h2 tabindex="-1">One page, one plea</h2>
-          <p>It opens on your apology and two buttons. The No button won’t sit still — it teleports away and shrinks with every attempt, while the message climbs a ladder of ever-more-desperate pleas. Pressing Yes bursts the screen in hearts.</p>
-          <ul class="scene-list">
-            <li><b>One ·</b> the plea, on a flowing rose gradient</li>
-            <li><b>Two ·</b> every dodge — the No button flees, shrinks, sparkles</li>
-            <li><b>Three ·</b> the Yes — heart rain and bouncing emoji</li>
-          </ul>
-          <p class="hint">Nothing to download, nothing to wait for — the whole page loads at once.</p>
-          <a class="button secondary" href="/maafi/demo" target="_blank" rel="noopener">Try the demo <span aria-hidden="true">↗</span></a>
-        </section>
-
-        <section data-step="1" class="step" hidden>
+        <section data-step="0" class="step" hidden>
           <h2 tabindex="0">Who is it for?</h2>
           <p>Their name is all the apology truly needs.</p>
           ${field({ id: 'recipientName', label: 'Their name', max: 60, placeholder: 'Meher', required: true, hint: 'Just the name you actually call them.' })}
         </section>
 
-        <section data-step="2" class="step" hidden>
+        <section data-step="1" class="step" hidden>
           <h2 tabindex="0">The words</h2>
           <p>Leave them as they are if they already sound like you. The preview on the right follows every keystroke.</p>
           ${field({ id: 'headline', label: 'The opening plea', max: 120, placeholder: 'I’m really sorry ❤️' })}
@@ -78,17 +66,12 @@ function maafiCreatePage() {
           ${field({ id: 'senderName', label: 'Sign it', max: 60, placeholder: 'Rahul', hint: 'Appears as a small signature at the very end.' })}
         </section>
 
-        <section data-step="3" class="step" hidden>
+        <section data-step="2" class="step" hidden>
           <h2 tabindex="0">Ready to send</h2>
           <p>Have one last look, then publish. You will get a link and a QR card you can send anywhere.</p>
           <div id="review" class="review"></div>
-          <div class="preview-callout">
-            <span aria-hidden="true">✦</span>
-            <p>Chase the No button exactly as they will.</p>
-            <button type="button" id="savePreview" class="button primary">Save &amp; preview</button>
-          </div>
-          <p id="previewState" class="hint" aria-live="polite"></p>
-          <button type="button" id="publish" class="button publish" disabled>Publish this Paigaam</button>
+<p id="previewState" class="hint" aria-live="polite"></p>
+          <button type="button" id="publish" class="button publish">Publish this Paigaam</button>
           <p class="hint">Free. The link stays live; only you can edit it before publishing.</p>
         </section>
 

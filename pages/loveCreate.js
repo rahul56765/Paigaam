@@ -10,7 +10,7 @@ const { logoFull } = require('../lib/brand');
 const { builderShell } = require('../lib/builderShell');
 
 const STEPS = [
-  { key: 'design', title: 'The intro' },
+  
   { key: 'who', title: 'Who it’s for' },
   { key: 'photos', title: 'Your photos' },
   { key: 'review', title: 'Look it over' },
@@ -54,19 +54,7 @@ function loveCreatePage() {
       <p id="stepCounter" class="eyebrow"></p>
       <form id="loveForm" novalidate>
 
-        <section data-step="0" class="step">
-          <h2 tabindex="-1">Three little scenes</h2>
-          <p>First an intro with your words and one button. Then the gallery — your photos scattered as draggable cards, mixed with hidden notes. And once they have touched most of the cards, your love letter appears.</p>
-          <ul class="scene-list">
-            <li><b>One ·</b> the intro — your words, one button</li>
-            <li><b>Two ·</b> the gallery — drag a card to flip it</li>
-            <li><b>Three ·</b> the letter, once most cards are touched</li>
-          </ul>
-          <p class="hint">Everything is drawn in the browser — the cards, the sparkles, the falling hearts.</p>
-          <a class="button secondary" href="/love-album/demo" target="_blank" rel="noopener">Watch the demo <span aria-hidden="true">↗</span></a>
-        </section>
-
-        <section data-step="1" class="step" hidden>
+        <section data-step="0" class="step" hidden>
           <h2 tabindex="-1">Who is it for?</h2>
           <p>Their name is all the album truly needs — the rest already has words waiting.</p>
           ${field({ id: 'recipientName', label: 'Their name (or nickname)', max: 60, placeholder: 'Pookie', required: true, hint: 'The nickname you actually call them. It appears in the intro and over the gallery.' })}
@@ -75,7 +63,7 @@ function loveCreatePage() {
           ${field({ id: 'continueLabel', label: 'The intro button says', max: 40, placeholder: "Let's Go!" })}
         </section>
 
-        <section data-step="2" class="step" hidden>
+        <section data-step="1" class="step" hidden>
           <h2 tabindex="-1">Your photos</h2>
           <p>Between <b>3 and 9</b> photos — they become the draggable cards of the gallery. Three hidden notes are woven between them automatically.</p>
           <div class="upload-box">
@@ -88,7 +76,7 @@ function loveCreatePage() {
           <p class="hint">Photos stay private: the album link is unguessable, and only published albums serve their photos.</p>
         </section>
 
-        <section data-step="3" class="step" hidden>
+        <section data-step="2" class="step" hidden>
           <h2 tabindex="-1">The hidden notes and the letter</h2>
           <p>Three notes hide on card backs inside the gallery. The letter is the finale — it appears once they have touched most of the cards.</p>
           ${field({ id: 'message1', label: 'Hidden message · one', max: 160, placeholder: 'You make my heart smile every day! ❤️' })}
@@ -99,17 +87,12 @@ function loveCreatePage() {
           ${field({ id: 'finalLabel', label: 'The final button says', max: 120, placeholder: 'One last thing for you! 💕 Click here!' })}
         </section>
 
-        <section data-step="4" class="step" hidden>
+        <section data-step="3" class="step" hidden>
           <h2 tabindex="-1">Ready to send</h2>
           <p>Have one last look, then publish. You will get a link and a QR card you can send anywhere.</p>
           <div id="review" class="review"></div>
-          <div class="preview-callout">
-            <span aria-hidden="true">✦</span>
-            <p>Open the album exactly as they will see it.</p>
-            <button type="button" id="savePreview" class="button primary">Save &amp; preview</button>
-          </div>
-          <p id="previewState" class="hint" aria-live="polite"></p>
-          <button type="button" id="publish" class="button publish" disabled>Publish this Paigaam</button>
+<p id="previewState" class="hint" aria-live="polite"></p>
+          <button type="button" id="publish" class="button publish">Publish this Paigaam</button>
           <p class="hint">Free. The link stays live; only you can edit it before publishing.</p>
         </section>
 
