@@ -523,10 +523,10 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
 }
 .hero--dark h1 em { font-style: italic; color: var(--gold); }
 .hero--dark .hero__lede { max-width: 480px; color: rgba(245, 233, 213, 0.66); font-size: 17.5px; line-height: 1.7; margin-bottom: 42px; }
-.hero--dark .hero__ctas { justify-content: flex-start; }
-.hero--dark .btn--primary { background: var(--gold); border-color: var(--gold); color: var(--dark); padding: 17px 36px; }
+.hero--dark .hero__ctas { justify-content: flex-start; gap: 16px; flex-wrap: wrap; }
+.hero--dark .btn--primary { background: var(--gold); border-color: var(--gold); color: var(--dark); padding: 17px 30px; }
 .hero--dark .btn--primary:hover { background: var(--ivory); border-color: var(--ivory); color: var(--dark); }
-.hero--dark .btn--outline { border-color: rgba(245, 233, 213, 0.35); color: var(--ivory); padding: 17px 36px; }
+.hero--dark .btn--outline { border-color: rgba(245, 233, 213, 0.35); color: var(--ivory); padding: 17px 30px; }
 .hero--dark .btn--outline:hover { border-color: var(--ivory); background: rgba(245, 233, 213, 0.06); color: var(--ivory); }
 .hero--dark .hero__micro { display: flex; gap: 28px; margin-top: 46px; color: rgba(245, 233, 213, 0.45); font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; }
 .hero--dark .hero__micro span { display: flex; align-items: center; gap: 9px; }
