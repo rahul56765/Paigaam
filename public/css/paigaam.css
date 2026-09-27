@@ -186,6 +186,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
 .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 44px; }
 .tcard { display: block; }
 .tcard__frame {
+  display: block;
   position: relative; overflow: hidden;
   border: 1px solid var(--line);
   background: var(--bg-deep);
