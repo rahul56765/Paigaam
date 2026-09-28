@@ -97,28 +97,40 @@
       var doc;
       try { doc = liveFrame.contentDocument; } catch (e) { return; }
       if (!doc || !doc.body) return;
-      // Measure the NATURAL doc height: stretch the iframe tall first (scrollHeight
-      // otherwise just echoes the current iframe height), then read back.
-      liveFrame.style.height = '8000px';
-      var naturalH = Math.max(doc.documentElement.scrollHeight, doc.body.scrollHeight, 1);
-      var naturalW = liveFrame.contentWindow ? liveFrame.contentWindow.innerWidth : 390;
-      if (naturalW < 100) naturalW = 390;
+      // Two page shapes live in this frame:
+      //  a) fixed-viewport experiences (scene paigaams) — natural size = one phone viewport;
+      //  b) scrolling pages — natural height > viewport, show the WHOLE page.
+      // Measure honestly: stretch the frame, read the doc height, and treat
+      // "content ≈ one viewport" as shape (a).
+      liveFrame.style.height = '4000px';
+      var docH = Math.max(doc.documentElement.scrollHeight, doc.body.scrollHeight, 1);
+      var vw = liveFrame.contentWindow ? liveFrame.contentWindow.innerWidth : 390;
+      if (vw < 100) vw = 390;
       var box = liveFrame.parentElement; // .livepane__frame
       if (!box) return;
       var fitW = box.clientWidth || 300;
       if (!fitW || fitW > 340) fitW = Math.min(fitW, 320); // phone-width design
       var fitH = window.innerHeight * (window.innerWidth <= 720 ? 0.42 : 0.66);
       fitH = Math.min(fitH, window.innerWidth <= 720 ? 340 : 640);
-      // width-first: fill the frame width; only shrink further if too tall
-      var scale = fitW / naturalW;
-      if (naturalH * scale > fitH) scale = fitH / naturalH;
+
+      var naturalH, scale;
+      if (docH <= 4000 * 0.55) {
+        // scrolling page: show ALL of it
+        naturalH = docH;
+        scale = fitW / vw;
+        if (naturalH * scale > fitH) scale = fitH / naturalH;
+      } else {
+        // fixed-viewport experience: show one full screen (phone aspect)
+        naturalH = Math.round(vw * (16 / 9) * (16 / 9) / 1) || vw * 2; // ≈ 9:16-ish viewport
+        naturalH = Math.round(vw * 2.1); // tall phone viewport
+        scale = Math.min(fitW / vw, fitH / naturalH);
+      }
       if (!isFinite(scale) || scale <= 0) scale = 1;
-      liveFrame.style.width = naturalW + 'px';
+      liveFrame.style.width = vw + 'px';
       liveFrame.style.height = naturalH + 'px';
       liveFrame.style.transformOrigin = '0 0';
       liveFrame.style.transform = 'scale(' + scale + ')';
-      // the box keeps the FIT size; the iframe's layout size is scaled away
-      box.style.width = Math.round(naturalW * scale) + 'px';
+      box.style.width = Math.round(vw * scale) + 'px';
       box.style.height = Math.round(naturalH * scale) + 'px';
       box.style.maxWidth = 'none';
       liveFrame.dataset.fitScale = String(scale);
