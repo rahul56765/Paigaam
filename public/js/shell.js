@@ -142,11 +142,16 @@
       highlightStyle.textContent = '.pa-shell-hl{outline:3px solid rgba(201,162,94,.9);outline-offset:-3px;border-radius:6px;transition:outline-color .8s ease 1.2s}';
       doc.head.appendChild(highlightStyle);
     }
-    // which field is the visible step editing?
+    // which field is the visible step editing? (bfday ids are f-<fieldid>-<n>; generic are data-field)
     var step = document.querySelector('.step:not([hidden]), .bstep:not([hidden])');
     if (!step) return;
     var input = step.querySelector('[data-field]');
-    var fid = input ? (input.getAttribute('data-field') || input.id || '').replace(/^f-/, '') : '';
+    var fid = input ? (input.getAttribute('data-field') || input.id || '') : (function () {
+      var any = step.querySelector('input[id], textarea[id]');
+      if (!any) return '';
+      var m = any.id.match(/^f-([a-z]+?)(?:-[0-9a-f]+)?$/i);
+      return m ? m[1] : any.id.replace(/^f-/, '');
+    })();
     if (!fid) return;
     // find the anchor: renderer marks data-field-anchor, else probe for the current value text
     var target = doc.querySelector('[data-field-anchor="' + fid + '"]');
