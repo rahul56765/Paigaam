@@ -25,4 +25,5 @@ module.exports = [
   'vivah',
   'shubh-vivah',
   'inaam',
+  'purana-seekho',
 ];
