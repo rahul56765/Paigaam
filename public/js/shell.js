@@ -154,8 +154,25 @@
       return any.id.replace(/^f-/, '').replace(/-[0-9a-f]+$/i, '');
     })();
     if (!fid || fid === '__review') return;
-    // find the anchor: renderer marks data-field-anchor, else probe for the current value text
+    // find the anchor: renderer marks data-field-anchor, else probe known field→heading keywords,
+    // else probe for the current value text
     var target = doc.querySelector('[data-field-anchor="' + fid + '"]');
+    if (!target) {
+      var HEADING_HINTS = {
+        coupons: ['coupon'], gifts: ['gift', 'pick'], award: ['award'], letter: ['letter'],
+        photos: ['photo', 'polaroid', 'gallery'], song: ['song', 'music'], bgmSong: ['song', 'music'],
+        recipientName: [], senderName: [], message: [], finaleNote: ['letter', 'finale'],
+        words: ['word'], reasons: ['reason'], moments: ['moment', 'memory'],
+      };
+      var hints = HEADING_HINTS[fid] || [];
+      for (var h = 0; h < hints.length && !target; h++) {
+        var cand = doc.querySelectorAll('h1,h2,h3,section,div');
+        for (var i = 0; i < cand.length; i++) {
+          var t = (cand[i].textContent || '').toLowerCase();
+          if (t.indexOf(hints[h]) !== -1) { target = cand[i].closest('section') || cand[i]; break; }
+        }
+      }
+    }
     if (!target) {
       var val = (input.value || '').trim();
       if (val.length > 1) {
