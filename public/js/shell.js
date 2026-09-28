@@ -123,7 +123,7 @@
   }
 
   if (liveFrame) {
-    liveFrame.addEventListener('load', function () { fitPreview(); setTimeout(fitPreview, 350); });
+    liveFrame.addEventListener('load', function () { fitPreview(); setTimeout(fitPreview, 350); setTimeout(highlightForStep, 450); });
     window.addEventListener('resize', fitPreview);
     // wizard engines swap srcdoc/src asynchronously — watch for it
     new MutationObserver(fitPreview).observe(liveFrame, { attributes: true, attributeFilter: ['src', 'srcdoc'] });
