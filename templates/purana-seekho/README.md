@@ -35,5 +35,5 @@ script. Motion is springy — `cubic-bezier(.34,1.56,.64,1)`, nothing over
 hash, never the answer). All text is server-rendered and HTML-escaped;
 `purana-seekho.js` is motion only. Assets ship from `lib/bfday/assets.js` —
 4 cat cutouts, the gift-box illustration, the couple illustration, 4 doodles,
-6 demo photos and `og.jpg` under `assets/purana-seekho/` and
-`assets/purana-seekho-demo/`.
+6 demo photos and `og.jpg` under `assets/purana-seekho/` (art) and
+`assets/bfday-demo/purana-seekho-demo-*.jpg` (demo photos — shared family demo dir).

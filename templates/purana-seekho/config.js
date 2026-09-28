@@ -19,12 +19,12 @@ const CLOUD_DEFAULTS = [
 ];
 
 const PHOTO_DEFAULTS = [
-  '/assets/purana-seekho-demo/demo-1.jpg',
-  '/assets/purana-seekho-demo/demo-2.jpg',
-  '/assets/purana-seekho-demo/demo-3.jpg',
-  '/assets/purana-seekho-demo/demo-4.jpg',
-  '/assets/purana-seekho-demo/demo-5.jpg',
-  '/assets/purana-seekho-demo/demo-6.jpg',
+  '/assets/bfday-demo/purana-seekho-demo-1.jpg',
+  '/assets/bfday-demo/purana-seekho-demo-2.jpg',
+  '/assets/bfday-demo/purana-seekho-demo-3.jpg',
+  '/assets/bfday-demo/purana-seekho-demo-4.jpg',
+  '/assets/bfday-demo/purana-seekho-demo-5.jpg',
+  '/assets/bfday-demo/purana-seekho-demo-6.jpg',
 ];
 
 module.exports = {
@@ -98,12 +98,8 @@ module.exports = {
       default: 'thank you for being the softest, silliest, warmest part of every day. happy boyfriend’s day, my love.',
     },
     {
-      id: 'songUrl', type: 'url', label: 'The song link on the closer',
+      id: 'closerSongUrl', type: 'url', label: 'The song link on the closer',
       hint: 'e.g. open.spotify.com/track/… or youtube.com/watch?v=… — YouTube links play right on the page, Spotify opens in a tap.',
-    },
-    {
-      id: 'bgmSong', type: 'bgm', label: 'Background music',
-      hint: 'A YouTube link or video id. Optional — leave it blank (or choose "no song") for a quiet page. Nothing plays until they tap the music button.',
     },
   ],
 
@@ -136,7 +132,7 @@ module.exports = {
     {
       title: 'The closer', heading: 'The last screen',
       intro: 'The pink oval, the couple illustration, and your song — YouTube plays right on the page.',
-      fields: ['closerLine', 'closerNote', 'songUrl', 'bgmSong'],
+      fields: ['closerLine', 'closerNote', 'closerSongUrl', 'bgmSong'],
     },
   ],
 
@@ -170,7 +166,7 @@ module.exports = {
     photos: PHOTO_DEFAULTS,
     closerLine: 'You complete me',
     closerNote: 'thank you for being the softest, silliest, warmest part of every day. happy boyfriend’s day, my love.',
-    songUrl: 'https://www.youtube.com/watch?v=mt9xg0mmt28',
+    closerSongUrl: 'https://www.youtube.com/watch?v=mt9xg0mmt28',
   },
 
   sections: ['gate', 'pick', 'hero', 'cloud', 'memories', 'closer'],

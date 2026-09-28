@@ -38,6 +38,38 @@ const { resolve } = require('../../lib/bfday/fields');
 const { escape, multiline, jsonPayload, head, previewBadge } = require('../../lib/bfday/page');
 const { bgmMarkup, bgmScript } = require('../../lib/bfday/bgm');
 
+/** Brand glyph shown on non-YouTube play links (tiny inline SVG). */
+function serviceGlyph(svc) {
+  if (svc === 'spotify') return '<svg class="ps-svc-ic" viewBox="0 0 24 24" aria-hidden="true"><path fill="#1DB954" d="M12 0a12 12 0 1 0 0 24 12 12 0 0 0 0-24Zm5.5 17.3a.75.75 0 0 1-1.03.25c-2.83-1.73-6.39-2.12-10.58-1.16a.75.75 0 0 1-.33-1.46c4.55-1.04 8.45-.59 11.6 1.34.36.22.46.68.24 1.03Zm1.47-3.27a.94.94 0 0 1-1.29.31c-3.24-1.99-8.18-2.57-12-1.4a.94.94 0 1 1-.55-1.8c4.25-1.29 9.62-.66 13.33 1.6.44.27.58.85.31 1.29Zm.13-3.4C15.24 8.3 8.9 8.08 5.16 9.22a1.13 1.13 0 0 1-.66-2.16c4.18-1.27 11.2-1.02 15.6 1.58a1.13 1.13 0 0 1-1.17 1.99Z"/></svg>';
+  if (svc === 'apple') return '<svg class="ps-svc-ic" viewBox="0 0 24 24" aria-hidden="true"><path fill="#FA243C" d="M16.37 12.56c.03 3.08 2.7 4.1 2.73 4.11-.02.07-.43 1.46-1.41 2.89-.85 1.24-1.73 2.48-3.12 2.5-1.36.03-1.8-.8-3.35-.8-1.55 0-2.04.78-3.32.77-1.33-.02-2.36-1.34-3.22-2.58C2.93 16.9 1.55 12.06 3.3 8.87a5.6 5.6 0 0 1 4.72-2.86c1.47-.03 2.86.99 3.76.99.9 0 2.59-1.23 4.37-1.05.74.03 2.83.3 4.17 2.26-.11.07-2.49 1.45-2.46 4.35ZM13.8 4.25c.71-.86 1.19-2.05 1.06-3.25-1.02.04-2.26.68-3 1.54-.66.76-1.24 1.98-1.08 3.15 1.14.09 2.31-.58 3.02-1.44Z"/></svg>';
+  return '';
+}
+
+/** "Open in <service>" label for non-YouTube song links (display text). */
+function linkService(url) {
+  const m = /^https?:\/\/(?:www\.)?([^/?#]+)/i.exec(String(url || '').trim());
+  const h = m ? m[1].toLowerCase() : '';
+  if (/spotify/.test(h)) return 'Spotify';
+  if (/music\.apple\.|itunes/.test(h)) return 'Apple Music';
+  if (/jiosaavn/.test(h)) return 'JioSaavn';
+  return 'the app';
+}
+
+/** CSS class key for brand styling, derived independently of the label. */
+function linkBrand(url) {
+  const m = /^https?:\/\/(?:www\.)?([^/?#]+)/i.exec(String(url || '').trim());
+  const h = m ? m[1].toLowerCase() : '';
+  if (/spotify/.test(h)) return 'spotify';
+  if (/music\.apple\.|itunes/.test(h)) return 'apple';
+  return '';
+}
+
+/** Extract a YouTube video ID from watch / youtu.be / shorts / embed URLs. */
+function youtubeId(url) {
+  const m = /^(?:https?:\/\/)?(?:www\.|m\.)?(?:youtube\.com\/(?:watch\?[^#]*v=|shorts\/|embed\/)|youtu\.be\/)([\w-]{11})/i.exec(String(url || '').trim());
+  return m ? m[1] : null;
+}
+
 /** One word-cloud label + its little handwritten arrow. */
 function cloudLabel(item, i) {
   return `<li class="ps-cloud__item" style="--i:${i}">
@@ -50,6 +82,16 @@ function cloudLabel(item, i) {
 const CLOUD_ARROWS = [
   '<svg viewBox="0 0 40 24" aria-hidden="true"><path d="M3 20 C 14 18, 26 12, 36 4 M 36 4 l-7 .8 M 36 4 l-2.5 6.4" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>',
   '<svg viewBox="0 0 40 24" aria-hidden="true"><path d="M4 6 C 14 10, 26 14, 36 20 M 36 20 l-1.2 -6.8 M 36 20 l-6.9 1.6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>',
+];
+
+/** The shipped sample memories (shared family demo dir). */
+const PHOTO_DEMOS = [
+  '/assets/bfday-demo/purana-seekho-demo-1.jpg',
+  '/assets/bfday-demo/purana-seekho-demo-2.jpg',
+  '/assets/bfday-demo/purana-seekho-demo-3.jpg',
+  '/assets/bfday-demo/purana-seekho-demo-4.jpg',
+  '/assets/bfday-demo/purana-seekho-demo-5.jpg',
+  '/assets/bfday-demo/purana-seekho-demo-6.jpg',
 ];
 
 /** One memory photo in the booth strip. */
@@ -89,7 +131,19 @@ function render(paigaam = {}, opts = {}) {
     `<span class="ps-hero__word" style="--i:${i}">${escape(w)}</span>`).join(' ');
 
   const cloud = d.cloudLabels.slice(0, 6);
-  const photos = d.photos.slice(0, 6);
+  /* the memories strip: sender photos, else the shipped sample shots */
+  const photos = (d.photos.length ? d.photos : PHOTO_DEMOS).slice(0, 6);
+
+  /* ---- the closer song: YouTube embeds, everything else gets a branded pill ---- */
+  const songUrl = d.closerSongUrl || '';
+  const ytId = youtubeId(songUrl);
+  const svc = (!ytId && songUrl) ? linkBrand(songUrl) : '';
+  const songEmbed = ytId
+    ? `<div class="ps-song__embed"><iframe src="https://www.youtube-nocookie.com/embed/${ytId}?rel=0" title="your song" loading="lazy" allow="accelerometer; encrypted-media; picture-in-picture; web-share" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>`
+    : '';
+  const songLink = (!ytId && songUrl)
+    ? `<a class="ps-song__pill${svc ? ' ps-song__pill--' + svc : ''}" href="${escape(songUrl)}" target="_blank" rel="noopener noreferrer">&#9654; Play in ${escape(linkService(songUrl))}${serviceGlyph(svc)}</a>`
+    : '';
 
   const payload = {
     h: passHash,
@@ -215,6 +269,8 @@ ${jsonPayload('psData', payload)}
       <p class="ps-closer__oval ps-pop"><span>You complete me</span></p>
       <img class="ps-closer__couple ps-pop" src="/assets/purana-seekho/couple-illustration.png" alt="an illustrated couple under rainbow doodles" width="1024" height="1024" draggable="false">
       <p class="ps-closer__sign ps-pop">forever yours, ${escape(her)}</p>
+      ${songEmbed}
+      ${songLink}
       <footer class="ps-closer__foot ps-pop">made with love on <a href="/">Paigaam</a></footer>
     </section>
 
