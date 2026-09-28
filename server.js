@@ -640,7 +640,10 @@ function buildTemplateFromForm(form) {
     if (!Array.isArray(fields)) throw new Error('Fields must be a JSON array.');
     for (const f of fields) {
       if (!f.id || !f.label || !f.type) throw new Error('Each field needs an id, label and type.');
-      if (!['text', 'textarea', 'date', 'time', 'number', 'image'].includes(f.type)) throw new Error(`Unknown field type "${f.type}".`);
+      // Mirror lib/bfday/fields.js TYPES + the classic types the seeded
+      // registry ships (list/select/url included) so editing any stock
+      // template in the admin UI never trips on its own schema.
+      if (!['text', 'textarea', 'date', 'time', 'number', 'image', 'list', 'select', 'url', 'bgm'].includes(f.type)) throw new Error(`Unknown field type "${f.type}".`);
       if (!f.group) f.group = 'people';
     }
   } catch (e) {
