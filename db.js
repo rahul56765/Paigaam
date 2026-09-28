@@ -133,6 +133,7 @@ addColumnIfMissing('orders', 'razorpay_order_id', "razorpay_order_id TEXT NOT NU
 addColumnIfMissing('orders', 'razorpay_payment_id', "razorpay_payment_id TEXT NOT NULL DEFAULT ''");
 addColumnIfMissing('orders', 'razorpay_signature', "razorpay_signature TEXT NOT NULL DEFAULT ''");
 addColumnIfMissing('paigaams', 'recovery_token', "recovery_token TEXT NOT NULL DEFAULT ''");
+addColumnIfMissing('templates', 'list_price', "list_price INTEGER NOT NULL DEFAULT 0");
 db.exec(`CREATE INDEX IF NOT EXISTS idx_orders_rzp ON orders(razorpay_order_id);
 CREATE INDEX IF NOT EXISTS idx_paigaams_recovery ON paigaams(recovery_token);`);
 
@@ -180,25 +181,25 @@ const q = {
   templateById:      (id) => parse(db.prepare('SELECT * FROM templates WHERE id = ?').get(id), ['config']),
   templateInsert:    (t) => {
     const id = uid();
-    db.prepare(`INSERT INTO templates (id,name,slug,category,description,price,currency,thumbnail_url,config,status,created_at,updated_at)
-                VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`)
-      .run(id, t.name, t.slug, t.category, t.description || '', t.price | 0, t.currency || 'INR',
+    db.prepare(`INSERT INTO templates (id,name,slug,category,description,price,list_price,currency,thumbnail_url,config,status,created_at,updated_at)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`)
+      .run(id, t.name, t.slug, t.category, t.description || '', t.price | 0, t.list_price | 0, t.currency || 'INR',
            t.thumbnail_url || '', JSON.stringify(t.config || {}), t.status || 'draft', now(), now());
     return q.templateById(id);
   },
   templateUpdate: (id, t) => {
-    db.prepare(`UPDATE templates SET name=?,slug=?,category=?,description=?,price=?,currency=?,thumbnail_url=?,config=?,status=?,updated_at=? WHERE id=?`)
-      .run(t.name, t.slug, t.category, t.description || '', t.price | 0, t.currency || 'INR',
+    db.prepare(`UPDATE templates SET name=?,slug=?,category=?,description=?,price=?,list_price=?,currency=?,thumbnail_url=?,config=?,status=?,updated_at=? WHERE id=?`)
+      .run(t.name, t.slug, t.category, t.description || '', t.price | 0, t.list_price | 0, t.currency || 'INR',
            t.thumbnail_url || '', JSON.stringify(t.config || {}), t.status || 'draft', now(), id);
     return q.templateById(id);
   },
   templateDelete: (id) => db.prepare('DELETE FROM templates WHERE id = ?').run(id),
 
   // paigaams
-  paigaamsAll:  () => db.prepare(`SELECT p.*, t.name AS template_name, t.slug AS template_slug, t.price AS template_price
+  paigaamsAll:  () => db.prepare(`SELECT p.*, t.name AS template_name, t.slug AS template_slug, t.price AS template_price, t.list_price AS template_list_price
                                   FROM paigaams p JOIN templates t ON t.id = p.template_id
                                   ORDER BY p.created_at DESC`).all().map(r => parse(r)),
-  paigaamById:  (id) => parse(db.prepare(`SELECT p.*, t.name AS template_name, t.slug AS template_slug, t.price AS template_price, t.currency AS template_currency, t.config AS template_config, t.category AS template_category
+  paigaamById:  (id) => parse(db.prepare(`SELECT p.*, t.name AS template_name, t.slug AS template_slug, t.price AS template_price, t.list_price AS template_list_price, t.currency AS template_currency, t.config AS template_config, t.category AS template_category
                                           FROM paigaams p JOIN templates t ON t.id = p.template_id WHERE p.id = ?`).get(id), ['customer_data', 'template_config']),
   paigaamBySlug:(slug) => parse(db.prepare(`SELECT p.*, t.name AS template_name, t.slug AS template_slug, t.config AS template_config, t.category AS template_category
                                             FROM paigaams p JOIN templates t ON t.id = p.template_id WHERE p.slug = ?`).get(slug), ['customer_data', 'template_config']),
@@ -222,7 +223,7 @@ const q = {
   },
   paigaamSlugTaken: (slug) => !!db.prepare('SELECT 1 FROM paigaams WHERE slug = ?').get(slug),
   paigaamDelete: (id) => db.prepare('DELETE FROM paigaams WHERE id = ?').run(id),
-  paigaamByRecoveryToken: (token) => parse(db.prepare(`SELECT p.*, t.name AS template_name, t.slug AS template_slug, t.price AS template_price, t.currency AS template_currency, t.config AS template_config, t.category AS template_category
+  paigaamByRecoveryToken: (token) => parse(db.prepare(`SELECT p.*, t.name AS template_name, t.slug AS template_slug, t.price AS template_price, t.list_price AS template_list_price, t.currency AS template_currency, t.config AS template_config, t.category AS template_category
                                             FROM paigaams p JOIN templates t ON t.id = p.template_id WHERE p.recovery_token = ?`).get(token), ['customer_data', 'template_config']),
   paigaamSetRecoveryToken: (id, token) => db.prepare('UPDATE paigaams SET recovery_token = ?, updated_at = ? WHERE id = ?').run(token || '', now(), id),
 
@@ -249,6 +250,18 @@ const q = {
   orderUpdate: (id, status) => {
     db.prepare('UPDATE orders SET status = ?, updated_at = ? WHERE id = ?').run(status, now(), id);
     return q.orderById(id);
+  },
+
+  // "Begin where you left off": the sender's most recent draft of a template
+  // (owners tables all share the shape paigaam_id/owner_hash/created_at-ms).
+  recentDraftForOwner: (ownersTable, ownerHash, templateId, withinMs) => {
+    if (!ownerHash) return null;
+    const row = db.prepare(`SELECT o.paigaam_id FROM ${ownersTable} o
+                            JOIN paigaams p ON p.id = o.paigaam_id
+                            WHERE o.owner_hash = ? AND o.created_at > ? AND p.template_id = ? AND p.status = 'draft'
+                            ORDER BY o.created_at DESC LIMIT 1`)
+      .get(ownerHash, Date.now() - (withinMs || 3600000), templateId);
+    return row ? q.paigaamById(row.paigaam_id) : null;
   },
 
   // settings

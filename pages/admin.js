@@ -144,8 +144,12 @@ function templateForm(tpl, isNew) {
         <select class="input" style="font-size:17px" id="category" name="category" required>
           ${['Wedding', 'Birthday', 'Anniversary', 'Baby', 'Festival', 'Personal'].map(c => `<option ${tpl.category === c ? 'selected' : ''}>${c}</option>`).join('')}
         </select></div>
-      <div class="field"><label for="price">Price (₹) <span class="req">*</span></label>
-        <input class="input" style="font-size:19px" type="number" min="0" id="price" name="price" value="${esc(tpl.price ?? 499)}" required></div>
+      <div class="field"><label for="price">Sale price (₹) <span class="req">*</span></label>
+        <input class="input" style="font-size:19px" type="number" min="0" id="price" name="price" value="${esc(tpl.price ?? 499)}" required>
+        <p class="hint">What the customer actually pays.</p></div>
+      <div class="field"><label for="list_price">Listing price (₹)</label>
+        <input class="input" style="font-size:19px" type="number" min="0" id="list_price" name="list_price" value="${esc(tpl.list_price ?? 0)}">
+        <p class="hint">Shown struck-through above the sale price (the "was" price). 0 = none.</p></div>
     </div>
     <div class="field"><label for="description">Description</label>
       <textarea class="textarea" style="font-size:18px" id="description" name="description">${esc(tpl.description || '')}</textarea></div>

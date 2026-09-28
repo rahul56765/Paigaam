@@ -33,6 +33,10 @@
 
   var step = 0;
   var draftId = null;
+
+  window.wizardAdoptDraft = function (id, purl) { draftId = id; if (purl) previewUrl = purl; };
+
+  window.wizardDiscardDraft = function (id) { /* stale draft simply expires */ };
   var previewUrl = null;
   var saving = false;
   var publishing = false;
@@ -231,6 +235,7 @@
     invalid_image: 'One of those files is not an image we can use (JPG, PNG or WebP).',
     storage_unavailable: 'Publishing is paused right now. Your draft is safe — try again shortly.',
     forbidden: 'This Paigaam can’t be edited any more.',
+    payments_offline: 'Payments are being switched on — check back shortly. Your draft is safe.',
     not_found: 'This Paigaam has wandered off. Reload and start again.',
   };
 
@@ -357,7 +362,7 @@
         .then(function () {
           return request('/api/sau-wajah/publish', { id: draftId });
         })
-        .then(function (body) { showResult(body.url); })
+        .then(function (body) { if (body && body.payUrl) { window.location.href = body.payUrl; return; } showResult(body.url); })
         .catch(function (err) {
           publishing = false;
           publishBtn.disabled = false;
@@ -433,4 +438,13 @@
     });
     refreshLive();
   }
+
+  /* ---------------- autosave (added): typing pauses 4s → draft saved ---------------- */
+  var autoTimer = 0;
+  form.addEventListener('input', function () {
+    clearTimeout(autoTimer);
+    autoTimer = setTimeout(function () {
+      if (typeof saveDraft === 'function' && !saving) { saveDraft().catch(function () {}); }
+    }, 4000);
+  });
 })();

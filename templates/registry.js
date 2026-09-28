@@ -167,4 +167,17 @@ function displayDate(iso) {
   return dt.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
 }
 
-module.exports = { TEMPLATES, GROUPS, getTemplateConfig, fieldGroups, displayNames, displayDate };
+/**
+ * Price display pieces for any template row (registry entry or DB row).
+ * Returns { free, sale, list, off } — list is 0 when there is no higher
+ * listing price to strike through, off is the rounded discount percent.
+ */
+function priceInfo(t) {
+  const sale = Math.max(0, Number(t && t.price) || 0);
+  const lp = Math.max(0, Number(t && t.list_price) || 0);
+  const list = lp > sale ? lp : 0;
+  const off = list ? Math.round(((list - sale) / list) * 100) : 0;
+  return { free: sale === 0, sale, list, off };
+}
+
+module.exports = { TEMPLATES, GROUPS, getTemplateConfig, fieldGroups, displayNames, displayDate, priceInfo };

@@ -27,10 +27,15 @@ function field({ id, label, hint, max, type = 'text', rows = 3, placeholder = ''
 </div>`;
 }
 
-function saalgirahCreatePage() {
+function saalgirahCreatePage(opts = {}) {
+  const price = Number(opts.price) || 0, listPrice = Number(opts.listPrice) || 0;
+  const rd = opts.resumeDraft || null;
+  const boot = rd ? { draftId: rd.id, data: rd.customer_data || {}, at: rd.updated_at ? new Date(rd.updated_at.replace(' ', 'T') + 'Z').getTime() : Date.now(), noun: 'letter' } : null;
     return builderShell('Saalgirah', `
 <link rel="stylesheet" href="/saalgirah/create.css">
 <script src="/saalgirah/create.js" defer></script>
+${boot ? `<script src="/js/resume.js" defer></script>
+<script type="application/json" id="wizardBoot">${JSON.stringify(boot).replace(/</g, '\u003c')}</script>` : ''}
 <script src="/js/qr-card.js" defer></script>
 <main id="wizard">
   <section class="intro">
@@ -86,8 +91,8 @@ function saalgirahCreatePage() {
           <p>Have one last look, then publish. You will get a link and a QR card you can send anywhere.</p>
           <div id="review" class="review"></div>
 <p id="previewState" class="hint" aria-live="polite"></p>
-          <button type="button" id="publish" class="button publish">Publish this Paigaam</button>
-          <p class="hint">Free. The link stays live; only you can edit it before publishing.</p>
+          <button type="button" id="publish" class="button publish">${price > 0 ? `Pay &#8377;${price} &amp; publish this Paigaam` : 'Publish this Paigaam'}</button>
+          <p class="hint">${price > 0 ? `Secure payment via Razorpay${listPrice > price ? ` — <s>&#8377;${listPrice}</s>` : ''}. Your Paigaam publishes itself the moment payment lands.` : 'Free. The link stays live; only you can edit it before publishing.'}</p>
         </section>
 
         <div id="formError" class="error" role="alert" hidden></div>

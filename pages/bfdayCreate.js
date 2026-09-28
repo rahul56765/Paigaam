@@ -113,9 +113,12 @@ function fieldHTML(f) {
   return f.id === 'bgmSong' ? bgmFieldHTML(f) : scalarField(f);
 }
 
-/** @param t a family entry: { slug, config, fields } */
-function bfdayCreatePage(t) {
+/** @param t a family entry: { slug, config, fields }; opts carry the LIVE db price (owner-set). */
+function bfdayCreatePage(t, opts = {}) {
   const c = t.config, create = c.create || {};
+  // The owner's admin-set price is the truth; config price is a fallback.
+  c.price = opts.price != null ? opts.price : (c.price | 0);
+  c.listPrice = opts.listPrice | 0;
   const byId = new Map(t.fields.map(f => [f.id, f]));
   const steps = [
     ...c.steps.map(s => ({ title: s.title })),
@@ -131,6 +134,8 @@ function bfdayCreatePage(t) {
     lastStep: lastFormStep,
     stepFields: [...c.steps.map(s => s.fields), []],
     noun: create.noun || 'Paigaam',
+    price: c.price | 0,
+    listPrice: c.listPrice | 0,
   };
   const S = escape(t.slug);
 
@@ -140,6 +145,8 @@ ${jsonPayload('bfSpec', spec)}
 <style>:root { --bg: ${escape(theme.bg)}; --ink: ${escape(theme.ink)}; --accent: ${escape(theme.accent)}; --soft: ${escape(theme.soft)}; }${darkThemeOverride(theme)}</style>
 <script src="/bfday/create.js" defer></script>
 <script src="/js/qr-card.js" defer></script>
+${opts.resumeDraft ? `<script src="/js/resume.js" defer></script>
+<script type="application/json" id="wizardBoot">${JSON.stringify({ draftId: opts.resumeDraft.id, data: opts.resumeDraft.customer_data || {}, at: opts.resumeDraft.updated_at ? new Date(opts.resumeDraft.updated_at.replace(' ', 'T') + 'Z').getTime() : Date.now(), noun: create.noun || 'Paigaam' }).replace(/</g, '\\u003c')}</script>` : ''}
 <main id="wizard">
   <section class="intro">
     <p class="eyebrow">${escape(create.eyebrow || c.name)}</p>
@@ -171,8 +178,8 @@ ${jsonPayload('bfSpec', spec)}
           <p>Publish and share — it takes one tap.</p>
           <div id="review" class="review"></div>
           <p id="previewState" class="hint" aria-live="polite"></p>
-          <button type="button" id="publish" class="button publish">Publish this Paigaam</button>
-          <p class="hint">Free. The link stays live; only you can edit it before publishing.</p>
+          <button type="button" id="publish" class="button publish">${c.price > 0 ? `Pay &#8377;${c.price} &amp; publish this Paigaam` : 'Publish this Paigaam'}</button>
+          <p class="hint">${c.price > 0 ? `Secure payment via Razorpay${c.listPrice > c.price ? ` — <s>&#8377;${c.listPrice}</s>` : ''}. Your Paigaam publishes itself the moment payment lands.` : 'Free. The link stays live; only you can edit it before publishing.'}</p>
         </section>
 
         <div id="formError" class="error" role="alert" hidden></div>

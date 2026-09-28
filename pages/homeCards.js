@@ -8,6 +8,7 @@
 const { esc } = require('../lib/layout');
 const { doveSVG } = require('../lib/logo');
 const { occasionForCategory } = require('../lib/occasions');
+const { priceInfo } = require('../templates/registry');
 
 function motifSVG(motif, color) {
   if (motif === 'dove') return doveSVG(color, 'width="100%"');
@@ -29,6 +30,7 @@ function templateCard(t, opts = {}) {
   const createHref = opts.createHref || `/create/${esc(t.slug)}`;
   const previewHref = opts.previewHref || `/templates/${esc(t.slug)}`;
   const free = Number(t.price) === 0;
+  const pinfo = priceInfo(t);
   // Search haystack: name, category, description, tags + occasion aliases.
   const occ = occasionForCategory(t.category);
   const haystack = [t.name, t.category, t.description, (t.tags || []).join(' '), occ ? occ.aliases.join(' ') : ''].join(' ');
@@ -55,7 +57,7 @@ function templateCard(t, opts = {}) {
   </a>
   <div class="tcard__meta">
     <span class="tcard__title">${esc(t.name)}</span>
-    ${free ? '<span class="tcard__price tcard__price--free">FREE</span>' : `<span class="tcard__price">&#8377;${esc(t.price)}</span>`}
+    ${free ? '<span class="tcard__price tcard__price--free">FREE</span>' : `<span class="tcard__price">${pinfo.list ? `<s>\u20B9${pinfo.list}</s>` : ''}\u20B9${pinfo.sale}</span>`}
   </div>
   <p class="tcard__desc">${esc(t.description || '')}</p>
   <span class="tcard__occ-label">${esc(t.category)}</span>

@@ -26,6 +26,10 @@
 
   var step = 0;
   var draftId = null;
+
+  window.wizardAdoptDraft = function (id, purl) { draftId = id; if (purl) previewUrl = purl; };
+
+  window.wizardDiscardDraft = function (id) { /* stale draft simply expires */ };
   var previewUrl = null;
   var saving = false;
 
@@ -123,6 +127,7 @@
     limit: 'That is a lot of letters for one day. Try again a bit later.',
     storage_unavailable: 'Publishing is paused right now. Your draft is safe — try again shortly.',
     forbidden: 'This letter can’t be edited any more.',
+    payments_offline: 'Payments are being switched on — check back shortly. Your draft is safe.',
     not_found: 'This letter has wandered off. Reload and start again.',
   };
 
@@ -214,7 +219,7 @@
       say('Publishing…');
       saveDraft() // one tap: the latest typing goes with it
         .then(function () { return request('/api/saalgirah/publish', { id: draftId }); })
-        .then(function (body) { showResult(body.url); })
+        .then(function (body) { if (body && body.payUrl) { window.location.href = body.payUrl; return; } showResult(body.url); })
         .catch(function (err) {
           publishBtn.disabled = false;
           say('');
@@ -290,4 +295,13 @@
   }
 
   show(0);
+
+  /* ---------------- autosave (added): typing pauses 4s → draft saved ---------------- */
+  var autoTimer = 0;
+  form.addEventListener('input', function () {
+    clearTimeout(autoTimer);
+    autoTimer = setTimeout(function () {
+      if (typeof saveDraft === 'function' && !saving) { saveDraft().catch(function () {}); }
+    }, 4000);
+  });
 })();

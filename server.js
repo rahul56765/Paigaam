@@ -145,10 +145,11 @@ function seed() {
           config: { fields: [], sections: [], theme: t.theme, custom: true, editable: false, appPath: t.appPath } });
       }
     } else {
-      // native templates: keep name/description/price/category in sync with registry
+      // native templates: keep name/category in sync with the registry. PRICE IS
+      // NEVER re-synced here — the owner's admin-set price (and list_price) wins.
       const cur = q.templateBySlug(t.slug);
-      if (cur && (cur.price !== t.price || cur.name !== t.name || cur.description !== t.description || cur.category !== t.category)) {
-        q.templateUpdate(cur.id, { ...cur, name: t.name, description: t.description, price: t.price, category: t.category });
+      if (cur && (cur.name !== t.name || cur.description !== t.description || cur.category !== t.category)) {
+        q.templateUpdate(cur.id, { ...cur, name: t.name, description: t.description, category: t.category });
       }
     }
   }
@@ -737,7 +738,7 @@ function buildTemplateFromForm(form) {
   return {
     name: (form.name || '').trim(), slug: (form.slug || '').trim().toLowerCase(),
     category: form.category || 'Personal', description: form.description || '',
-    price: Math.max(0, parseInt(form.price, 10) || 0), currency: 'INR',
+    price: Math.max(0, parseInt(form.price, 10) || 0), list_price: Math.max(0, parseInt(form.list_price, 10) || 0), currency: 'INR',
     thumbnail_url: form.thumbnail_url || '', status: form.status === 'published' ? 'published' : 'draft',
     config: { fields, sections, theme },
   };

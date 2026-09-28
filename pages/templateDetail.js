@@ -1,6 +1,7 @@
 'use strict';
 const { page, esc } = require('../lib/layout');
 const { renderPaigaamPage } = require('../lib/renderPaigaam');
+const { priceInfo } = require('../templates/registry');
 const bfday = require('../lib/bfday/family');
 
 /** Sample data so the preview always looks alive. */
@@ -75,9 +76,10 @@ function templateDetail(tpl, { baseUrl = '' } = {}) {
     ? `A fixed, ready-made experience — exactly as designed. Get yours and share the link.`
     : `You'll see your Paigaam come alive as you fill it in — and receive your own link to share.`;
   const free = Number(tpl.price) === 0;
+  const pinfo = priceInfo(tpl);
   const priceHTML = bfday.has(tpl.slug) ? '' : (free
     ? `<div class="detail__price"><small>One Paigaam</small><span style="font-size:26px;letter-spacing:0.18em;color:#3E6B40">FREE</span></div>`
-    : `<div class="detail__price"><small>One Paigaam</small>&#8377;${esc(tpl.price)}</div>`);
+    : `<div class="detail__price"><small>One Paigaam</small>${pinfo.list ? `<s style="font-size:17px;color:var(--taupe);margin-right:8px">&#8377;${pinfo.list}</s>` : ''}<span style="font-size:26px;letter-spacing:0.18em">&#8377;${pinfo.sale}</span>${pinfo.off ? `<span style="font-size:13px;color:#3E6B40;margin-left:10px;font-weight:600">${pinfo.off}% off</span>` : ''}</div>`);
 
   return page(tpl.name, `
 <main data-topened="${esc(tpl.slug)}">
@@ -110,7 +112,7 @@ function templateDetail(tpl, { baseUrl = '' } = {}) {
   <div class="sticky-cta__inner">
     <div class="sticky-cta__info">
       <strong>${esc(tpl.name)}</strong>
-      <span>${free ? 'FREE' : '&#8377;' + esc(tpl.price) + ' &middot; one-time'}</span>
+      <span>${free ? 'FREE' : (pinfo.list ? '<s style="color:var(--taupe)">&#8377;' + pinfo.list + '</s> ' : '') + '&#8377;' + pinfo.sale + ' &middot; one-time'}</span>
     </div>
     <a class="btn btn--primary" href="/create/${esc(tpl.slug)}" data-track="template_create_clicked" data-template="${esc(tpl.slug)}" data-label="sticky_bar">Create &rarr;</a>
   </div>

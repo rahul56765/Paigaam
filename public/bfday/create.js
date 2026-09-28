@@ -40,6 +40,16 @@
   var step = 0;
   var draftId = null;
   var previewUrl = null;
+
+  window.wizardAdoptDraft = function (id, purl) { draftId = id; if (purl) previewUrl = purl; };
+  window.wizardDiscardDraft = function (id) { /* stale draft simply expires */ };
+
+  // resume.js hook: apply a saved value to a full control (lists, photos).
+  window.wizardApplyField = function (id, v) {
+    var c = controls[id];
+    if (c && typeof c.set === 'function') { c.set(v); changed(); return false; }
+    return true; // plain inputs: let resume.js set .value directly
+  };
   var controls = {};      // field id -> { get(), focus(), rows? }
 
   function el(id) { return document.getElementById(id); }
@@ -55,7 +65,8 @@
     validation: 'Something in there is a little too long or not quite right — check it and try again.',
     limit: 'That is a lot for one day. Try again a bit later.',
     storage_unavailable: 'Publishing is paused right now. Your draft is safe — try again shortly.',
-    forbidden: 'This Paigaam can’t be edited any more.',
+    payments_offline: 'Payments are being switched on — check back shortly. Your draft is safe.',
+    forbidden: 'This Paigaam is no longer editable here.',
     not_found: 'This draft has wandered off. Reload and start again.',
     too_large: 'That photo is too large — try a smaller one.',
     invalid_image: 'That file is not a photo we can use (JPG, PNG or WebP).',
@@ -340,6 +351,19 @@
           return out;
         });
       },
+      set: function (v) {
+        if (!Array.isArray(v)) return;
+        rows.slice().forEach(function (row) { row.remove.click(); });
+        v.forEach(function (item) {
+          addRow(item, false);
+          if (item && typeof item === 'object') {
+            var row = rows[rows.length - 1];
+            Object.keys(item).forEach(function (k) { if (row.parts[k] && row.parts[k].set) row.parts[k].set(item[k]); });
+          }
+        });
+        while (rows.length < f.minItems) addRow(null, false);
+        renumber(); changed();
+      },
       focus: function () { if (addBtn) addBtn.focus(); },
     };
   }
@@ -369,6 +393,7 @@
       });
       controls[f.id] = {
         get: function () { return (none && none.checked) ? 'none' : input.value.trim(); },
+        set: function (v) { if (none) none.checked = (v === 'none'); input.value = (v === 'none') ? '' : String(v || ''); input.disabled = !!(none && none.checked); },
         focus: function () { (none && none.checked ? none : input).focus(); },
       };
       return;
@@ -380,6 +405,7 @@
     }
     controls[f.id] = {
       get: function () { return f.type === 'select' ? input.value : input.value.trim(); },
+      set: function (v) { input.value = String(v == null ? '' : v); },
       focus: function () { input.focus(); },
     };
   });
@@ -620,7 +646,11 @@
       say('Publishing…');
       saveDraft() // one tap: the latest typing goes with it
         .then(function () { return request('/api/' + SLUG + '/publish', { id: draftId }); })
-        .then(function (body) { showResult(body.url); })
+        .then(function (body) {
+          // Paid template → the server hands us off to the Razorpay checkout.
+          if (body && body.payUrl) { window.location.href = body.payUrl; return; }
+          showResult(body.url);
+        })
         .catch(function (err) {
           publishBtn.disabled = false;
           say('');
@@ -666,4 +696,13 @@
 
   show(0);
   refreshLivePreview();
+
+  /* ---------------- autosave (added): typing pauses 4s → draft saved ---------------- */
+  var autoTimer = 0;
+  form.addEventListener('input', function () {
+    clearTimeout(autoTimer);
+    autoTimer = setTimeout(function () {
+      if (typeof saveDraft === 'function' && draftId) { saveDraft().catch(function () {}); }
+    }, 4000);
+  });
 })();

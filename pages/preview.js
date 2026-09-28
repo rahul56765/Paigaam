@@ -16,7 +16,7 @@ function previewPage(paigaam, settings, opts = {}) {
 
   const priceBlock = isFree
     ? `<div><span>Price</span><strong>Free</strong></div>`
-    : `<div><span>Price</span><strong>₹${esc(paigaam.template_price)}</strong></div>`;
+    : `<div><span>Price</span><strong>${paigaam.template_list_price > paigaam.template_price ? `<s style="color:var(--taupe)">&#8377;${paigaam.template_list_price}</s> ` : ''}&#8377;${esc(paigaam.template_price)}</strong></div>`;
 
   const cta = isFree ? `
     <div id="freeArea">
@@ -38,7 +38,7 @@ function previewPage(paigaam, settings, opts = {}) {
       </div>
     </div>`
     : `
-    <a class="btn btn--primary" href="/pay/${esc(paigaam.id)}" data-track="purchase_started" data-template="${esc(paigaam.template_slug)}">Pay &amp; publish — &#8377;${esc(paigaam.template_price)}</a>
+    <a class="btn btn--primary" href="/pay/${esc(paigaam.id)}" data-track="purchase_started" data-template="${esc(paigaam.template_slug)}">Pay &amp; publish — ${paigaam.template_list_price > paigaam.template_price ? `<s>&#8377;${paigaam.template_list_price}</s>` : ''}&#8377;${esc(paigaam.template_price)}</a>
     <a class="btn btn--ghost" href="/create/${esc(paigaam.template_slug)}?draft=${esc(paigaam.id)}">Edit Paigaam</a>`;
 
   const sub = isFree
