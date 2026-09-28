@@ -131,6 +131,7 @@ body {
 /* ============================================================
    ② THE TEASE — playful, never hostile
    ============================================================ */
+.ps-tease[hidden] { display: none !important; }
 .ps-tease {
   position: fixed; inset: 0; z-index: 60;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -186,7 +187,7 @@ body {
 /* ============================================================
    THE SITE — beats stacked, revealed in order
    ============================================================ */
-.ps-site { display: block; }
+.ps-site[hidden] { display: none !important; }
 .ps-beat {
   max-width: 640px;
   margin: 0 auto;
