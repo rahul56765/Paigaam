@@ -97,6 +97,9 @@
       var doc;
       try { doc = liveFrame.contentDocument; } catch (e) { return; }
       if (!doc || !doc.body) return;
+      // Measure the NATURAL doc height: stretch the iframe tall first (scrollHeight
+      // otherwise just echoes the current iframe height), then read back.
+      liveFrame.style.height = '8000px';
       var naturalH = Math.max(doc.documentElement.scrollHeight, doc.body.scrollHeight, 1);
       var naturalW = liveFrame.contentWindow ? liveFrame.contentWindow.innerWidth : 390;
       if (naturalW < 100) naturalW = 390;
