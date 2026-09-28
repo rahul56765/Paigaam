@@ -160,13 +160,13 @@ ${jsonPayload('bfSpec', spec)}
       <p id="stepCounter" class="eyebrow"></p>
       <form id="bfForm" novalidate>
 
-        ${c.steps.map((s, i) => `<section data-step="${i}" class="step" ${i > 0 ? 'hidden' : ''}>
+        ${c.steps.map((s, i) => `<section data-step="${i}" data-step-field="${escape(s.field || (s.fields && s.fields[0]) || '')}" class="step" ${i > 0 ? 'hidden' : ''}>
           <h2 tabindex="-1">${escape(s.heading || s.title)}</h2>
           ${s.intro ? `<p>${escape(s.intro)}</p>` : ''}
           ${s.fields.map(id => fieldHTML(byId.get(id))).join('\n          ')}
         </section>`).join('\n\n        ')}
 
-        <section data-step="${lastFormStep}" class="step" hidden>
+        <section data-step="${lastFormStep}" data-step-field="__review" class="step" hidden>
           <h2 tabindex="-1">Ready to send</h2>
           <p>Publish and share — it takes one tap.</p>
           <div id="review" class="review"></div>
