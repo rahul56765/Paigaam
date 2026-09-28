@@ -56,6 +56,7 @@ body {
 /* ============================================================
    ① THE GATE — light theme, zero dark tokens
    ============================================================ */
+.ps-gate[hidden] { display: none !important; }
 .ps-gate {
   min-height: 100svh;
   display: flex; align-items: center; justify-content: center;
