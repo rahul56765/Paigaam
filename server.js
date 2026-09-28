@@ -40,6 +40,7 @@ const valentine = require('./lib/valentineRoutes');
 const sauwajah = require('./lib/sauwajahRoutes');
 const loveAwaits = require('./lib/loveAwaitsRoutes');
 const { streamFile } = require('./lib/streamFile');
+const razorpay = require('./lib/razorpay');
 const { ensureSawaalMedia } = require('./lib/sawaalMedia');
 
 const PORT = Number(process.env.PORT || 3000);
@@ -314,7 +315,7 @@ const server = http.createServer(async (req, res) => {
         if (!getAdmin(req) && !bfday.owned(req, pg.id)) return json(res, 403, { error: 'forbidden' });
         return redirect(res, '/' + pg.template_slug + '/preview/' + pg.id);
       }
-      return send(res, 200, previewPage(pg, q.settings(), { baseUrl: BASE_URL }));
+      return send(res, 200, previewPage(pg, q.settings(), { baseUrl: BASE_URL, recoveryToken: razorpay.ensureRecoveryToken(pg) }));
     }
     m = p.match(/^\/p\/([a-z0-9-]+)$/);
     if (method === 'GET' && m) {
@@ -327,6 +328,81 @@ const server = http.createServer(async (req, res) => {
     }
     if (method === 'GET' && p === '/contact') {
       return send(res, 200, contactPage(q.settings()));
+    }
+
+    /* ---------- Razorpay checkout (paid templates — replaces the WhatsApp handoff) ---------- */
+    m = p.match(/^\/pay\/([A-Za-z0-9_-]+)$/);
+    if (method === 'GET' && m) {
+      const pg = q.paigaamById(m[1]);
+      if (!pg) return send(res, 404, errorPage('404', 'This Paigaam seems to have wandered away.', ''));
+      if (pg.payment_status === 'paid') return send(res, 200, razorpay.payPage(pg, { baseUrl: BASE_URL, alreadyPaid: true }));
+      if (Number(pg.template_price) <= 0) return redirect(res, `/preview/${pg.id}`);
+      if (!razorpay.ENABLED) return send(res, 200, razorpay.payPage(pg, { baseUrl: BASE_URL }));
+      const settings = q.settings();
+      try {
+        const rzpOrder = await razorpay.createOrder(pg, settings);
+        // Attach the rzp order to a real order row so reconciliation has a home.
+        const existing = q.ordersAll().find(o => o.paigaam_id === pg.id && o.razorpay_order_id === rzpOrder.id);
+        if (!existing) {
+          q.orderInsert({
+            paigaam_id: pg.id, customer_name: pg.customer_name,
+            whatsapp: (pg.customer_data && pg.customer_data.whatsapp) || '',
+            amount: pg.template_price, currency: pg.template_currency || settings.currency || 'INR',
+            razorpay_order_id: rzpOrder.id,
+          });
+        }
+        if (pg.status === 'draft') q.paigaamUpdate(pg.id, { status: 'payment_pending' });
+        q.eventInsert('purchase_started', { template: pg.template_slug, via: 'razorpay', rzp_order: rzpOrder.id }, '/pay');
+        return send(res, 200, razorpay.payPage(pg, { keyId: razorpay.KEY_ID, rzpOrder, baseUrl: BASE_URL }));
+      } catch (e) {
+        console.error('[razorpay] order create failed:', e.message);
+        return send(res, 502, razorpay.payPage(pg, { baseUrl: BASE_URL, error: 'payment gateway did not respond' }));
+      }
+    }
+    m = p.match(/^\/recover\/([a-f0-9]{32})$/);
+    if (method === 'GET' && m) {
+      const pg = q.paigaamByRecoveryToken(m[1]);
+      if (!pg || pg.status === 'archived') return send(res, 404, razorpay.recoverPage(null, { baseUrl: BASE_URL, deleted: true }));
+      return send(res, 200, razorpay.recoverPage(pg, { baseUrl: BASE_URL }));
+    }
+
+    /* ---------- Razorpay verify + webhook (before the generic JSON API) ---------- */
+    if (method === 'POST' && p === '/api/razorpay/verify') {
+      const body = JSON.parse(await readBody(req) || '{}');
+      const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = body;
+      if (!razorpay.verifyCheckoutSignature(razorpay_order_id, razorpay_payment_id, razorpay_signature)) {
+        return json(res, 400, { error: 'bad_signature' });
+      }
+      const order = q.orderByRazorpayOrderId(razorpay_order_id);
+      if (!order) return json(res, 404, { error: 'order_not_found' });
+      const url = settlePaidOrder(order, razorpay_payment_id, razorpay_signature);
+      return json(res, 200, { ok: true, url });
+    }
+    if (method === 'POST' && p === '/api/razorpay/webhook') {
+      const raw = await readBody(req);
+      const sig = req.headers['x-razorpay-signature'];
+      if (!razorpay.verifyWebhookSignature(raw, sig)) return json(res, 400, { error: 'bad_signature' });
+      let event; try { event = JSON.parse(raw); } catch { return json(res, 400, { error: 'bad_json' }); }
+      const rzpOrderId = razorpay.handleWebhookEvent(event);
+      if (rzpOrderId) {
+        const order = q.orderByRazorpayOrderId(rzpOrderId);
+        if (order && order.status !== 'paid') {
+          const entity = event.payload && event.payload.payment && event.payload.payment.entity;
+          settlePaidOrder(order, (entity && entity.id) || '', 'webhook');
+        }
+      }
+      return json(res, 200, { ok: true });
+    }
+
+    /** Shared settlement: mark order paid, publish the paigaam, return the live URL. */
+    function settlePaidOrder(order, paymentId, signature) {
+      const pg = q.paigaamById(order.paigaam_id);
+      if (!pg) return '';
+      q.orderMarkPaid(order.id, { razorpay_payment_id: paymentId, razorpay_signature: signature });
+      const pub = publishPaigaam(pg);
+      razorpay.ensureRecoveryToken(pub);
+      q.eventInsert('paigaam_generated', { template: pub.template_slug, via: 'razorpay', paid: true }, '/api/razorpay/verify');
+      return `${BASE_URL}/p/${pub.slug}`;
     }
 
     /* ---------- Legal pages ---------- */
@@ -363,6 +439,8 @@ Disallow: /admin
 Disallow: /admin/
 Disallow: /create/
 Disallow: /preview/
+Disallow: /pay/
+Disallow: /recover/
 Disallow: /go/
 Disallow: /api/
 

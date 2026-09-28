@@ -122,6 +122,20 @@ CREATE TABLE IF NOT EXISTS events (
 CREATE INDEX IF NOT EXISTS idx_events_name ON events(event);
 `);
 
+/* ---------- additive migrations (idempotent) ---------- */
+// Razorpay columns on orders + a recovery token on paigaams. ALTERs run once;
+// pragma_table_info keeps re-boots cheap and safe.
+function addColumnIfMissing(table, column, ddl) {
+  const has = db.prepare(`SELECT 1 FROM pragma_table_info('${table}') WHERE name = ?`).get(column);
+  if (!has) db.exec(`ALTER TABLE ${table} ADD COLUMN ${ddl}`);
+}
+addColumnIfMissing('orders', 'razorpay_order_id', "razorpay_order_id TEXT NOT NULL DEFAULT ''");
+addColumnIfMissing('orders', 'razorpay_payment_id', "razorpay_payment_id TEXT NOT NULL DEFAULT ''");
+addColumnIfMissing('orders', 'razorpay_signature', "razorpay_signature TEXT NOT NULL DEFAULT ''");
+addColumnIfMissing('paigaams', 'recovery_token', "recovery_token TEXT NOT NULL DEFAULT ''");
+db.exec(`CREATE INDEX IF NOT EXISTS idx_orders_rzp ON orders(razorpay_order_id);
+CREATE INDEX IF NOT EXISTS idx_paigaams_recovery ON paigaams(recovery_token);`);
+
 const uid = () => crypto.randomBytes(9).toString('base64url');
 const now = () => new Date().toISOString().replace('T', ' ').slice(0, 19);
 
@@ -208,8 +222,17 @@ const q = {
   },
   paigaamSlugTaken: (slug) => !!db.prepare('SELECT 1 FROM paigaams WHERE slug = ?').get(slug),
   paigaamDelete: (id) => db.prepare('DELETE FROM paigaams WHERE id = ?').run(id),
+  paigaamByRecoveryToken: (token) => parse(db.prepare(`SELECT p.*, t.name AS template_name, t.slug AS template_slug, t.price AS template_price, t.currency AS template_currency, t.config AS template_config, t.category AS template_category
+                                            FROM paigaams p JOIN templates t ON t.id = p.template_id WHERE p.recovery_token = ?`).get(token), ['customer_data', 'template_config']),
+  paigaamSetRecoveryToken: (id, token) => db.prepare('UPDATE paigaams SET recovery_token = ?, updated_at = ? WHERE id = ?').run(token || '', now(), id),
 
   // orders
+  orderByRazorpayOrderId: (rzpId) => db.prepare('SELECT * FROM orders WHERE razorpay_order_id = ? ORDER BY created_at DESC LIMIT 1').get(rzpId),
+  orderMarkPaid: (id, { razorpay_payment_id = '', razorpay_signature = '' } = {}) => {
+    db.prepare(`UPDATE orders SET status='paid', razorpay_payment_id=?, razorpay_signature=?, updated_at=? WHERE id=?`)
+      .run(razorpay_payment_id, razorpay_signature, now(), id);
+    return q.orderById(id);
+  },
   ordersAll: () => db.prepare(`SELECT o.*, p.slug AS paigaam_slug, t.name AS template_name
                                FROM orders o
                                LEFT JOIN paigaams p ON p.id = o.paigaam_id
@@ -218,9 +241,9 @@ const q = {
   orderById: (id) => db.prepare('SELECT * FROM orders WHERE id = ?').get(id),
   orderInsert: (o) => {
     const id = uid();
-    db.prepare(`INSERT INTO orders (id,paigaam_id,customer_name,whatsapp,amount,currency,status,created_at,updated_at)
-                VALUES (?,?,?,?,?,?,?,?,?)`)
-      .run(id, o.paigaam_id, o.customer_name || '', o.whatsapp || '', o.amount | 0, o.currency || 'INR', o.status || 'pending', now(), now());
+    db.prepare(`INSERT INTO orders (id,paigaam_id,customer_name,whatsapp,amount,currency,status,razorpay_order_id,created_at,updated_at)
+                VALUES (?,?,?,?,?,?,?,?,?,?)`)
+      .run(id, o.paigaam_id, o.customer_name || '', o.whatsapp || '', o.amount | 0, o.currency || 'INR', o.status || 'pending', o.razorpay_order_id || '', now(), now());
     return q.orderById(id);
   },
   orderUpdate: (id, status) => {

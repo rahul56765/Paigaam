@@ -244,6 +244,15 @@ function paigaamDetail(p, baseUrl) {
     </div>
   </div>` : ''}
 
+  ${p.recovery_token ? `
+  <div style="border:1px solid var(--line);background:var(--paper,#fff);padding:16px 22px;margin-bottom:30px;font-size:13.5px;color:var(--ink-soft)">
+    <strong style="font-size:12px;letter-spacing:0.18em;text-transform:uppercase">Recovery link</strong> — give this to the sender if they lost their link (no account needed):
+    <div style="margin-top:6px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <a style="word-break:break-all" href="/recover/${esc(p.recovery_token)}">${esc(baseUrl)}/recover/${esc(p.recovery_token)}</a>
+      <button class="btn btn--small" data-copy="${esc(baseUrl)}/recover/${esc(p.recovery_token)}">Copy</button>
+    </div>
+  </div>` : ''}
+
   <div style="display:grid;grid-template-columns:1.2fr 1fr;gap:44px;align-items:start" class="pg-detail-grid">
     <div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:22px;margin-bottom:34px">
@@ -348,7 +357,7 @@ function ordersAdmin(orders) {
     <th>Order</th><th>Customer</th><th>Paigaam</th><th>Amount</th><th>Status</th><th>Created</th><th></th>
   </tr></thead><tbody>
   ${orders.map(o => `<tr>
-    <td style="font-family:ui-monospace,monospace;font-size:12.5px">#${esc(o.id.slice(0, 8).toUpperCase())}</td>
+    <td style="font-family:ui-monospace,monospace;font-size:12.5px">#${esc(o.id.slice(0, 8).toUpperCase())}${o.razorpay_payment_id ? `<br><span style="font-size:10.5px;color:var(--taupe)">rzp pay: ${esc(String(o.razorpay_payment_id).slice(0, 18))}</span>` : ''}</td>
     <td class="serif">${esc(o.customer_name || '—')}</td>
     <td>${esc(o.template_name || '—')}</td>
     <td>${money(o.amount, o.currency)}</td>

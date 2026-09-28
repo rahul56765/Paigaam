@@ -6,6 +6,7 @@ const { logoFull } = require('../lib/brand');
 
 function previewPage(paigaam, settings, opts = {}) {
   const baseUrl = opts.baseUrl || '';
+  if (opts.recoveryToken && !paigaam.recovery_token) paigaam.recovery_token = opts.recoveryToken;
   const isFree = Number(paigaam.template_price) <= 0;
   const tpl = { slug: paigaam.template_slug, category: paigaam.template_category, config: paigaam.template_config };
   const d = paigaam.customer_data || {};
@@ -37,12 +38,12 @@ function previewPage(paigaam, settings, opts = {}) {
       </div>
     </div>`
     : `
-    <a class="btn btn--whatsapp" href="/go/whatsapp/${esc(paigaam.id)}" data-track="purchase_started" data-template="${esc(paigaam.template_slug)}">Continue on WhatsApp</a>
+    <a class="btn btn--primary" href="/pay/${esc(paigaam.id)}" data-track="purchase_started" data-template="${esc(paigaam.template_slug)}">Pay &amp; publish — &#8377;${esc(paigaam.template_price)}</a>
     <a class="btn btn--ghost" href="/create/${esc(paigaam.template_slug)}?draft=${esc(paigaam.id)}">Edit Paigaam</a>`;
 
   const sub = isFree
     ? `Publish it now — your link and QR are yours instantly.`
-    : `We'll confirm your Paigaam on WhatsApp and send your personal link once it's live.`;
+    : `Secure checkout via Razorpay — your Paigaam publishes itself the moment payment lands.`;
 
   return page('Your Paigaam is ready', `
 <main class="preview-page">
@@ -66,6 +67,8 @@ function previewPage(paigaam, settings, opts = {}) {
 
     <div style="display:flex;gap:16px;justify-content:center;flex-wrap:wrap">${cta}</div>
     <p style="margin-top:34px;color:var(--taupe);font-style:italic;font-family:var(--serif);font-size:16px">${sub}</p>
+    ${paigaam.recovery_token ? `<p class="hint" style="margin-top:18px">No account needed — but bookmark this recovery link so you can always get back to this Paigaam:<br>
+      <a href="/recover/${esc(paigaam.recovery_token)}" style="word-break:break-all">${esc(baseUrl)}/recover/${esc(paigaam.recovery_token)}</a></p>` : ''}
   </div>
 </main>
 ${isFree ? `<script src="/js/qr-card.js" defer></script>

@@ -16,7 +16,7 @@ function fixedPage(tpl) {
         <span class="kicker">Make it yours</span>
         <h1 style="font-size:clamp(34px,5vw,48px);margin-bottom:8px;letter-spacing:0.12em">${esc(tpl.name.toUpperCase())}</h1>
         <p style="color:var(--ink-soft);font-family:var(--serif);font-style:italic;font-size:18px;margin-bottom:14px">A fixed experience, exactly as designed — nothing to edit.</p>
-        <p style="color:var(--ink-soft);font-size:16px;margin-bottom:46px;max-width:480px">Tell us who it's from and where to reach you, and we'll prepare your personal link and send it on WhatsApp once it's live.</p>
+        <p style="color:var(--ink-soft);font-size:16px;margin-bottom:46px;max-width:480px">Tell us who it's from and where to reach you, then pay securely — your personal link arrives instantly.</p>
 
         <form id="fixedForm" data-template="${esc(tpl.slug)}">
           <div class="field"><label for="senderName">Your name <span class="req" aria-hidden="true">*</span></label>
@@ -28,7 +28,7 @@ function fixedPage(tpl) {
             <p class="hint">So we can send your live Paigaam link.</p></div>
           <div class="create__nav" style="margin-top:44px">
             <a class="btn btn--ghost" href="/templates/${esc(tpl.slug)}">Back</a>
-            <button type="submit" class="btn btn--whatsapp" id="fixedGo">Continue on WhatsApp</button>
+            <button type="submit" class="btn btn--primary" id="fixedGo">Pay &amp; get my link</button>
           </div>
           <p id="formError" class="form-error" hidden>Please add your name and WhatsApp number.</p>
         </form>
@@ -66,9 +66,9 @@ function fixedPage(tpl) {
         customer_data: { senderName: name, recipientName: form.recipientName.value.trim(), whatsapp: wa }
       })
     }).then(function (r) { return r.json(); }).then(function (res) {
-      if (res && res.id) window.location.href = '/go/whatsapp/' + res.id;
-      else { btn.disabled = false; btn.textContent = 'Continue on WhatsApp'; alert('Something went quiet. Please try again.'); }
-    }).catch(function () { btn.disabled = false; btn.textContent = 'Continue on WhatsApp'; });
+      if (res && res.id) window.location.href = '/pay/' + res.id;
+      else { btn.disabled = false; btn.textContent = 'Pay & get my link'; alert('Something went quiet. Please try again.'); }
+    }).catch(function () { btn.disabled = false; btn.textContent = 'Pay & get my link'; });
   });
 })();
 </script>`);
