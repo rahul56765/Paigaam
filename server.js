@@ -332,6 +332,23 @@ const server = http.createServer(async (req, res) => {
     }
 
     /* ---------- Razorpay order API (inline checkout — no separate pay page) ---------- */
+    // "Welcome back": the sender's recent paigaams (paid ones first) — shown as
+    // a popup on any page, so a closed-tab-after-payment is always recoverable.
+    if (method === 'GET' && p === '/api/my-paigaams') {
+      const raw = (req.headers.cookie || '').split(';').map(x => x.trim()).find(x => x.startsWith('paigaam_creator='));
+      const value = raw ? raw.slice('paigaam_creator='.length) : '';
+      const hash = /^[a-f0-9]{64}$/.test(value) ? require('node:crypto').createHash('sha256').update(value).digest('hex') : null;
+      const recents = q.recentPaigaamsForOwner(hash, 3600000, 3).map(pg => ({
+        id: pg.id,
+        template: pg.template_name,
+        names: pg.customer_name || '',
+        status: pg.status,
+        paid: pg.payment_status === 'paid',
+        url: pg.slug ? `${BASE_URL}/p/${pg.slug}` : '',
+        preview: `/preview/${pg.id}`,
+      }));
+      return json(res, 200, { paigaams: recents });
+    }
     // Legacy /pay/:id GETs redirect to the preview (checkout is inline now).
     m = p.match(/^\/pay\/([A-Za-z0-9_-]+)$/);
     if (method === 'GET' && m) return redirect(res, `/preview/${m[1]}`);

@@ -130,6 +130,28 @@ const root = path.join(__dirname, '..');
     assert.match(htmlFree, /Publish this Paigaam/, 'free CTA unchanged');
     assert.match(htmlFree, /Free\. The link stays live/, 'free hint intact');
 
+    /* ---- 7. welcome-back: recent PAID paigaam discoverable via /api/my-paigaams ---- */
+    // settle id2's flow via a direct order row + mark paid (simulating a webhook settle)
+    const { db } = require('../db');
+    const token = 'a'.repeat(64);
+    const hash = crypto.createHash('sha256').update(token).digest('hex');
+    const tRow = q.templateBySlug('maafi');
+    const pgNew = q.paigaamInsert({ template_id: tRow.id, customer_data: { recipientName: 'WB' }, customer_name: 'WB', status: 'published', payment_status: 'paid', slug: 'wb-check' });
+    db.prepare('INSERT INTO maafi_owners VALUES(?,?,?)').run(pgNew.id, hash, Date.now());
+    r = await fetch(base + '/api/my-paigaams', { headers: { cookie: 'paigaam_creator=' + token } });
+    assert.equal(r.status, 200);
+    const mine = await r.json();
+    assert.ok(mine.paigaams.some(x => x.id === pgNew.id && x.paid && x.url.includes('/p/wb-check')), 'paid paigaam surfaced to its creator');
+    // no cookie → empty
+    r = await fetch(base + '/api/my-paigaams');
+    const none = await r.json();
+    assert.equal(none.paigaams.length, 0, 'no cookie → nothing leaked');
+    // welcome-back.js exists and is wired into the base layout
+    const fs2 = require('fs');
+    assert.ok(fs2.existsSync(path.join(root, 'public/js/welcome-back.js')), 'welcome-back script exists');
+    const layout = fs2.readFileSync(path.join(root, 'lib/layout.js'), 'utf8');
+    assert.ok(layout.includes('welcome-back.js'), 'welcome-back wired into base scripts');
+
     console.log('\nALL PRICING + RESUME TESTS GREEN');
   } finally {
     await stop();

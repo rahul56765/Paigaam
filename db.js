@@ -264,6 +264,24 @@ const q = {
     return row ? q.paigaamById(row.paigaam_id) : null;
   },
 
+  // "Welcome back" popup: the sender's recent paigaams across EVERY template
+  // family (paid ones matter most — a payment landed and the tab got closed).
+  recentPaigaamsForOwner: (ownerHash, withinMs, limit = 3) => {
+    if (!ownerHash) return [];
+    const tables = ['maafi_owners', 'sawaal_owners', 'valentine_owners', 'love_owners', 'saalgirah_owners',
+                    'lavender_owners', 'love_awaits_owners', 'sau_wajah_owners', 'bfday_owners',
+                    'ganapati_owners', 'ganpati_courtyard_owners'];
+    const rows = [];
+    for (const t of tables) {
+      try {
+        rows.push(...db.prepare(`SELECT o.paigaam_id AS id, o.created_at AS at FROM ${t} o
+                                 WHERE o.owner_hash = ? AND o.created_at > ?`).all(ownerHash, Date.now() - (withinMs || 3600000)));
+      } catch (e) { /* table missing — skip */ }
+    }
+    rows.sort((a, b) => b.at - a.at);
+    return rows.slice(0, limit).map(r => q.paigaamById(r.id)).filter(Boolean);
+  },
+
   // settings
   settings: () => {
     let s = db.prepare('SELECT * FROM settings WHERE id = 1').get();
