@@ -362,7 +362,7 @@
         .then(function () {
           return request('/api/sau-wajah/publish', { id: draftId });
         })
-        .then(function (body) { if (body && body.payUrl) { window.location.href = body.payUrl; return; } showResult(body.url); })
+        .then(function (body) { if (body && body.razorpay) { return window.PaigaamPay.open({ order: body }).then(function (pay) { showResult(pay.url); }); } showResult(body.url); })
         .catch(function (err) {
           publishing = false;
           publishBtn.disabled = false;

@@ -331,18 +331,23 @@ const server = http.createServer(async (req, res) => {
       return send(res, 200, contactPage(q.settings()));
     }
 
-    /* ---------- Razorpay checkout (paid templates — replaces the WhatsApp handoff) ---------- */
+    /* ---------- Razorpay order API (inline checkout — no separate pay page) ---------- */
+    // Legacy /pay/:id GETs redirect to the preview (checkout is inline now).
     m = p.match(/^\/pay\/([A-Za-z0-9_-]+)$/);
-    if (method === 'GET' && m) {
-      const pg = q.paigaamById(m[1]);
-      if (!pg) return send(res, 404, errorPage('404', 'This Paigaam seems to have wandered away.', ''));
-      if (pg.payment_status === 'paid') return send(res, 200, razorpay.payPage(pg, { baseUrl: BASE_URL, alreadyPaid: true }));
-      if (Number(pg.template_price) <= 0) return redirect(res, `/preview/${pg.id}`);
-      if (!razorpay.ENABLED) return send(res, 200, razorpay.payPage(pg, { baseUrl: BASE_URL }));
+    if (method === 'GET' && m) return redirect(res, `/preview/${m[1]}`);
+    if (method === 'POST' && p === '/api/razorpay/order') {
+      const body = JSON.parse(await readBody(req) || '{}');
+      const pg = q.paigaamById(body.id);
+      if (!pg) return json(res, 404, { error: 'not_found' });
+      if (Number(pg.template_price) <= 0) return json(res, 400, { error: 'not_paid' });
+      if (pg.payment_status === 'paid') {
+        const pub = pg.status === 'published' ? pg : publishPaigaam(pg);
+        return json(res, 200, { alreadyPaid: true, url: `${BASE_URL}/p/${pub.slug}` });
+      }
+      if (!razorpay.ENABLED) return json(res, 503, { error: 'payments_offline' });
       const settings = q.settings();
       try {
         const rzpOrder = await razorpay.createOrder(pg, settings);
-        // Attach the rzp order to a real order row so reconciliation has a home.
         const existing = q.ordersAll().find(o => o.paigaam_id === pg.id && o.razorpay_order_id === rzpOrder.id);
         if (!existing) {
           q.orderInsert({
@@ -353,11 +358,17 @@ const server = http.createServer(async (req, res) => {
           });
         }
         if (pg.status === 'draft') q.paigaamUpdate(pg.id, { status: 'payment_pending' });
-        q.eventInsert('purchase_started', { template: pg.template_slug, via: 'razorpay', rzp_order: rzpOrder.id }, '/pay');
-        return send(res, 200, razorpay.payPage(pg, { keyId: razorpay.KEY_ID, rzpOrder, baseUrl: BASE_URL }));
+        q.eventInsert('purchase_started', { template: pg.template_slug, via: 'razorpay', rzp_order: rzpOrder.id }, '/api/razorpay/order');
+        return json(res, 200, {
+          keyId: razorpay.KEY_ID, orderId: rzpOrder.id,
+          amount: Number(pg.template_price) * 100,
+          currency: pg.template_currency || settings.currency || 'INR',
+          name: settings.business_name || 'Paigaam', description: pg.template_name,
+          prefillName: pg.customer_name || '',
+        });
       } catch (e) {
         console.error('[razorpay] order create failed:', e.message);
-        return send(res, 502, razorpay.payPage(pg, { baseUrl: BASE_URL, error: 'payment gateway did not respond' }));
+        return json(res, 502, { error: 'gateway_unreachable' });
       }
     }
     m = p.match(/^\/recover\/([a-f0-9]{32})$/);

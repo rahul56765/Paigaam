@@ -63,9 +63,12 @@ const root = path.join(__dirname, '..');
     const cookie = r.headers.get('set-cookie').split(';')[0];
     const { id } = await r.json();
     r = await fetch(base + '/api/maafi/publish', { method: 'POST', headers: { cookie, 'content-type': 'application/json' }, body: JSON.stringify({ id }) });
-    assert.equal(r.status, 200, 'paid publish succeeds via payUrl branch');
+    // Paid template: the handler tries Razorpay's API. With placeholder keys the
+    // gateway is unreachable → 502 gateway_unreachable (NOT 403 "can't edit").
+    // The inline-checkout payload shape is covered by the live verification.
+    assert.equal(r.status, 502, 'paid publish attempts gateway (502 with fake keys, not 403)');
     const pub = await r.json();
-    assert.equal(pub.payUrl, '/pay/' + id, 'publish returns payUrl');
+    assert.equal(pub.error, 'gateway_unreachable');
     const stillDraft = q.paigaamById(id);
     assert.equal(stillDraft.status, 'draft', 'not published yet — payment pending');
 

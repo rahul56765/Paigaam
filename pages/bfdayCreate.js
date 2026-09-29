@@ -144,6 +144,7 @@ ${jsonPayload('bfSpec', spec)}
 <link rel="stylesheet" href="/bfday/create.css">
 <style>:root { --bg: ${escape(theme.bg)}; --ink: ${escape(theme.ink)}; --accent: ${escape(theme.accent)}; --soft: ${escape(theme.soft)}; }${darkThemeOverride(theme)}</style>
 <script src="/bfday/create.js" defer></script>
+<script src="/js/paigaam-pay.js" defer></script>
 <script src="/js/qr-card.js" defer></script>
 ${opts.resumeDraft ? `<script src="/js/resume.js" defer></script>
 <script type="application/json" id="wizardBoot">${JSON.stringify({ draftId: opts.resumeDraft.id, data: opts.resumeDraft.customer_data || {}, at: opts.resumeDraft.updated_at ? new Date(opts.resumeDraft.updated_at.replace(' ', 'T') + 'Z').getTime() : Date.now(), noun: create.noun || 'Paigaam' }).replace(/</g, '\\u003c')}</script>` : ''}

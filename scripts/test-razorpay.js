@@ -75,12 +75,17 @@ process.env.RAZORPAY_ENABLED = '1';
     assert.doesNotMatch(previewHtml, /go\/whatsapp/, 'no WhatsApp handoff on paid preview');
     assert.match(previewHtml, /\/recover\/[a-f0-9]{32}/, 'recovery link nudged on preview');
 
-    // /pay/:id would create a real Razorpay order — without network it 502s,
-    // which is the correct failure shape (checkout page with explanation).
-    r = await fetch(base + '/pay/' + paidId);
-    assert.equal(r.status, 502, 'pay page degrades gracefully when gateway unreachable');
+    // /pay/:id is a redirect now (checkout is inline); the order API with
+    // placeholder keys → 502 gateway_unreachable (honest failure shape).
+    r = await fetch(base + '/pay/' + paidId, { redirect: 'manual' });
+    assert.equal(r.status, 303, '/pay redirects to preview (inline checkout)');
+    r = await fetch(base + '/api/razorpay/order', {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ id: paidId })
+    });
+    assert.equal(r.status, 502, 'order API degrades gracefully when gateway unreachable');
     const payHtml = await r.text();
-    assert.match(payHtml, /Checkout is not open|payment gateway/, 'friendly error, no crash');
+    assert.match(payHtml, /gateway_unreachable/, 'honest error, no crash');
 
     /* ---- 3. verify endpoint: bad signature rejected, good signature settles ---- */
     r = await fetch(base + '/api/razorpay/verify', {

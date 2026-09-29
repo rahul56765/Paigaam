@@ -216,7 +216,7 @@
         .then(function (body) {
           if (!body || !body.url) throw new Error('request_failed');
           if (status) status.textContent = '';
-          if (body && body.payUrl) { window.location.href = body.payUrl; return; }
+          if (body && body.razorpay) { return window.PaigaamPay.open({ order: body }).then(function (pay) { return showResult(pay.url); }); }
           return showResult(body.url);
         })
         .catch(function (err) {

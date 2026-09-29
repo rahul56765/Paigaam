@@ -648,7 +648,7 @@
         .then(function () { return request('/api/' + SLUG + '/publish', { id: draftId }); })
         .then(function (body) {
           // Paid template → the server hands us off to the Razorpay checkout.
-          if (body && body.payUrl) { window.location.href = body.payUrl; return; }
+          if (body && body.razorpay) { return window.PaigaamPay.open({ order: body }).then(function (pay) { showResult(pay.url); }); }
           showResult(body.url);
         })
         .catch(function (err) {

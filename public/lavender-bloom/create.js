@@ -215,7 +215,7 @@
       say('Publishing…');
       saveDraft() // one tap: the latest typing goes with it
         .then(function () { return request('/api/lavender-bloom/publish', { id: draftId }); })
-        .then(function (body) { if (body && body.payUrl) { window.location.href = body.payUrl; return; } showResult(body.url); })
+        .then(function (body) { if (body && body.razorpay) { return window.PaigaamPay.open({ order: body }).then(function (pay) { showResult(pay.url); }); } showResult(body.url); })
         .catch(function (err) {
           publishBtn.disabled = false;
           say('');

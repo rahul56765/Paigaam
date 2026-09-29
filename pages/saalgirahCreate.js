@@ -34,6 +34,7 @@ function saalgirahCreatePage(opts = {}) {
     return builderShell('Saalgirah', `
 <link rel="stylesheet" href="/saalgirah/create.css">
 <script src="/saalgirah/create.js" defer></script>
+<script src="/js/paigaam-pay.js" defer></script>
 ${boot ? `<script src="/js/resume.js" defer></script>
 <script type="application/json" id="wizardBoot">${JSON.stringify(boot).replace(/</g, '\u003c')}</script>` : ''}
 <script src="/js/qr-card.js" defer></script>

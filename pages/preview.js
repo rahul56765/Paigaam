@@ -38,12 +38,26 @@ function previewPage(paigaam, settings, opts = {}) {
       </div>
     </div>`
     : `
-    <a class="btn btn--primary" href="/pay/${esc(paigaam.id)}" data-track="purchase_started" data-template="${esc(paigaam.template_slug)}">Pay &amp; publish — ${paigaam.template_list_price > paigaam.template_price ? `<s>&#8377;${paigaam.template_list_price}</s>` : ''}&#8377;${esc(paigaam.template_price)}</a>
-    <a class="btn btn--ghost" href="/create/${esc(paigaam.template_slug)}?draft=${esc(paigaam.id)}">Edit Paigaam</a>`;
+    <button class="btn btn--primary" id="payPublish" data-paigaam-id="${esc(paigaam.id)}" data-track="purchase_started" data-template="${esc(paigaam.template_slug)}">Pay &amp; publish — ${paigaam.template_list_price > paigaam.template_price ? `<s>&#8377;${paigaam.template_list_price}</s>` : ''}&#8377;${esc(paigaam.template_price)}</button>
+    <a class="btn btn--ghost" href="/create/${esc(paigaam.template_slug)}?draft=${esc(paigaam.id)}">Edit Paigaam</a>
+    <div id="paidDone" hidden style="margin-top:8px;width:100%">
+      <p style="font-family:var(--serif);font-style:italic;font-size:20px;margin-bottom:18px">Payment received — it's live. Share it.</p>
+      <div class="qr-card" style="margin:0 auto 22px">
+        <div style="display:flex;justify-content:center;margin-bottom:14px">${logoFull(120, 'Paigaam')}</div>
+        <p class="qr-line">Scan to open<br>this Paigaam</p>
+        <div id="paidQR" style="display:flex;justify-content:center"></div>
+        <p class="qr-url" id="paidUrlText"></p>
+      </div>
+      <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+        <button class="btn btn--primary btn--small" id="paidCopy">Copy link</button>
+        <a class="btn btn--small" href="https://wa.me/?text=" id="paidWa" target="_blank" rel="noopener">Send on WhatsApp</a>
+        <button class="btn btn--small" id="paidQRdl">Download QR</button>
+      </div>
+    </div>`;
 
   const sub = isFree
     ? `Publish it now — your link and QR are yours instantly.`
-    : `Secure checkout via Razorpay — your Paigaam publishes itself the moment payment lands.`;
+    : `Secure payment via Razorpay — the moment it lands, your link and QR appear right here.`;
 
   return page('Your Paigaam is ready', `
 <main class="preview-page">
@@ -135,7 +149,52 @@ ${isFree ? `<script src="/js/qr-card.js" defer></script>
     }).catch(function () { btn.disabled = false; btn.textContent = 'Publish my Paigaam'; });
   });
 })();
-</script>` : ''}`);
+</script>` : `<script src="/js/paigaam-pay.js" defer></script>
+<script src="/js/qr-card.js" defer></script>
+<script>
+(function () {
+  var btn = document.getElementById('payPublish');
+  if (!btn) return;
+  btn.addEventListener('click', function () {
+    btn.disabled = true; btn.textContent = 'Opening checkout…';
+    if (window.paTrack) window.paTrack('preview_opened', { template: btn.dataset.template, paid: true });
+    window.PaigaamPay.open({}).then(function (res) {
+      if (window.paTrack) window.paTrack('paigaam_generated', { template: btn.dataset.template, paid: true });
+      var url = res.url, short = url.replace(/^https:\\/\\//, '');
+      btn.hidden = true;
+      var done = document.getElementById('paidDone'); if (done) done.hidden = false;
+      document.getElementById('paidUrlText').textContent = short;
+      document.getElementById('paidWa').href = 'https://wa.me/?text=' + encodeURIComponent('I made you something. ' + url);
+      fetch('/api/qr?url=' + encodeURIComponent(url)).then(function (r) { return r.text(); }).then(function (svg) {
+        document.getElementById('paidQR').innerHTML = svg;
+      });
+      document.getElementById('paidCopy').addEventListener('click', function () {
+        var b = this;
+        if (navigator.clipboard) navigator.clipboard.writeText(url).then(function () {
+          b.textContent = 'Copied'; setTimeout(function () { b.textContent = 'Copy link'; }, 1500);
+        });
+      });
+      document.getElementById('paidQRdl').addEventListener('click', function () {
+        var b = this;
+        if (window.PaigaamQrCard && window.PaigaamQrCard.download) {
+          b.disabled = true; b.textContent = 'Preparing…';
+          window.PaigaamQrCard.download(url).then(function () {
+            b.textContent = 'Downloaded ✓';
+            setTimeout(function () { b.textContent = 'Download QR'; b.disabled = false; }, 1800);
+          }).catch(function () { b.disabled = false; b.textContent = 'Download QR'; });
+        }
+      });
+      done.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }).catch(function (err) {
+      btn.disabled = false;
+      btn.innerHTML = 'Pay &amp; publish — ${paigaam.template_list_price > paigaam.template_price ? `<s>&#8377;${paigaam.template_list_price}</s>` : ''}&#8377;${esc(paigaam.template_price)}';
+      if (err && err.code === 'dismissed') return;
+      if (err && err.code === 'payments_offline') { alert('Payments are being switched on — check back shortly.'); return; }
+      alert("Checkout didn't open. Please try again in a moment.");
+    });
+  });
+})();
+</script>`}`);
 }
 
 module.exports = { previewPage };
