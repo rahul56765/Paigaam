@@ -258,7 +258,7 @@ const q = {
     if (!ownerHash) return null;
     const row = db.prepare(`SELECT o.paigaam_id FROM ${ownersTable} o
                             JOIN paigaams p ON p.id = o.paigaam_id
-                            WHERE o.owner_hash = ? AND o.created_at > ? AND p.template_id = ? AND p.status = 'draft'
+                            WHERE o.owner_hash = ? AND o.created_at > ? AND p.template_id = ? AND p.status IN ('draft', 'payment_pending')
                             ORDER BY o.created_at DESC LIMIT 1`)
       .get(ownerHash, Date.now() - (withinMs || 3600000), templateId);
     return row ? q.paigaamById(row.paigaam_id) : null;

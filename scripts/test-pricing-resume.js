@@ -72,6 +72,14 @@ const root = path.join(__dirname, '..');
     const stillDraft = q.paigaamById(id);
     assert.equal(stillDraft.status, 'draft', 'not published yet — payment pending');
 
+    /* ---- 3b. abandoned checkout: dismissed modal → draft still editable ---- */
+    // (publish flipped it to payment_pending; saving/editing must keep working)
+    r = await fetch(base + '/api/maafi/draft', {
+      method: 'POST', headers: { cookie, 'content-type': 'application/json' },
+      body: JSON.stringify({ id, customer_data: { recipientName: 'Meher', senderName: 'Rahul Two' } }),
+    });
+    assert.equal(r.status, 200, 'draft save works after abandoned checkout (payment_pending)');
+
     /* ---- 4. payments_offline: keys absent → honest 503, not "can't edit" ---- */
     await stop();
     await start({}); // no razorpay env
