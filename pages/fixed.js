@@ -54,7 +54,7 @@ function fixedPage(tpl) {
     </div>
   </div>
 </main>
-<script src="/js/paigaam-pay.js" defer></script>
+<script src="/js/paigaam-pay.js?v=1" defer></script>
 <script>
 (function () {
   var form = document.getElementById('fixedForm');

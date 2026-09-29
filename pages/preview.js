@@ -85,7 +85,7 @@ function previewPage(paigaam, settings, opts = {}) {
       <a href="/recover/${esc(paigaam.recovery_token)}" style="word-break:break-all">${esc(baseUrl)}/recover/${esc(paigaam.recovery_token)}</a></p>` : ''}
   </div>
 </main>
-${isFree ? `<script src="/js/qr-card.js" defer></script>
+${isFree ? `<script src="/js/qr-card.js?v=1" defer></script>
 <script>
 (function () {
   var btn = document.getElementById('publishFree');
@@ -149,8 +149,8 @@ ${isFree ? `<script src="/js/qr-card.js" defer></script>
     }).catch(function () { btn.disabled = false; btn.textContent = 'Publish my Paigaam'; });
   });
 })();
-</script>` : `<script src="/js/paigaam-pay.js" defer></script>
-<script src="/js/qr-card.js" defer></script>
+</script>` : `<script src="/js/paigaam-pay.js?v=1" defer></script>
+<script src="/js/qr-card.js?v=1" defer></script>
 <script>
 (function () {
   var btn = document.getElementById('payPublish');

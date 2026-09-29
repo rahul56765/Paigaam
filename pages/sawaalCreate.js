@@ -31,12 +31,12 @@ function sawaalCreatePage(opts = {}) {
   const rd = opts.resumeDraft || null;
   const boot = rd ? { draftId: rd.id, data: rd.customer_data || {}, at: rd.updated_at ? new Date(rd.updated_at.replace(' ', 'T') + 'Z').getTime() : Date.now(), noun: 'invitation' } : null;
     return builderShell('Sawaal', `
-<link rel="stylesheet" href="/sawaal/create.css">
-<script src="/sawaal/create.js" defer></script>
-<script src="/js/paigaam-pay.js" defer></script>
-${boot ? `<script src="/js/resume.js" defer></script>
+<link rel="stylesheet" href="/sawaal/create.css?v=2">
+<script src="/sawaal/create.js?v=2" defer></script>
+<script src="/js/paigaam-pay.js?v=1" defer></script>
+${boot ? `<script src="/js/resume.js?v=1" defer></script>
 <script type="application/json" id="wizardBoot">${JSON.stringify(boot).replace(/</g, '\u003c')}</script>` : ''}
-<script src="/js/qr-card.js" defer></script>
+<script src="/js/qr-card.js?v=1" defer></script>
 <main id="wizard">
   <section class="intro">
     <p class="eyebrow">Sawaal</p>

@@ -141,12 +141,12 @@ function bfdayCreatePage(t, opts = {}) {
 
   return builderShell(c.name, `
 ${jsonPayload('bfSpec', spec)}
-<link rel="stylesheet" href="/bfday/create.css">
+<link rel="stylesheet" href="/bfday/create.css?v=2">
 <style>:root { --bg: ${escape(theme.bg)}; --ink: ${escape(theme.ink)}; --accent: ${escape(theme.accent)}; --soft: ${escape(theme.soft)}; }${darkThemeOverride(theme)}</style>
-<script src="/bfday/create.js" defer></script>
-<script src="/js/paigaam-pay.js" defer></script>
-<script src="/js/qr-card.js" defer></script>
-${opts.resumeDraft ? `<script src="/js/resume.js" defer></script>
+<script src="/bfday/create.js?v=2" defer></script>
+<script src="/js/paigaam-pay.js?v=1" defer></script>
+<script src="/js/qr-card.js?v=1" defer></script>
+${opts.resumeDraft ? `<script src="/js/resume.js?v=1" defer></script>
 <script type="application/json" id="wizardBoot">${JSON.stringify({ draftId: opts.resumeDraft.id, data: opts.resumeDraft.customer_data || {}, at: opts.resumeDraft.updated_at ? new Date(opts.resumeDraft.updated_at.replace(' ', 'T') + 'Z').getTime() : Date.now(), noun: create.noun || 'Paigaam' }).replace(/</g, '\\u003c')}</script>` : ''}
 <main id="wizard">
   <section class="intro">

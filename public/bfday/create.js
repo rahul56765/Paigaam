@@ -660,6 +660,7 @@
   }
 
   function showResult(url) {
+    if (typeof arguments[0] !== 'string' || arguments[0].indexOf('/') !== 0) { console.error('bad publish result'); return; } // GUARD
     var wizard = el('wizard');
     var result = el('publishedResult');
     if (wizard) wizard.hidden = true;
