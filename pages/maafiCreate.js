@@ -30,8 +30,8 @@ function maafiCreatePage(opts = {}) {
   const rd = opts.resumeDraft || null;
   const boot = rd ? { draftId: rd.id, data: rd.customer_data || {}, at: rd.updated_at ? new Date(rd.updated_at.replace(' ', 'T') + 'Z').getTime() : Date.now(), noun: 'apology' } : null;
     return builderShell('Maafi', `
-<link rel="stylesheet" href="/maafi/create.css?v=2">
-<script src="/maafi/create.js?v=2" defer></script>
+<link rel="stylesheet" href="/maafi/create.css?v=3">
+<script src="/maafi/create.js?v=3" defer></script>
 <script src="/js/paigaam-pay.js?v=1" defer></script>
 <script src="/js/qr-card.js?v=1" defer></script>
 ${boot ? `<script src="/js/resume.js?v=1" defer></script>

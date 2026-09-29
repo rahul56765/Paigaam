@@ -350,7 +350,7 @@
   }
 
   function showResult(url) {
-    if (typeof arguments[0] !== 'string' || arguments[0].indexOf('/') !== 0) { console.error('bad publish result'); return; } // GUARD
+    if (typeof arguments[0] !== 'string' || !/^(https?:\/\/|\/)/.test(arguments[0])) { console.error('bad publish result'); return; } // GUARD
     var wizard = document.getElementById('wizard');
     var result = document.getElementById('publishedResult');
     if (wizard) wizard.hidden = true;

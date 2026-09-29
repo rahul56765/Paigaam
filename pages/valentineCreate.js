@@ -34,8 +34,8 @@ function valentineCreatePage(opts = {}) {
   const rd = opts.resumeDraft || null;
   const boot = rd ? { draftId: rd.id, data: rd.customer_data || {}, at: rd.updated_at ? new Date(rd.updated_at.replace(' ', 'T') + 'Z').getTime() : Date.now(), noun: 'question' } : null;
     return builderShell('Valentine Say Yes', `
-<link rel="stylesheet" href="/valentine-say-yes/create.css?v=2">
-<script src="/valentine-say-yes/create.js?v=2" defer></script>
+<link rel="stylesheet" href="/valentine-say-yes/create.css?v=3">
+<script src="/valentine-say-yes/create.js?v=3" defer></script>
 <script src="/js/paigaam-pay.js?v=1" defer></script>
 ${boot ? `<script src="/js/resume.js?v=1" defer></script>
 <script type="application/json" id="wizardBoot">${JSON.stringify(boot).replace(/</g, '\u003c')}</script>` : ''}

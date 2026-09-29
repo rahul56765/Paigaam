@@ -141,9 +141,9 @@ function bfdayCreatePage(t, opts = {}) {
 
   return builderShell(c.name, `
 ${jsonPayload('bfSpec', spec)}
-<link rel="stylesheet" href="/bfday/create.css?v=2">
+<link rel="stylesheet" href="/bfday/create.css?v=3">
 <style>:root { --bg: ${escape(theme.bg)}; --ink: ${escape(theme.ink)}; --accent: ${escape(theme.accent)}; --soft: ${escape(theme.soft)}; }${darkThemeOverride(theme)}</style>
-<script src="/bfday/create.js?v=2" defer></script>
+<script src="/bfday/create.js?v=3" defer></script>
 <script src="/js/paigaam-pay.js?v=1" defer></script>
 <script src="/js/qr-card.js?v=1" defer></script>
 ${opts.resumeDraft ? `<script src="/js/resume.js?v=1" defer></script>

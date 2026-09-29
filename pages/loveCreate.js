@@ -34,8 +34,8 @@ function loveCreatePage(opts = {}) {
   const rd = opts.resumeDraft || null;
   const boot = rd ? { draftId: rd.id, data: rd.customer_data || {}, at: rd.updated_at ? new Date(rd.updated_at.replace(' ', 'T') + 'Z').getTime() : Date.now(), noun: 'album' } : null;
     return builderShell('Love Album', `
-<link rel="stylesheet" href="/love-album/create.css?v=2">
-<script src="/love-album/create.js?v=2" defer></script>
+<link rel="stylesheet" href="/love-album/create.css?v=3">
+<script src="/love-album/create.js?v=3" defer></script>
 <script src="/js/paigaam-pay.js?v=1" defer></script>
 ${boot ? `<script src="/js/resume.js?v=1" defer></script>
 <script type="application/json" id="wizardBoot">${JSON.stringify(boot).replace(/</g, '\u003c')}</script>` : ''}
