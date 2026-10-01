@@ -33,9 +33,11 @@ function goldFrames(photos) {
     const stamp = STAMPS[i % STAMPS.length];
     return `
       <figure class="cm-frame" style="--tilt:${TILTS[i % TILTS.length]}deg" role="listitem">
-        <img class="cm-frame__img" src="${escape(p.photo)}" alt="${escape(p.caption || 'a party memory')}" loading="lazy" decoding="async">
-        <img class="cm-frame__gold" src="/assets/chamak/gold-frame.png" alt="" aria-hidden="true" draggable="false">
-        <img class="cm-frame__stamp" src="/assets/chamak/sticker-${stamp}.png" alt="" aria-hidden="true" loading="lazy" decoding="async" draggable="false">
+        <div class="cm-frame__art">
+          <img class="cm-frame__img" src="${escape(p.photo)}" alt="${escape(p.caption || 'a party memory')}" loading="lazy" decoding="async">
+          <img class="cm-frame__gold" src="/assets/chamak/gold-frame.png" alt="" aria-hidden="true" draggable="false">
+          <img class="cm-frame__stamp" src="/assets/chamak/sticker-${stamp}.png" alt="" aria-hidden="true" loading="lazy" decoding="async" draggable="false">
+        </div>
         ${p.caption ? `<figcaption class="cm-frame__cap">${escape(p.caption)}</figcaption>` : ''}
       </figure>`;
   }).join('\n');
@@ -64,7 +66,7 @@ ${head({ paigaam, opts, title, description, themeColor: '#111111', image: (d.pho
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@1,9..144,900&family=Bricolage+Grotesque:opsz,wght@12..96,700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/chamak/chamak.css?v=2">
+<link rel="stylesheet" href="/chamak/chamak.css?v=3">
 <script src="/chamak/chamak.js?v=2" defer></script>
 <noscript><style>
   /* No JS: the whole night is one readable, still page. */
