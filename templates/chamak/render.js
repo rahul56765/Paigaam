@@ -64,8 +64,8 @@ ${head({ paigaam, opts, title, description, themeColor: '#111111', image: (d.pho
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@1,9..144,900&family=Bricolage+Grotesque:opsz,wght@12..96,700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/chamak/chamak.css?v=1">
-<script src="/chamak/chamak.js?v=1" defer></script>
+<link rel="stylesheet" href="/chamak/chamak.css?v=2">
+<script src="/chamak/chamak.js?v=2" defer></script>
 <noscript><style>
   /* No JS: the whole night is one readable, still page. */
   .cm-stage { position: static !important; min-height: auto; }

@@ -105,11 +105,20 @@ body {
   font-size: clamp(44px, 13vw, 96px);
   line-height: 1.02;
   letter-spacing: 0.01em;
+  filter: drop-shadow(0 2px 18px rgba(244, 234, 0, 0.28));
+}
+
+/* The foil gradient must live on the LETTER spans, not the parent —
+   background-clip:text does not cascade through child spans (each span
+   clipped its own nonexistent background and the name painted invisible).
+   Each span carries the full gradient; at 96px a per-letter restart is
+   invisible in practice (Director's Option A). */
+.cm-ch, .cm-name {
   background: linear-gradient(168deg, #FFF3A0 0%, var(--neon-gold) 38%, var(--gold) 62%, #B8860B 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  filter: drop-shadow(0 2px 18px rgba(244, 234, 0, 0.28));
+  -webkit-text-fill-color: transparent;
 }
 
 .cm-ch { display: inline-block; opacity: 0; transform: translateY(0.55em) rotate(4deg); }
@@ -227,7 +236,10 @@ body {
   scroll-snap-align: center;
   position: relative;
   transform: rotate(var(--tilt));
-  padding: 26px;
+  padding: 26px 26px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .cm-frame__img {
@@ -249,23 +261,25 @@ body {
 
 .cm-frame__stamp {
   position: absolute;
-  top: -22px;
-  right: -16px;
-  width: 30%;
+  top: -4px;
+  right: -8px;
+  width: 26%;
   height: auto;
   transform: rotate(12deg);
   filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.5));
 }
 
+/* P2: captions live BELOW the frame on the black stage — gold-on-gold on
+   the frame's bottom rail was unreadable (Director's ruling). Cream/pink,
+   clear of the gold. */
 .cm-frame__cap {
-  position: absolute;
-  bottom: 8px;
-  left: 0;
-  right: 0;
+  position: static;
+  margin-top: 14px;
   font-size: 13px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: var(--gold);
+  color: var(--pink);
+  text-shadow: 0 0 10px rgba(255, 79, 163, 0.4);
 }
 
 .cm-gallery__cue {
