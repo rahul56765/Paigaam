@@ -30,4 +30,5 @@ module.exports = [
   'yaadon',
   'nishaan',
   'chamak',
+  'daawat',
 ];
