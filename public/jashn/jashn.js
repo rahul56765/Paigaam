@@ -72,10 +72,14 @@
   }
 
   /* ------------------------------------------------ candle state (shared) */
-  var flameBtns = candlesBlow ? [].slice.call(candlesBlow.querySelectorAll('.js-flame-btn')) : [];
 
-  // Mirror the blow stage's candle clones from the cake's set.
+  // Mirror the blow stage's candle clones from the cake's set FIRST — the
+  // innerHTML swap replaces every button node, so the tap listeners below
+  // must be attached to the post-clone DOM (capturing first left them on
+  // detached orphans and the flames never went out).
   if (candlesCake && candlesBlow) candlesBlow.innerHTML = candlesCake.innerHTML;
+
+  var flameBtns = candlesBlow ? [].slice.call(candlesBlow.querySelectorAll('.js-flame-btn')) : [];
 
   function litCount() {
     return candlesBlow ? candlesBlow.querySelectorAll('.js-candle:not(.is-out)').length : 0;
