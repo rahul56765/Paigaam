@@ -28,4 +28,5 @@ module.exports = [
   'purana-seekho',
   'jashn',
   'yaadon',
+  'nishaan',
 ];

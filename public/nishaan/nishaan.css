@@ -1,0 +1,277 @@
+/*
+ * Nishaan — Milestone (Boyfriend Day family, Birthday Series 3 of 4).
+ *
+ * Palette: warm white #FFFDF8 cotton field, ink #2C2A26, gold #C9A227
+ * (decorative only), one deep-red accent #8C2F39. Fraunces 900 display,
+ * DM Sans 300 air. Editorial luxury — nothing cute, nothing festival.
+ */
+:root {
+  --field: #FFFDF8;
+  --ink: #2C2A26;
+  --gold: #C9A227;
+  --red: #8C2F39;
+  --ink-soft: rgba(44, 42, 38, 0.55);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background:
+    url('/assets/nishaan/paper-texture.jpg') repeat,
+    var(--field);
+  background-size: 512px;
+  color: var(--ink);
+  font-family: 'DM Sans', system-ui, -apple-system, sans-serif;
+  font-weight: 300;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+.ns { position: relative; }
+
+.ns-beat {
+  min-height: 100vh;
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 64px 22px;
+  position: relative;
+  overflow: hidden;
+}
+
+.ns-visuallyhidden {
+  position: absolute; width: 1px; height: 1px;
+  clip: rect(0 0 0 0); clip-path: inset(50%); overflow: hidden; white-space: nowrap;
+}
+
+.ns-cue {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0.34em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+/* ---------- ① the foil numeral ---------- */
+.ns-beat--numeral { gap: 8px; }
+
+.ns-numeral {
+  font-family: 'Fraunces', serif;
+  font-weight: 900;
+  font-size: clamp(160px, 52vw, 460px);
+  line-height: 0.9;
+  letter-spacing: -0.02em;
+  background: url('/assets/nishaan/foil-texture.jpg') center / cover no-repeat;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 4px 14px rgba(201, 162, 39, 0.25));
+}
+
+.ns-numeral__sub {
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 300;
+  font-size: clamp(15px, 3.6vw, 20px);
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+/* ---------- ② the type-collage band ---------- */
+.ns-collage {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0.35em 0.45em;
+  max-width: 760px;
+  margin-bottom: 22px;
+}
+
+.ns-word { line-height: 1.05; }
+
+.ns-word--serif {
+  font-family: 'Fraunces', serif;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  color: var(--ink);
+}
+
+.ns-word--script {
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  font-weight: 400;
+  color: var(--red);
+}
+
+.ns-collage__date {
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 400;
+  font-size: 12px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  margin-bottom: 30px;
+}
+
+.ns-rule { display: block; height: auto; }
+.ns-rule--flourish { width: min(64vw, 420px); }
+.ns-rule--diamond { width: min(84vw, 620px); }
+
+/* ---------- ③ the timeline ---------- */
+.ns-tl__h {
+  font-family: 'Fraunces', serif;
+  font-weight: 900;
+  font-size: clamp(26px, 6.4vw, 38px);
+  color: var(--ink);
+  margin-bottom: 44px;
+}
+
+.ns-tl {
+  list-style: none;
+  width: 100%;
+  max-width: 520px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ns-tl__row {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-areas: 'year rule' 'year line';
+  column-gap: 18px;
+  align-items: center;
+  text-align: left;
+  padding: 14px 0;
+}
+
+.ns-tl__year {
+  grid-area: year;
+  font-family: 'Fraunces', serif;
+  font-weight: 900;
+  font-size: clamp(20px, 5vw, 26px);
+  color: var(--gold);
+  min-width: 4.2em;
+}
+
+.ns-tl__rule { grid-area: rule; height: 12px; display: flex; align-items: center; }
+.ns-tl__rule img { width: 100%; height: auto; }
+
+.ns-tl__line {
+  grid-area: line;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 300;
+  font-size: clamp(15px, 3.8vw, 18px);
+  color: var(--ink);
+  padding-top: 2px;
+}
+
+/* ---------- ④ the portrait in the museum mat ---------- */
+.ns-mat { position: relative; width: min(76vw, 380px); }
+
+.ns-mat__photo {
+  display: block;
+  width: calc(100% - 44px);
+  margin: 22px;
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+}
+
+.ns-mat__frame {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  filter: drop-shadow(0 22px 44px rgba(44, 42, 38, 0.28));
+}
+
+.ns-portrait__credit {
+  margin-top: 26px;
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  font-weight: 400;
+  font-size: 18px;
+  color: var(--ink-soft);
+}
+
+/* ---------- ⑤ the toast ---------- */
+.ns-clink {
+  width: clamp(140px, 34vw, 220px);
+  height: auto;
+  margin-bottom: 30px;
+}
+
+.ns-clink.is-clinking { animation: ns-clink 0.7s var(--ease-out, ease-out); }
+
+@keyframes ns-clink {
+  30% { transform: rotate(-7deg) translateY(-8px); }
+  60% { transform: rotate(5deg) translateY(-4px); }
+  100% { transform: rotate(0) translateY(0); }
+}
+
+.ns-toast__wish {
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  font-weight: 400;
+  font-size: clamp(24px, 6.4vw, 36px);
+  line-height: 1.3;
+  color: var(--ink);
+  max-width: 560px;
+  margin-bottom: 20px;
+}
+
+.ns-toast__sign {
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 300;
+  font-size: 14px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--red);
+  margin-bottom: 44px;
+}
+
+.ns-foot {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(44, 42, 38, 0.5);
+  margin-bottom: 26px;
+}
+.ns-foot a { color: inherit; text-underline-offset: 3px; }
+
+.ns-replay {
+  appearance: none;
+  border: 1px solid var(--ink);
+  background: transparent;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 400;
+  font-size: 13px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink);
+  padding: 14px 32px;
+  border-radius: 0;
+  transition: background 0.25s ease, color 0.25s ease;
+}
+
+.ns-replay:hover { background: var(--ink); color: var(--field); }
+
+/* ---------- scroll reveals (nishaan.js adds .is-in) ---------- */
+.ns-reveal { opacity: 0; transform: translateY(18px); transition: opacity 0.7s var(--ease-out, ease-out), transform 0.7s ease-out; }
+.ns-reveal.is-in { opacity: 1; transform: none; }
+
+@supports (transform: translateX(0)) { }
+
+/* ---------- reduced motion ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .ns-reveal { opacity: 1; transform: none; transition: none; }
+  .ns-clink.is-clinking { animation: none; }
+}
