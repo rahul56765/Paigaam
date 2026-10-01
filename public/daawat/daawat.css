@@ -278,8 +278,10 @@ body {
 }
 
 /* per-letter stagger: 60ms per letter, slight rise + fade, no glow (ruling #4) */
-.dw-ch {
+.dw-ch, .dw-sp {
   display: inline-block;
+}
+.dw-ch {
   opacity: 0;
   transform: translateY(10px);
 }
@@ -430,6 +432,7 @@ body {
   .dw-hero.dw-open .dw-curtain--right { transform: translateX(100%); }
   .dw-petal { animation: none !important; opacity: 0 !important; }
   .dw-ch { opacity: 1 !important; transform: none !important; animation: none !important; }
+  .dw-sp { display: inline !important; }
 }
 
 /* ------- small screens ------- */

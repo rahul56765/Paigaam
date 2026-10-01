@@ -105,8 +105,31 @@
     }
   }
 
-  /* ------------------------------ the name stagger ------------------------------ */
+  /* ------------------------------ the name stagger ------------------------------
+     The letters ship server-rendered as .dw-ch spans (render.js namesMarkup);
+     this guard catches anything that isn't split yet — and keeps the h2's
+     aria-label as the only thing a screen reader reads. */
   var names = document.querySelector('.dw-card__names');
+  if (names && !names.querySelector('.dw-ch')) {
+    var i = 0;
+    var walker = document.createTreeWalker(names, NodeFilter.SHOW_TEXT, null);
+    var texts = [];
+    while (walker.nextNode()) texts.push(walker.currentNode);
+    texts.forEach(function (node) {
+      if (!node.textContent.trim()) return;
+      var frag = document.createDocumentFragment();
+      Array.from(node.textContent).forEach(function (ch) {
+        if (ch === ' ') { frag.appendChild(document.createTextNode(' ')); return; }
+        var span = document.createElement('span');
+        span.className = 'dw-ch';
+        span.setAttribute('aria-hidden', 'true');
+        span.style.setProperty('--i', String(i++));
+        span.textContent = ch;
+        frag.appendChild(span);
+      });
+      node.parentNode.replaceChild(frag, node);
+    });
+  }
   if (names && 'IntersectionObserver' in window && !reduced) {
     var io = new IntersectionObserver(function (entries) {
       entries.forEach(function (entry) {

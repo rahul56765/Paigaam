@@ -46,11 +46,15 @@ function tiles(now, target) {
   return [d, h, i, s].map(n => String(n).padStart(2, '0'));
 }
 
-/** The couple's names in Great Vibes, one span per letter (60ms stagger). */
-function nameLetters(name) {
-  return Array.from(name).map((ch, i) =>
+/** The couple's names in Great Vibes, one span per letter (60ms stagger,
+ *  continuous index across both names), the ampersand preserved between them.
+ *  The spans are aria-hidden — the h2's aria-label carries the reading. */
+function namesMarkup(bride, groom) {
+  let i = 0;
+  const letters = name => Array.from(name).map(ch =>
     ch === ' ' ? '<span class="dw-sp" aria-hidden="true">&nbsp;</span>'
-      : `<span class="dw-ch" style="--i:${i}">${escape(ch)}</span>`).join('');
+      : `<span class="dw-ch" style="--i:${i++}">${escape(ch)}</span>`).join('');
+  return `<span aria-hidden="true">${letters(bride)}<span class="dw-amp">&amp;</span>${letters(groom)}</span>`;
 }
 
 /* -------------------------------------------------------------- sections */
@@ -85,11 +89,10 @@ function heroBeat(d, now) {
 
 /** Beat 3 · the maroon card: names, gold divider, invitation line, facts. */
 function cardBeat(d) {
-  const names = `${escape(d.brideName)}<span class="dw-amp">&amp;</span>${escape(d.groomName)}`;
   return `<section class="dw-beat dw-cardbeat" id="card" aria-labelledby="dwCardH">
       <div class="dw-card">
         <p class="dw-card__occasion">${escape(d.eventName)}</p>
-        <h2 class="dw-card__names" id="dwCardH" aria-label="${escape(d.brideName)} and ${escape(d.groomName)}">${names}</h2>
+        <h2 class="dw-card__names" id="dwCardH" aria-label="${escape(d.brideName)} and ${escape(d.groomName)}">${namesMarkup(d.brideName, d.groomName)}</h2>
         <img class="dw-card__divider" src="/assets/daawat/divider-gold.png" alt="" width="270" height="24" aria-hidden="true" loading="lazy" decoding="async">
         <p class="dw-card__invite">${multiline(d.inviteLine)}</p>
         <dl class="dw-facts">
@@ -184,8 +187,8 @@ ${head({ paigaam, opts, title, description, themeColor: '#1A0505', image: config
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500;1,600&family=Great+Vibes&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/daawat/daawat.css?v=1">
-<script src="/daawat/daawat.js?v=1" defer></script>
+<link rel="stylesheet" href="/daawat/daawat.css?v=2">
+<script src="/daawat/daawat.js?v=2" defer></script>
 <noscript><style>
   /* No JS: the whole ceremony is one readable, still page. */
   .dw-plaque { display: none !important; }
@@ -210,4 +213,4 @@ ${bgmScript(d.bgmSong || '')}
 </html>`;
 }
 
-module.exports = { render, humanDate, targetMs, tiles, nameLetters };
+module.exports = { render, humanDate, targetMs, tiles, namesMarkup };
