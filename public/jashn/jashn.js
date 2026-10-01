@@ -213,7 +213,22 @@
     setTimeout(function () { confetti.classList.add('is-done'); }, 6200);
   }
 
-  /* ------------------------------------------------ reel dots */
+  /* ------------------------------------------------ ④ reel → ⑤ letter */
+  // The reel beat ends the fixed-stage walk: after it, the letter is simply
+  // below in normal flow — reveal it (and hand scrolling back to the page)
+  // the first time the reel has been read (all dots visited or 6s dwell).
+  var letterShown = false;
+  function showLetter() {
+    if (letterShown) return;
+    letterShown = true;
+    var el = beats.letter;
+    if (!el) return;
+    el.classList.remove('is-active');      // it was never fixed-active
+    el.style.display = 'block';            // static flow from here down
+    el.setAttribute('aria-hidden', 'false');
+    el.classList.add('is-entering');
+  }
+
   if (reel && dots && reel.children.length > 1) {
     var count = reel.children.length;
     for (var i = 0; i < count; i++) {
@@ -226,7 +241,11 @@
       var w = reel.children[0] ? reel.children[0].offsetWidth + 18 : 1;
       var ix = Math.min(count - 1, Math.round(reel.scrollLeft / w));
       dotEls.forEach(function (d, j) { d.classList.toggle('is-on', j === ix); });
+      if (ix >= count - 1) showLetter();               // reached the last photo
     }, { passive: true });
+    setTimeout(showLetter, 8000);                      // or let the reel breathe ~8s
+  } else if (reel) {
+    setTimeout(showLetter, 4000);                      // single/no photos → straight on
   }
 
   /* ------------------------------------------------ ⑤ replay */
@@ -236,6 +255,9 @@
     [].slice.call(document.querySelectorAll('.js-flame-btn')).forEach(function (b) { b.disabled = false; });
     if (confetti) { confetti.innerHTML = ''; confetti.classList.remove('is-done'); }
     advanced = false;
+    letterShown = false;
+    var el = beats.letter;
+    if (el) { el.style.display = ''; el.setAttribute('aria-hidden', 'true'); }
     showStage('intro');
   });
 

@@ -88,11 +88,12 @@ ${head({ paigaam, opts, title, description, themeColor: '#F7F0E6', image: ogImag
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,800&family=Caveat:wght@500;600;700&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/jashn/jashn.css?v=2">
-<script src="/jashn/jashn.js?v=2" defer></script>
+<link rel="stylesheet" href="/jashn/jashn.css?v=3">
+<script src="/jashn/jashn.js?v=3" defer></script>
 <noscript><style>
   /* No JS: the whole ceremony is one readable, still page. */
   .js-beat { position: static !important; opacity: 1 !important; transform: none !important; min-height: auto; }
+  #jsLetter { display: block !important; }
   .js-intro__hint, .js-blow__mic, .js-flame-btn { display: none !important; }
   .js-flame { opacity: 1 !important; }
   .js-smoke { opacity: 0 !important; }
