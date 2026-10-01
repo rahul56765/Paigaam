@@ -127,7 +127,7 @@ function render(paigaam = {}, opts = {}) {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-${head({ paigaam, opts, title, description, themeColor: '#F7F0E4', image: config.ogImage })}
+${head({ paigaam, opts, title, description, themeColor: '#F7F0E4', image: d.finalePhoto || config.ogImage })}
 <link rel="stylesheet" href="/bfday/bgm.css">
 <style>:root { --bgm-accent: #E4573D; }</style>
 <link rel="preconnect" href="https://fonts.googleapis.com">

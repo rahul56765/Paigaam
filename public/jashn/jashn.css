@@ -1,0 +1,484 @@
+/*
+ * Jashn — Blow the Candles (Boyfriend Day family, Birthday Series 1 of 4).
+ *
+ * Palette: soft cream #F7F0E6 stage · pastel pink #D8A7B1 · sage #A8B5A2 ·
+ * gold #C9A227 (decorative only) · body ink #4A3F3A (contrast carrier for
+ * the letter). Fraunces 800 display, Caveat handwritten, DM Sans body.
+ *
+ * Phone-first: every beat is designed at 390px and scales up. Motion budget:
+ * the drift/breathe loops are the only continuous animations, and they are
+ * transform/opacity only. Reduced motion collapses everything to stills.
+ */
+:root {
+  --cream: #F7F0E6;
+  --cream-deep: #EFE6D6;
+  --pink: #D8A7B1;
+  --sage: #A8B5A2;
+  --gold: #C9A227;
+  --ink: #4A3F3A;
+  --ink-soft: rgba(74, 63, 58, 0.62);
+  --card: #FFFDF8;
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body { height: 100%; }
+
+body {
+  background: var(--cream);
+  color: var(--ink);
+  font-family: 'DM Sans', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+.js { position: relative; min-height: 100vh; min-height: 100svh; }
+
+/* ---------- beats: one visible at a time ---------- */
+.js-beat {
+  position: fixed;
+  inset: 0;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 24px;
+  overflow: hidden;
+}
+
+.js-beat.is-active { display: flex; }
+
+.js-beat--reel, .js-beat--letter { position: static; min-height: 100vh; min-height: 100svh; }
+
+/* ---------- shared bits ---------- */
+.js-eyebrow {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  margin-bottom: 18px;
+}
+
+/* sprinkle doodles, scattered on intro */
+.js-sprinkle { position: absolute; width: 34px; height: auto; opacity: 0.9; }
+.js-sprinkle--0 { top: 12%; left: 8%; transform: rotate(-14deg); }
+.js-sprinkle--1 { top: 20%; right: 10%; transform: rotate(10deg); }
+.js-sprinkle--2 { bottom: 18%; left: 12%; transform: rotate(6deg); }
+.js-sprinkle--3 { bottom: 24%; right: 7%; transform: rotate(-8deg); }
+.js-sprinkle--4 { top: 45%; left: 4%; transform: rotate(16deg); }
+
+/* ---------- ① intro ---------- */
+.js-intro__balloon {
+  position: absolute;
+  width: clamp(120px, 30vw, 210px);
+  height: auto;
+  filter: drop-shadow(0 14px 24px rgba(74, 63, 58, 0.12));
+}
+.js-intro__balloon--pink { top: 6%; left: 4%; animation: js-drift 6s ease-in-out infinite; }
+.js-intro__balloon--sage { bottom: 8%; right: 5%; width: clamp(100px, 26vw, 180px); animation: js-drift 7s ease-in-out 1.2s infinite; }
+
+@keyframes js-drift {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-14px) rotate(2deg); }
+}
+
+.js-intro__inner {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 22px;
+  max-width: 420px;
+}
+
+.js-intro__h {
+  font-family: 'Fraunces', serif;
+  font-weight: 800;
+  font-size: clamp(30px, 8.5vw, 44px);
+  line-height: 1.14;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+
+.js-open-btn {
+  appearance: none;
+  border: 0;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 700;
+  font-size: 16px;
+  letter-spacing: 0.02em;
+  color: #FFFDF8;
+  background: var(--ink);
+  padding: 16px 34px;
+  border-radius: 999px;
+  box-shadow: 0 12px 28px rgba(74, 63, 58, 0.28);
+  animation: js-pulse 2.2s ease-in-out infinite;
+}
+
+@keyframes js-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.045); }
+}
+
+.js-intro__hint {
+  font-family: 'Caveat', cursive;
+  font-size: 19px;
+  color: var(--ink-soft);
+}
+
+/* ---------- ② cake entrance ---------- */
+.js-cake__balloon { position: absolute; width: clamp(90px, 22vw, 160px); height: auto; opacity: 0.95; }
+.js-cake__balloon--pink { top: 4%; right: 6%; animation: js-drift 7s ease-in-out infinite; }
+.js-cake__balloon--sage { bottom: 5%; left: 5%; width: clamp(80px, 19vw, 140px); animation: js-drift 8s ease-in-out 0.8s infinite; }
+
+.js-cake__inner {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  max-width: 420px;
+  width: 100%;
+}
+
+.js-cake__name {
+  font-family: 'Fraunces', serif;
+  font-weight: 800;
+  font-size: clamp(26px, 7.4vw, 38px);
+  line-height: 1.16;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+
+.js-cake-wrap {
+  position: relative;
+  width: min(78vw, 340px);
+  animation: js-rise 0.9s var(--ease-spring) both;
+}
+
+@keyframes js-rise {
+  from { opacity: 0; transform: translateY(46px) scale(0.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.js-cake { display: block; width: 100%; height: auto; }
+
+.js-candles {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  /* sits on the top tier; width is driven by candle count in JS */
+  bottom: 72%;
+  display: flex;
+  align-items: flex-end;
+  gap: clamp(2px, 1.4vw, 6px);
+  z-index: 2;
+}
+
+.js-candle { position: relative; width: clamp(14px, 4vw, 20px); }
+
+.js-candle::before {
+  /* the candle stick itself, drawn in CSS — no binary needed */
+  content: '';
+  display: block;
+  width: clamp(5px, 1.6vw, 7px);
+  height: clamp(22px, 5.4vw, 30px);
+  margin: 0 auto;
+  border-radius: 3px;
+  background: repeating-linear-gradient(45deg, #FFFDF8 0 5px, var(--pink) 5px 10px);
+  box-shadow: 0 2px 4px rgba(74, 63, 58, 0.18);
+}
+
+.js-flame {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: clamp(13px, 3.6vw, 17px);
+  height: auto;
+  transform-origin: 50% 100%;
+  animation: js-flicker 1.4s ease-in-out calc(var(--i) * 0.18s) infinite;
+  transition: opacity 0.45s ease, transform 0.45s var(--ease-out);
+}
+
+@keyframes js-flicker {
+  0%, 100% { transform: translateX(-50%) scale(1) rotate(-2deg); }
+  50% { transform: translateX(-50%) scale(1.06) rotate(2.5deg); }
+}
+
+.js-smoke {
+  position: absolute;
+  bottom: 96%;
+  left: 50%;
+  transform: translateX(-50%) translateY(6px);
+  width: clamp(12px, 3.2vw, 16px);
+  height: auto;
+  opacity: 0;
+  transition: opacity 0.9s ease 0.1s, transform 1.4s ease 0.1s;
+}
+
+.js-candle.is-out .js-flame { opacity: 0; transform: translateX(-50%) scale(0.6); }
+.js-candle.is-out .js-smoke { opacity: 0.85; transform: translateX(-50%) translateY(-14px); }
+
+/* the invisible-but-focusable tap target over each flame */
+.js-flame-btn {
+  position: absolute;
+  inset: -14px -12px -4px;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  border-radius: 50%;
+  touch-action: manipulation;
+}
+.js-flame-btn:focus-visible { outline: 2px dashed var(--gold); outline-offset: 2px; }
+
+.js-cake__cue, .js-blow__fallback {
+  font-family: 'Caveat', cursive;
+  font-size: 20px;
+  color: var(--ink-soft);
+}
+
+.js-next-btn, .js-mic-btn {
+  appearance: none;
+  border: 0;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 700;
+  font-size: 15px;
+  color: #FFFDF8;
+  background: var(--ink);
+  padding: 14px 30px;
+  border-radius: 999px;
+  box-shadow: 0 10px 22px rgba(74, 63, 58, 0.25);
+  margin-top: 12px;
+}
+
+.js-mic-btn { background: var(--sage); color: #26302A; }
+
+.js-mic-btn.is-listening { background: var(--gold); color: #FFFDF8; }
+
+/* ---------- ③ blow beat ---------- */
+.js-blow__inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  max-width: 420px;
+  width: 100%;
+}
+
+.js-blow__h {
+  font-family: 'Fraunces', serif;
+  font-weight: 800;
+  font-size: clamp(26px, 7.6vw, 36px);
+  color: var(--ink);
+}
+
+.js-blow__status {
+  min-height: 22px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-soft);
+}
+
+.js-blow__stage { position: relative; width: min(72vw, 320px); }
+
+.js-cake--blow { filter: drop-shadow(0 16px 26px rgba(74, 63, 58, 0.14)); }
+
+.js-blow__fallback { margin-top: 4px; }
+
+/* ---------- ④ confetti + reel ---------- */
+.js-confetti { position: fixed; inset: 0; pointer-events: none; overflow: hidden; z-index: 3; }
+.js-confetti.is-done { display: none; }
+
+.js-confetti i {
+  position: absolute;
+  top: -4vh;
+  display: block;
+  width: 9px;
+  height: 13px;
+  border-radius: 2px;
+  opacity: 0.95;
+  animation: js-fall linear forwards;
+}
+
+@keyframes js-fall {
+  to { transform: translateY(112vh) rotate(660deg); }
+}
+
+.js-reel__inner {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  padding: 56px 20px 48px;
+  width: 100%;
+  max-width: 560px;
+  margin: 0 auto;
+}
+
+.js-reel__h {
+  font-family: 'Fraunces', serif;
+  font-weight: 800;
+  font-size: clamp(26px, 7.2vw, 36px);
+  line-height: 1.18;
+  color: var(--ink);
+}
+
+.js-reel {
+  position: relative;
+  width: 100%;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  display: flex;
+  gap: 18px;
+  padding: 12px 8px 22px;
+  scrollbar-width: none;
+}
+.js-reel::-webkit-scrollbar { display: none; }
+
+.js-slide {
+  flex: 0 0 min(78vw, 300px);
+  scroll-snap-align: center;
+  background: var(--card);
+  border-radius: 14px;
+  padding: 12px 12px 14px;
+  box-shadow: 0 16px 34px rgba(74, 63, 58, 0.16);
+  transform: rotate(calc(var(--i) % 2 * 4deg - 2deg));
+}
+
+.js-slide img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.js-slide__ph {
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  border-radius: 8px;
+  background: var(--cream-deep);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 40px;
+  color: var(--pink);
+}
+
+.js-slide__cap {
+  font-family: 'Caveat', cursive;
+  font-size: 21px;
+  color: var(--ink);
+  padding: 10px 2px 0;
+}
+
+.js-dots { display: flex; gap: 7px; }
+.js-dots i { width: 7px; height: 7px; border-radius: 50%; background: rgba(74, 63, 58, 0.22); transition: background 0.25s ease, transform 0.25s ease; }
+.js-dots i.is-on { background: var(--ink); transform: scale(1.25); }
+
+/* ---------- ⑤ letter finale ---------- */
+.js-beat--letter { background: var(--cream-deep); }
+
+.js-paper {
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 40px 22px 48px;
+  background:
+    url('/assets/jashn/paper-grain.jpg') repeat,
+    #FFFDF8;
+  border-radius: 18px;
+  box-shadow: 0 22px 48px rgba(74, 63, 58, 0.18);
+}
+
+.js-letter { text-align: left; }
+
+.js-letter p {
+  font-family: 'Caveat', cursive;
+  font-size: clamp(21px, 5.4vw, 25px);
+  font-weight: 500;
+  line-height: 1.45;
+  color: var(--ink);
+  margin-bottom: 14px;
+}
+
+.js-letter__to {
+  font-size: clamp(26px, 6.4vw, 32px) !important;
+  font-weight: 700;
+}
+
+.js-letter__signoff { margin-top: 26px; font-style: italic; }
+
+.js-letter__name {
+  font-size: clamp(24px, 6vw, 30px) !important;
+  font-weight: 700 !important;
+  margin-bottom: 0 !important;
+}
+
+.js-foot {
+  margin-top: 30px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(74, 63, 58, 0.16);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  text-align: center;
+  color: rgba(74, 63, 58, 0.5);
+}
+.js-foot a { color: inherit; text-underline-offset: 3px; }
+
+.js-replay {
+  display: block;
+  margin: 22px auto 0;
+  appearance: none;
+  border: 0;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--ink);
+  background: transparent;
+  border: 2px solid var(--ink);
+  padding: 12px 28px;
+  border-radius: 999px;
+}
+
+/* ---------- beat transitions (added by jashn.js) ---------- */
+.js-beat.is-entering { animation: js-beat-in 0.55s var(--ease-out) both; }
+
+@keyframes js-beat-in {
+  from { opacity: 0; transform: translateY(22px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ---------- small phones ---------- */
+@media (max-width: 360px) {
+  .js-beat { padding: 18px; }
+}
+
+/* ---------- desktop scale-up ---------- */
+@media (min-width: 768px) {
+  .js-intro__h { font-size: 52px; }
+  .js-cake-wrap { width: 360px; }
+  .js-slide { flex-basis: 320px; }
+}
+
+/* ---------- reduced motion: stills, everything readable ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .js-intro__balloon, .js-intro__balloon--sage, .js-cake__balloon,
+  .js-open-btn, .js-flame, .js-cake-wrap { animation: none !important; }
+  .js-beat.is-entering { animation: none; }
+  .js-smoke { transition: none; }
+  .js-candle.is-out .js-smoke { opacity: 0.85; transform: translateX(-50%) translateY(-6px); }
+  .js-confetti { display: none; }
+}
