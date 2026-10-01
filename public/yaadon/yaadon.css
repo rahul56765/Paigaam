@@ -1,0 +1,440 @@
+/*
+ * Yaadon — Memory Scrapbook (Boyfriend Day family, Birthday Series 2 of 4).
+ *
+ * Palette: kraft field #F5EEE3 / #E8D8C8, brass #B08D57, terracotta
+ * #9A5B4D, sage #6B7A5E, ink #4A3F3A. Caveat 700 marginalia, Fraunces
+ * small-caps headers, DM Sans captions.
+ *
+ * The book is built as full-viewport spreads stacked in normal flow after
+ * the cover; the "flip" is a scroll-snap horizontal strip of spreads on
+ * low-end devices (`.yd--degrade`) and a subtle 3D-tilt reveal on capable
+ * ones. Imperfect on purpose: tilts ≤3°, alternating (Director's ruling).
+ */
+:root {
+  --kraft: #F5EEE3;
+  --kraft-deep: #E8D8C8;
+  --brass: #B08D57;
+  --terracotta: #9A5B4D;
+  --sage: #6B7A5E;
+  --ink: #4A3F3A;
+  --ink-soft: rgba(74, 63, 58, 0.6);
+  --paper: #FFFDF8;
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body { height: 100%; }
+
+body {
+  background: var(--kraft);
+  background-image: url('/assets/yaadon/kraft-texture.jpg');
+  background-size: 512px;
+  color: var(--ink);
+  font-family: 'DM Sans', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+.yd { position: relative; min-height: 100vh; min-height: 100svh; }
+
+.yd-visuallyhidden {
+  position: absolute; width: 1px; height: 1px;
+  clip: rect(0 0 0 0); clip-path: inset(50%); overflow: hidden; white-space: nowrap;
+}
+
+/* ============ ① the cover ============ */
+.yd-cover {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 24px;
+  overflow: hidden;
+}
+
+.yd-cover.is-open { animation: yd-cover-away 0.7s var(--ease-out) forwards; pointer-events: none; }
+
+@keyframes yd-cover-away {
+  to { opacity: 0; transform: translateY(-28px) rotate(-1.2deg); visibility: hidden; }
+}
+
+.yd-cover__inner { display: flex; flex-direction: column; align-items: center; gap: 18px; position: relative; }
+
+.yd-doodle { position: absolute; opacity: 0.75; width: 40px; height: auto; }
+.yd-doodle--0 { top: 14%; left: 8%; transform: rotate(-12deg); }
+.yd-doodle--1 { top: 22%; right: 12%; width: 30px; transform: rotate(14deg); }
+.yd-doodle--2 { bottom: 26%; left: 14%; width: 22px; transform: rotate(-6deg); }
+.yd-doodle--3 { bottom: 18%; right: 8%; transform: rotate(20deg); }
+.yd-doodle--4 { top: 46%; left: 5%; width: 54px; transform: rotate(4deg); }
+
+.yd-seal-btn {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+}
+
+.yd-seal {
+  width: clamp(108px, 30vw, 150px);
+  height: auto;
+  filter: drop-shadow(0 10px 20px rgba(74, 63, 58, 0.28));
+  transition: transform 0.3s var(--ease-spring);
+}
+
+.yd-seal-btn:active .yd-seal { transform: scale(0.94) rotate(-4deg); }
+
+.yd-seal.is-lifting {
+  animation: yd-seal-lift 0.9s var(--ease-out) forwards;
+}
+
+@keyframes yd-seal-lift {
+  40% { transform: translateY(-16px) rotate(-5deg) scale(1.04); opacity: 1; }
+  100% { transform: translateY(-70px) rotate(-18deg) scale(0.9); opacity: 0; }
+}
+
+.yd-seal-btn__hint {
+  font-family: 'Caveat', cursive;
+  font-size: 20px;
+  color: var(--ink-soft);
+}
+
+.yd-cover__line {
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  font-weight: 600;
+  font-size: clamp(24px, 6.6vw, 34px);
+  color: var(--ink);
+}
+
+.yd-cover__for {
+  font-family: 'Caveat', cursive;
+  font-size: 24px;
+  color: var(--terracotta);
+}
+.yd-cover__for strong { font-weight: 700; }
+
+/* ============ the book: spread walker ============ */
+.yd-book { position: relative; }
+
+.yd-spread {
+  min-height: 100vh;
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 40px 20px;
+  position: relative;
+  overflow: hidden;
+}
+
+.yd-book.is-flipping .yd-spread { animation: yd-flip-in 0.7s var(--ease-out) both; }
+
+@keyframes yd-flip-in {
+  from { opacity: 0; transform: perspective(1200px) rotateY(-7deg) translateX(30px); }
+  to { opacity: 1; transform: perspective(1200px) rotateY(0) translateX(0); }
+}
+
+/* degrade: no 3D, slide-fade only (low-end Android) */
+.yd--degrade .yd-book.is-flipping .yd-spread { animation-name: yd-slide-in; }
+
+@keyframes yd-slide-in {
+  from { opacity: 0; transform: translateX(24px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+/* ============ ② the title spread ============ */
+.yd-title__inner { position: relative; display: flex; flex-direction: column; align-items: center; gap: 14px; max-width: 420px; }
+
+.yd-title__eyebrow {
+  font-family: 'Caveat', cursive;
+  font-size: 21px;
+  color: var(--ink-soft);
+}
+
+.yd-title__h {
+  font-family: 'Fraunces', serif;
+  font-weight: 600;
+  font-variant: small-caps;
+  letter-spacing: 0.04em;
+  font-size: clamp(40px, 12vw, 62px);
+  color: var(--ink);
+}
+
+.yd-title__date {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--terracotta);
+}
+
+.yd-title__tape {
+  width: 190px;
+  height: auto;
+  transform: rotate(-3deg);
+  margin-top: 6px;
+}
+
+.yd-title__cue { font-family: 'Caveat', cursive; font-size: 20px; color: var(--ink-soft); margin-top: 26px; }
+
+.yd-title__flower { position: absolute; opacity: 0.95; }
+.yd-title__flower--daisy { top: 8%; right: 6%; width: clamp(80px, 22vw, 130px); transform: rotate(12deg); }
+.yd-title__flower--fern { bottom: 10%; left: 6%; width: clamp(60px, 16vw, 100px); transform: rotate(-14deg); }
+
+/* ============ ③ the polaroid pages ============ */
+.yd-pages__flower--babysbreath { position: absolute; bottom: 8%; right: 5%; width: clamp(70px, 18vw, 110px); transform: rotate(18deg); opacity: 0.9; }
+.yd-pages__sticker { position: absolute; top: 7%; left: 6%; width: clamp(70px, 17vw, 104px); transform: rotate(-8deg); }
+
+.yd-pages {
+  display: flex;
+  gap: 20px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  width: 100%;
+  max-width: 560px;
+  padding: 14px 12px 20px;
+  scrollbar-width: none;
+}
+.yd-pages::-webkit-scrollbar { display: none; }
+
+.yd-page {
+  flex: 0 0 min(74vw, 290px);
+  scroll-snap-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  transform: rotate(var(--tilt));
+}
+
+.yd-polaroid { position: relative; width: 100%; }
+
+.yd-polaroid__img,
+.yd-polaroid__ph {
+  display: block;
+  width: calc(100% - 22px);
+  margin: 11px 11px 0;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+}
+
+.yd-polaroid__ph {
+  background: var(--kraft-deep);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 44px;
+  color: var(--terracotta);
+}
+
+/* the frame carries the transparent window: photo sits underneath it */
+.yd-polaroid__frame {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  filter: drop-shadow(0 12px 24px rgba(74, 63, 58, 0.2));
+}
+
+.yd-polaroid__tape {
+  position: absolute;
+  top: -14px;
+  left: 50%;
+  width: 46%;
+  height: auto;
+  transform: translateX(-50%) rotate(calc(var(--tilt) * -0.8));
+}
+
+.yd-page__cap {
+  font-family: 'Caveat', cursive;
+  font-size: 21px;
+  color: var(--ink);
+  padding-top: 4px;
+}
+
+.yd-dots { display: flex; gap: 7px; margin-top: 4px; }
+.yd-dots i { width: 7px; height: 7px; border-radius: 50%; background: rgba(74, 63, 58, 0.22); transition: background 0.25s, transform 0.25s; }
+.yd-dots i.is-on { background: var(--terracotta); transform: scale(1.25); }
+
+.yd-pages__cue { font-family: 'Caveat', cursive; font-size: 19px; color: var(--ink-soft); margin-top: 14px; }
+
+/* ============ ④ the reasons (peel strips, Kashf pattern) ============ */
+.yd-reasons__sticker { position: absolute; top: 8%; right: 7%; width: clamp(64px, 15vw, 96px); transform: rotate(10deg); }
+.yd-reasons__flower { position: absolute; bottom: 7%; left: 5%; width: clamp(60px, 14vw, 92px); transform: rotate(-16deg); opacity: 0.9; }
+
+.yd-reasons__h {
+  font-family: 'Fraunces', serif;
+  font-weight: 600;
+  font-variant: small-caps;
+  font-size: clamp(28px, 8vw, 40px);
+  color: var(--ink);
+  margin-bottom: 26px;
+}
+
+.yd-strips { display: flex; flex-direction: column; gap: 16px; width: 100%; max-width: 420px; }
+
+.yd-strip {
+  position: relative;
+  background: var(--paper);
+  border-radius: 8px;
+  padding: 18px 20px;
+  box-shadow: 0 8px 20px rgba(74, 63, 58, 0.14);
+  overflow: hidden;
+  min-height: 64px;
+  display: flex;
+  align-items: center;
+}
+
+.yd-strip__text {
+  font-family: 'Caveat', cursive;
+  font-size: 23px;
+  line-height: 1.3;
+  color: var(--ink);
+  opacity: 0;
+  transition: opacity 0.6s ease 0.25s;
+  width: 100%;
+}
+
+.yd-strip.is-open .yd-strip__text { opacity: 1; }
+
+/* the peel: a paper strip that slides up and away */
+.yd-strip__peel {
+  position: absolute;
+  inset: 0;
+  background:
+    url('/assets/yaadon/kraft-texture.jpg') repeat,
+    var(--kraft-deep);
+  background-size: 256px;
+  transition: transform 0.7s var(--ease-out), opacity 0.7s ease;
+  cursor: pointer;
+}
+
+.yd-strip__peel::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: var(--brass);
+  opacity: 0.6;
+}
+
+.yd-strip.is-open .yd-strip__peel { transform: translateY(-104%) rotate(-2deg); opacity: 0.25; }
+
+.yd-strip__hint {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-family: 'Caveat', cursive;
+  font-size: 17px;
+  color: rgba(74, 63, 58, 0.5);
+  pointer-events: none;
+  transition: opacity 0.3s;
+}
+
+.yd-strip.is-open .yd-strip__hint { opacity: 0; }
+
+.yd-reasons__cue { font-family: 'Caveat', cursive; font-size: 20px; color: var(--ink-soft); margin-top: 24px; }
+
+.yd-reveal-all {
+  appearance: none;
+  border: 0;
+  cursor: pointer;
+  margin-top: 18px;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--paper);
+  background: var(--terracotta);
+  padding: 13px 28px;
+  border-radius: 999px;
+  box-shadow: 0 10px 22px rgba(154, 91, 77, 0.3);
+}
+
+/* ============ ⑤ the letter ============ */
+.yd-spread--letter { padding-bottom: 56px; }
+
+.yd-letter__sticker { position: absolute; top: 6%; right: 8%; width: clamp(110px, 26vw, 160px); transform: rotate(8deg); }
+
+.yd-letter__paper {
+  width: 100%;
+  max-width: 480px;
+  background: url('/assets/yaadon/lined-paper.jpg') repeat;
+  background-size: 420px;
+  border-radius: 12px;
+  padding: 36px 24px 30px;
+  box-shadow: 0 20px 44px rgba(74, 63, 58, 0.22);
+  position: relative;
+}
+
+.yd-letter { text-align: left; }
+
+.yd-letter p {
+  font-family: 'Caveat', cursive;
+  font-size: clamp(21px, 5.4vw, 25px);
+  font-weight: 600;
+  line-height: 1.5;
+  color: var(--ink);
+  margin-bottom: 14px;
+}
+
+.yd-letter__to { font-size: clamp(26px, 6.4vw, 32px) !important; font-weight: 700; }
+.yd-letter__signoff { margin-top: 24px; font-style: italic; }
+.yd-letter__name { font-size: clamp(24px, 6vw, 30px) !important; font-weight: 700 !important; margin-bottom: 0 !important; }
+
+.yd-foot {
+  margin-top: 26px;
+  padding-top: 18px;
+  border-top: 1px solid rgba(74, 63, 58, 0.16);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  text-align: center;
+  color: rgba(74, 63, 58, 0.5);
+}
+.yd-foot a { color: inherit; text-underline-offset: 3px; }
+
+.yd-replay {
+  display: block;
+  margin: 20px auto 0;
+  appearance: none;
+  border: 2px solid var(--ink);
+  background: transparent;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--ink);
+  padding: 12px 28px;
+  border-radius: 999px;
+}
+
+/* ============ degrade helpers (set by yaadon.js on <body>) ============ */
+.yd--degrade .yd-polaroid__frame { filter: drop-shadow(0 6px 10px rgba(74, 63, 58, 0.18)); }
+
+/* ============ reduced motion ============ */
+@media (prefers-reduced-motion: reduce) {
+  .yd-cover.is-open { animation: none; opacity: 0; visibility: hidden; }
+  .yd-seal.is-lifting { animation: none; opacity: 0; }
+  .yd-book.is-flipping .yd-spread { animation: none; }
+  .yd-strip__peel { transition: none; }
+  .yd-strip.is-open .yd-strip__peel { opacity: 0; }
+  .yd-strip__text { transition: none; }
+}
