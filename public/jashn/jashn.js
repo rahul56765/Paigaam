@@ -216,11 +216,16 @@
   /* ------------------------------------------------ ④ reel → ⑤ letter */
   // The reel beat ends the fixed-stage walk: after it, the letter is simply
   // below in normal flow — reveal it (and hand scrolling back to the page)
-  // the first time the reel has been read (all dots visited or 6s dwell).
+  // the first time the reel has been read: all dots visited, or 8s of
+  // REEL-time (armed when the reel becomes active, never at page load —
+  // the Director's P1: a load-armed timer ambushes the ceremony mid-beat).
   var letterShown = false;
+  var reelDwellTimer = 0;
   function showLetter() {
+    if (!letterShown && current !== 'reel') return;   // only from the reel
     if (letterShown) return;
     letterShown = true;
+    clearTimeout(reelDwellTimer);
     var el = beats.letter;
     if (!el) return;
     el.classList.remove('is-active');      // it was never fixed-active
@@ -243,9 +248,6 @@
       dotEls.forEach(function (d, j) { d.classList.toggle('is-on', j === ix); });
       if (ix >= count - 1) showLetter();               // reached the last photo
     }, { passive: true });
-    setTimeout(showLetter, 8000);                      // or let the reel breathe ~8s
-  } else if (reel) {
-    setTimeout(showLetter, 4000);                      // single/no photos → straight on
   }
 
   /* ------------------------------------------------ ⑤ replay */
@@ -256,6 +258,7 @@
     if (confetti) { confetti.innerHTML = ''; confetti.classList.remove('is-done'); }
     advanced = false;
     letterShown = false;
+    clearTimeout(reelDwellTimer);
     var el = beats.letter;
     if (el) { el.style.display = ''; el.setAttribute('aria-hidden', 'true'); }
     showStage('intro');
@@ -263,6 +266,19 @@
 
   /* ------------------------------------------------ ① → ② */
   openBtn.addEventListener('click', function () { showStage('cake'); });
+
+  /* ------------------------------------------------ stage hook: arm the reel dwell */
+  var _showStage = showStage;
+  showStage = function (name) {
+    _showStage(name);
+    // the 8s dwell (and the 4s single-photo variant) arms when the REEL
+    // becomes active — never at script init (Director's P1)
+    clearTimeout(reelDwellTimer);
+    if (name === 'reel') {
+      var single = !reel || reel.children.length <= 1;
+      reelDwellTimer = setTimeout(showLetter, single ? 4000 : 8000);
+    }
+  };
 
   showStage('intro');
 })();
