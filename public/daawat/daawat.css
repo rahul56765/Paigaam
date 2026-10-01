@@ -1,0 +1,443 @@
+/* Daa'wat — red velvet, maroon, gold. Cormorant Garamond display, Great Vibes names. */
+
+:root {
+  --velvet-dark: #1A0505;
+  --maroon: #4A0F10;
+  --maroon-deep: #2B0808;
+  --gold: #C9A24B;
+  --gold-soft: rgba(201, 162, 75, 0.4);
+  --cream: #F8EAD0;
+  --ink: #F8EAD0;
+}
+
+* { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  background: var(--velvet-dark);
+  color: var(--ink);
+  font-family: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
+  font-size: 19px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+.dw-story { position: relative; }
+
+.dw-visuallyhidden {
+  position: absolute; width: 1px; height: 1px;
+  margin: -1px; padding: 0; border: 0;
+  clip: rect(0 0 0 0); overflow: hidden; white-space: nowrap;
+}
+
+/* ------- beats ------- */
+.dw-beat {
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 64px 22px;
+  position: relative;
+}
+
+.dw-smallcaps {
+  font-size: 13px;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin: 0 0 22px;
+  font-weight: 600;
+}
+
+/* ------- beat 1 · the closed hero ------- */
+.dw-hero {
+  padding: 0;
+  overflow: hidden;
+  text-align: center;
+}
+
+.dw-curtains {
+  position: absolute;
+  inset: 0;
+  display: flex;
+}
+.dw-curtain {
+  width: 50%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  /* the seam guarantee: closed hero = the two halves, unsliced in CSS */
+  transform: translateX(0);
+  transition: transform 1.4s cubic-bezier(0.65, 0, 0.35, 1); /* heavy fabric, no overshoot */
+}
+.dw-curtain--left { object-position: left center; }
+.dw-curtain--right { object-position: right center; }
+
+/* ambient layer 1: drape sway (the ONLY ambient transforms — ruling #2) */
+@keyframes dw-sway {
+  0%, 100% { transform: translateX(0) scale(1); }
+  50% { transform: translateX(-3px) scale(1.002); }
+}
+.dw-curtain--left { animation: dw-sway 7s ease-in-out infinite; }
+.dw-curtain--right { animation: dw-sway 7s ease-in-out infinite reverse; }
+
+/* ambient layer 2: candle flicker (light-only, no transform) */
+.dw-flicker {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse 40% 30% at 12% 58%, rgba(255, 200, 100, 0.18), transparent 70%);
+  animation: dw-flicker 2.8s ease-in-out infinite;
+}
+@keyframes dw-flicker {
+  0%, 100% { opacity: 1; }
+  42% { opacity: 0.72; }
+  58% { opacity: 0.88; }
+  73% { opacity: 0.65; }
+}
+
+/* the light bloom through the gap (ruling #3): opacity 0→1 across 1.4s, from 0.2s in */
+.dw-bloom {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse 60% 55% at 50% 50%, rgba(255, 232, 190, 0.55), rgba(255, 210, 150, 0.2) 45%, transparent 72%);
+  opacity: 0;
+  transition: opacity 1.4s ease-out 0.2s;
+}
+.dw-hero.dw-open .dw-bloom { opacity: 1; }
+
+.dw-hero__inner {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transition: opacity 0.6s ease;
+}
+.dw-hero.dw-open .dw-hero__inner { opacity: 0; pointer-events: none; }
+
+.dw-eyebrow {
+  font-family: 'Great Vibes', 'Cormorant Garamond', cursive;
+  font-size: clamp(30px, 7vw, 46px);
+  color: var(--cream);
+  margin: 0 0 26px;
+  line-height: 1.2;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.55);
+}
+
+/* the countdown tiles (gold-ruled, on velvet) */
+.dw-count {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(64px, 104px));
+  gap: clamp(10px, 3vw, 20px);
+  justify-content: center;
+}
+.dw-count--standalone { margin-bottom: 0; }
+
+.dw-tile {
+  border: 1px solid var(--gold-soft);
+  border-radius: 6px;
+  background: rgba(26, 5, 5, 0.62);
+  padding: 16px 6px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  backdrop-filter: blur(2px);
+}
+.dw-tile__num {
+  font-size: clamp(26px, 6vw, 42px);
+  font-weight: 700;
+  color: var(--gold);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.dw-tile__lbl {
+  margin-top: 8px;
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--cream);
+  opacity: 0.85;
+}
+
+.dw-hero__date {
+  margin: 26px 0 0;
+  font-size: clamp(18px, 3.6vw, 24px);
+  font-style: italic;
+  color: var(--cream);
+  opacity: 0.9;
+}
+
+/* the reusable "tap to open" plaque (ruling #6 — component, not one-off) */
+.dw-plaque {
+  position: absolute;
+  bottom: clamp(48px, 9vh, 96px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 3;
+  background: rgba(26, 5, 5, 0.55);
+  border: 1px solid var(--gold-soft);
+  border-radius: 999px;
+  padding: 14px 34px;
+  cursor: pointer;
+  backdrop-filter: blur(3px);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+.dw-plaque__text {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-style: italic;
+  font-size: clamp(19px, 4vw, 25px);
+  color: var(--cream);
+  letter-spacing: 0.04em;
+  animation: dw-pulse 2.4s ease-in-out infinite;
+  display: block;
+}
+@keyframes dw-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+.dw-hero.dw-open .dw-plaque { opacity: 0; pointer-events: none; }
+
+/* the one-shot petal burst (ruling #2: ~2s, then settle) */
+.dw-petals {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 4;
+}
+.dw-petal {
+  position: absolute;
+  top: -8%;
+  width: clamp(16px, 4vw, 30px);
+  height: auto;
+  opacity: 0;
+}
+.dw-hero.dw-open .dw-petal {
+  animation: dw-fall 2s ease-in forwards;
+}
+@keyframes dw-fall {
+  0% { opacity: 0; transform: translateY(-4vh) rotate(var(--spin, 0deg)); }
+  12% { opacity: 1; }
+  100% { opacity: 0.9; transform: translateY(108vh) rotate(calc(var(--spin, 0deg) + 220deg)); }
+}
+
+/* ------- beat 2 · the reveal transition -------
+   On tap: the curtains part (each half slides out 100% of its own width,
+   1.4s cubic-bezier(0.65,0,0.35,1)), the bloom rises through the gap, the
+   petals burst once — then the page scrolls to the card. The hero keeps
+   its composure behind; the scroll does the transition's second half. */
+.dw-hero.dw-open .dw-curtain--left { transform: translateX(-100%); }
+.dw-hero.dw-open .dw-curtain--right { transform: translateX(100%); }
+
+/* ------- beat 3 · the maroon card ------- */
+.dw-cardbeat { background: radial-gradient(ellipse 80% 60% at 50% 40%, #2B0808, var(--velvet-dark) 85%); }
+
+.dw-card {
+  width: min(560px, 100%);
+  text-align: center;
+  padding: clamp(48px, 9vw, 88px) clamp(28px, 7vw, 64px);
+  background: var(--maroon) url('/assets/daawat/card-bg.jpg') center / cover;
+  background-color: var(--maroon);
+  /* ruling #5: the double gold border lives in CSS, never baked */
+  border: 1px solid var(--gold);
+  outline: 1px solid rgba(201, 162, 75, 0.45);
+  outline-offset: 6px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6);
+}
+
+.dw-card__occasion {
+  font-size: 13px;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin: 0 0 26px;
+  font-weight: 600;
+}
+
+.dw-card__names {
+  font-family: 'Great Vibes', 'Cormorant Garamond', cursive;
+  /* ruling #4: ≥44px on mobile — the script is thin, smaller fails legibility */
+  font-size: clamp(44px, 10vw, 72px);
+  color: var(--cream);
+  margin: 0;
+  line-height: 1.2;
+  font-weight: 400;
+}
+.dw-amp {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-style: italic;
+  font-size: 0.5em;
+  color: var(--gold);
+  margin: 0 0.35em;
+  vertical-align: middle;
+}
+
+/* per-letter stagger: 60ms per letter, slight rise + fade, no glow (ruling #4) */
+.dw-ch {
+  display: inline-block;
+  opacity: 0;
+  transform: translateY(10px);
+}
+.dw-in .dw-ch {
+  animation: dw-letter 0.7s ease-out forwards;
+  animation-delay: calc(var(--i) * 60ms);
+}
+@keyframes dw-letter {
+  to { opacity: 1; transform: none; }
+}
+
+.dw-card__divider {
+  display: block;
+  width: min(270px, 60%);
+  height: auto;
+  margin: 30px auto;
+}
+
+.dw-card__invite {
+  font-size: clamp(19px, 4vw, 24px);
+  font-style: italic;
+  color: var(--cream);
+  line-height: 1.55;
+  margin: 0 0 34px;
+}
+
+.dw-facts {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.dw-fact dt {
+  font-size: 11px;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 2px;
+}
+.dw-fact dd {
+  margin: 0;
+  font-size: clamp(19px, 4vw, 25px);
+  font-weight: 600;
+  color: var(--cream);
+  overflow-wrap: break-word;
+}
+
+/* ------- beat 4 · the countdown (standing pattern, on velvet) ------- */
+.dw-countbeat { background: var(--velvet-dark); text-align: center; }
+
+/* ------- beat 5 · the gold-frame gallery ------- */
+.dw-gallery { background: var(--velvet-dark); text-align: center; }
+.dw-gallery__grid {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(32px, 6vw, 56px);
+  width: min(460px, 100%);
+}
+.dw-frame {
+  position: relative;
+  margin: 0;
+  padding: clamp(20px, 4.5vw, 34px);
+  background: rgba(74, 15, 16, 0.5);
+  border: 1px solid var(--gold-soft);
+}
+.dw-frame__corner {
+  position: absolute;
+  width: 30px;
+  height: 30px;
+  border-color: var(--gold);
+  border-style: solid;
+  border-width: 0;
+  pointer-events: none;
+}
+.dw-frame__corner--tl { top: 6px; left: 6px; border-top-width: 2px; border-left-width: 2px; }
+.dw-frame__corner--tr { top: 6px; right: 6px; border-top-width: 2px; border-right-width: 2px; }
+.dw-frame__corner--bl { bottom: 6px; left: 6px; border-bottom-width: 2px; border-left-width: 2px; }
+.dw-frame__corner--br { bottom: 6px; right: 6px; border-bottom-width: 2px; border-right-width: 2px; }
+.dw-frame__img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.dw-frame__cap {
+  margin-top: 14px;
+  font-style: italic;
+  font-size: clamp(16px, 3.4vw, 20px);
+  color: var(--cream);
+  opacity: 0.9;
+}
+
+/* ------- beat 6 · the closing ------- */
+.dw-close { background: var(--maroon-deep); text-align: center; }
+.dw-close__msg {
+  font-size: clamp(21px, 4.6vw, 30px);
+  font-style: italic;
+  max-width: 30ch;
+  margin: 0 0 40px;
+  line-height: 1.5;
+  color: var(--cream);
+}
+.dw-seal {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  margin-bottom: 34px;
+  transition: transform 0.4s ease;
+}
+.dw-seal:active { transform: scale(0.94); }
+.dw-seal__img {
+  display: block;
+  width: clamp(110px, 24vw, 140px);
+  height: auto;
+  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.5));
+}
+.dw-close__love {
+  font-size: 14px;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  margin: 0 0 8px;
+  color: var(--cream);
+  opacity: 0.85;
+}
+.dw-close__names {
+  font-family: 'Great Vibes', 'Cormorant Garamond', cursive;
+  font-size: clamp(38px, 9vw, 62px);
+  margin: 0;
+  line-height: 1.15;
+  color: var(--cream);
+}
+.dw-close__made {
+  margin: 46px 0 0;
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  opacity: 0.72;
+  color: var(--cream);
+}
+.dw-close__made a { color: inherit; }
+
+/* ------- reduced motion: everything still, everything readable ------- */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .dw-curtain { animation: none !important; transition: none !important; }
+  .dw-flicker, .dw-plaque__text { animation: none !important; }
+  .dw-bloom { transition: none !important; }
+  .dw-hero.dw-open .dw-curtain--left { transform: translateX(-100%); }
+  .dw-hero.dw-open .dw-curtain--right { transform: translateX(100%); }
+  .dw-petal { animation: none !important; opacity: 0 !important; }
+  .dw-ch { opacity: 1 !important; transform: none !important; animation: none !important; }
+}
+
+/* ------- small screens ------- */
+@media (max-width: 379px) {
+  .dw-count { grid-template-columns: repeat(2, minmax(84px, 1fr)); }
+  .dw-card { padding-left: 20px; padding-right: 20px; }
+}
+
+@media (min-width: 760px) {
+  body { font-size: 20px; }
+}

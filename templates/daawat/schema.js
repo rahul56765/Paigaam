@@ -1,0 +1,11 @@
+'use strict';
+/**
+ * Validation for Daa'wat.
+ *
+ * Generated from config.fields by the family engine: a whitelisting
+ * validator with the max lengths declared there. The couple's names, the
+ * date and the venue are required; everything else falls back to the
+ * designed copy in config.js (via lib/bfday/fields.resolve). Unknown keys
+ * never persist.
+ */
+module.exports = require('../../lib/bfday/fields').makeSchema(require('./config'));
