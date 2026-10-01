@@ -69,6 +69,7 @@
   function flipIn(id) {
     var el = document.getElementById(id);
     if (!el) return;
+    if (id === 'ydLetter' && letter) letter.hidden = false; // unhide before scrolling to it
     if (!book) return;
     book.classList.remove('is-flipping');
     void el.offsetWidth;
@@ -130,8 +131,13 @@
     if (openCount >= strips.length) {
       allShown = true;
       if (reasonsCue) reasonsCue.textContent = 'every reason, out in the open';
-      setTimeout(function () { flipIn('ydLetter'); }, reduceMotion ? 200 : 1100);
+      setTimeout(showLetterSpread, reduceMotion ? 200 : 1100);
     }
+  }
+
+  /* the reveal: letter.hidden=false FIRST, flipIn only scrolls to it */
+  function showLetterSpread() {
+    flipIn('ydLetter'); // flipIn unhides the letter itself before scrolling
   }
 
   strips.forEach(function (strip) {
