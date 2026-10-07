@@ -16,7 +16,7 @@ const PDF = Buffer.from('%PDF-1.4\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF\n');
 
 function goodDataset(mapping) {
   const ds = {};
-  for (const f of mapping.fields) ds[f.canvaName] = { type: f.type };
+  for (const f of mapping.fields) for (const name of (f.canvaNames || [f.canvaName]).filter(Boolean)) ds[name] = { type: f.type };
   for (const i of mapping.images) ds[i.canvaName] = { type: i.type };
   return ds;
 }
