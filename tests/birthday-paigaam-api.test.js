@@ -30,6 +30,9 @@ test('demo, wizard and thumbnail render', async () => {
   const html = await (await fetch(base + '/birthday-paigaam/demo')).text();
   for (const s of ['unlock', 'question', 'letter', 'voice', 'song', 'scrapbook', 'finale']) assert.ok(html.includes(`data-screen="${s}"`), 'demo has ' + s);
   assert.ok(!html.includes('"1234"'), 'the passcode is never in the page in plain text');
+  assert.ok(html.includes('bp-cameo') && html.includes('bp-frame__empty'), 'the cameo frame waits for a photo');
+  assert.ok(!html.includes('bp-cat') && !html.includes('bp-portrait.jpg'), 'no cartoon cat or stand-in portrait in the frame');
+  assert.ok(html.includes('bp-env__ribbon') && html.includes('bp-flap__face--in'), 'the new envelope (ribbon + lace liner) renders');
 });
 
 test('draft → validation, defaults, escaping, ownership', async () => {
@@ -47,7 +50,7 @@ test('draft → validation, defaults, escaping, ownership', async () => {
   const other = await draft({ recipientName: 'X' }, null, id);
   assert.equal(other.r.status, 403);
   // bad values are refused
-  for (const bad of [{ passcode: '12a4' }, { passcode: '12345' }, { recipientName: 'x'.repeat(41) }, { palette: { accent: 'red' } }, { font: 'comic' }, { photos: [{ url: 'https://evil.example/x.jpg' }] }, { whatsapp: 'call me' }, { candles: 12 }, { birthdayDate: '2024-02-30' }, { noMessages: Array(11).fill('no') }, { recipientName: 'a\u0007' }]) {
+  for (const bad of [{ passcode: '12a4' }, { passcode: '12345' }, { recipientName: 'x'.repeat(41) }, { palette: { accent: 'red' } }, { font: 'comic' }, { photos: [{ url: 'https://evil.example/x.jpg' }] }, { whatsapp: 'call me' }, { candles: 12 }, { birthdayDate: '2024-02-30' }, { noMessages: Array(11).fill('no') }, { photoFocus: { x: 150 } }, { photoFocus: { y: 'top' } }, { recipientName: 'a\u0007' }]) {
     const res = await draft({ recipientName: 'Meher', ...bad }, cookie, id);
     assert.equal(res.r.status, 400, JSON.stringify(bad));
   }
