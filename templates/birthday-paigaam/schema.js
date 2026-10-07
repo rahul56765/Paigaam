@@ -128,6 +128,9 @@ function validate(data, { publish = false } = {}) {
   for (const [key, [maxItems, maxLen]] of Object.entries(LIST_FIELDS)) clean[key] = list(data[key], maxItems, maxLen);
 
   clean.mainPhoto = media(data.mainPhoto, 'image');
+  const focus = data.photoFocus && typeof data.photoFocus === 'object' && !Array.isArray(data.photoFocus) ? data.photoFocus : {};
+  const pct = v => { if (v == null || v === '') return 50; const n = Number(v); if (!Number.isFinite(n) || n < 0 || n > 100) throw new InputError(); return Math.round(n); };
+  clean.photoFocus = { x: pct(focus.x), y: pct(focus.y) };
   clean.voiceUrl = media(data.voiceUrl, 'audio');
   clean.songUrl = media(data.songUrl, 'audio');
 

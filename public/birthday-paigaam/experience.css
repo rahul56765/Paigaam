@@ -194,9 +194,6 @@ html:not(.js) .bp-screen { display: flex; }
 .bp-frame__art { width: 100%; height: 100%; overflow: visible; filter: drop-shadow(0 14px 18px rgba(91, 42, 60, .25)); }
 .bp-frame__hole { position: absolute; inset: 15.4%; border-radius: 50%; overflow: hidden; background: var(--cream); }
 .bp-frame__photo { width: 100%; height: 100%; object-fit: cover; }
-.bp-frame__empty { width: 100%; height: 100%; display: grid; place-items: center; position: relative; }
-.bp-frame__empty svg { width: 70%; opacity: .9; }
-.bp-frame__empty span { position: absolute; font: 900 54px var(--font-head); color: #fff; }
 .bp-unlock__cat { position: absolute; right: -4%; bottom: -6%; width: 48%; animation: bpWobble 4.2s ease-in-out infinite; transform-origin: 50% 90%; }
 .bp-cat { width: 100%; height: auto; overflow: visible; filter: drop-shadow(0 8px 10px rgba(91, 42, 60, .22)); }
 .bp-deco--s1 { width: 30px; left: -4%; top: 6%; animation: bpTwinkle 2.6s ease-in-out infinite; }
@@ -631,3 +628,151 @@ html:not(.js) .bp-screen { display: flex; }
 .bp--still .bp-stripes, .bp--still .bp-floaters { animation: none !important; }
 
 .bp-pola:first-child { z-index: 5; }
+
+/* =====================================================================
+ * Round 2 — soft, elegant, vintage. Scoped to: the password page, the
+ * envelope, the finale balloons, the background stripes. Everything else
+ * (question, NO screen, players, scrapbook, hearts) is untouched.
+ * ===================================================================== */
+:root { --gold: #C9A24A; --gold-soft: #DCC28A; --gold-ink: #8C6A2B; --sage: #93A387; --lace: #FFFDF8; }
+@supports (color: color-mix(in srgb, red, blue)) {
+  :root { --gold-soft: color-mix(in srgb, #C9A24A 62%, var(--cream)); --lace: color-mix(in srgb, var(--cream) 22%, #fff); --sage: color-mix(in srgb, #8FA383 82%, var(--lavender)); }
+}
+.f-lace { fill: var(--lace); } .f-paper { fill: var(--paper); } .f-sage { fill: var(--sage); } .s-sage { stroke: var(--sage); } .s-paper { stroke: var(--paper); }
+.f-linerdot { fill: #fff; opacity: .78; }
+
+/* calmer background */
+.bp-stripes { opacity: .5; }
+@media (min-width: 1100px) { .bp-stripes { opacity: .55; } }
+.bp-wash { opacity: .7; }
+
+/* ---------- password page: typography ---------- */
+.bp-title__orn { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; color: var(--gold); font: 400 13px/1 var(--font-head); }
+.bp-title__orn i { display: block; width: clamp(34px, 9vw, 64px); height: 1px; background: linear-gradient(90deg, transparent, var(--gold)); }
+.bp-title__orn i:last-child { background: linear-gradient(90deg, var(--gold), transparent); }
+.bp-title__main {
+  font-weight: 600; font-variation-settings: 'SOFT' 50, 'WONK' 0, 'opsz' 144; letter-spacing: .005em;
+  font-size: clamp(60px, 16vw, 124px); color: var(--accent);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, .9), 0 14px 34px rgba(91, 42, 60, .14);
+}
+.bp-title__script { color: var(--ink); opacity: .9; text-shadow: 0 0 10px rgba(255, 255, 255, .95); transform: rotate(-5deg) translateX(.45em); }
+
+/* ---------- password page: the cameo ---------- */
+.bp-unlock__art { width: min(56vw, 250px); aspect-ratio: 1; margin-top: 2px; }
+@media (min-width: 768px) { .bp-unlock__art { width: min(36vw, 360px); margin-top: 8px; } }
+@media (max-width: 767px) and (max-height: 700px) { .bp-unlock__art { width: min(44vw, 196px); } }
+.bp-frame { position: absolute; inset: 0; width: 100%; aspect-ratio: 1; animation: bpCameoFloat 6.5s ease-in-out infinite; will-change: transform; }
+.bp-frame__hole { position: absolute; inset: 15.3%; border-radius: 50%; overflow: hidden; background: var(--lace); box-shadow: inset 0 0 0 1px rgba(201, 162, 74, .35), inset 0 6px 18px rgba(91, 42, 60, .12); isolation: isolate; }
+.bp-frame__photo { width: 100%; height: 100%; object-fit: cover; object-position: 50% 50%; display: block; transform: translateZ(0); }
+.bp-cameo { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; filter: drop-shadow(0 14px 22px rgba(91, 42, 60, .16)) drop-shadow(0 2px 3px rgba(140, 106, 43, .18)); }
+.bp-frame__glint {
+  position: absolute; inset: 4%; border-radius: 50%; pointer-events: none; mix-blend-mode: screen; opacity: .7;
+  background: conic-gradient(from 0deg, transparent 0 72%, rgba(255, 246, 214, .0) 74%, rgba(255, 248, 225, .95) 79%, rgba(255, 246, 214, 0) 84%, transparent 100%);
+  -webkit-mask: radial-gradient(circle, transparent 0 69%, #000 71% 96%, transparent 98%);
+          mask: radial-gradient(circle, transparent 0 69%, #000 71% 96%, transparent 98%);
+  animation: bpGlint 9s linear infinite; will-change: transform;
+}
+.bp-frame__empty { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: radial-gradient(circle at 50% 38%, #fff 0%, var(--lace) 45%, color-mix(in srgb, var(--blush) 38%, var(--lace)) 100%); }
+.bp-frame__empty svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.bp-frame__invite { position: relative; margin-top: -6%; text-align: center; font: 400 clamp(22px, 6.4vw, 30px)/1 var(--font-script); color: var(--gold-ink); }
+.bp-frame__mono { position: relative; margin-top: -8%; font: 500 clamp(48px, 14vw, 68px)/1 var(--font-head); background: linear-gradient(160deg, #F4E2A6, #B98A3E 55%, #E9D08C); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.bp-deco--s1, .bp-deco--s3 { width: 16px; opacity: .85; }
+.bp-deco--s1 { left: -2%; top: 10%; } .bp-deco--s3 { right: 0; left: auto; bottom: 8%; }
+@keyframes bpCameoFloat { 0%, 100% { transform: translate3d(0, 0, 0); } 50% { transform: translate3d(0, -8px, 0); } }
+@keyframes bpGlint { to { transform: rotate(360deg); } }
+
+/* ---------- password page: a quieter keypad ---------- */
+.bp-keypad .bp-wave-edge .fill { stroke: var(--gold-soft); stroke-width: 1.6; }
+.bp-keypad .bp-wave-edge .dash { stroke: var(--gold-soft); stroke-width: 1; stroke-dasharray: 1 6; }
+.bp-keypad .bp-wave-edge { filter: drop-shadow(0 18px 30px rgba(91, 42, 60, .14)) drop-shadow(0 2px 4px rgba(91, 42, 60, .08)); }
+.bp-keypad__label { font: 800 12px/1.2 var(--font-ui); letter-spacing: .32em; text-transform: uppercase; color: var(--gold-ink); }
+.bp-box { border: 1.5px solid var(--gold-soft); background: rgba(255, 255, 255, .7); border-radius: 13px; box-shadow: inset 0 2px 6px rgba(91, 42, 60, .06); }
+.bp-boxes.is-wrong .bp-box { border-color: var(--accent); background: color-mix(in srgb, var(--blush) 50%, #fff); }
+.bp-key {
+  font: 500 24px/1 var(--font-head); color: var(--ink); background: rgba(255, 255, 255, .78);
+  border: 1.5px solid var(--gold-soft); box-shadow: 0 2px 0 var(--gold-soft), 0 6px 14px -8px rgba(91, 42, 60, .3);
+}
+.bp-key:active, .bp-key.is-pop { box-shadow: 0 0 0 var(--gold-soft); background: color-mix(in srgb, var(--blush) 45%, #fff); }
+.bp-key--soft { font: 800 11px/1 var(--font-ui); letter-spacing: .14em; text-transform: uppercase; }
+.bp-key--soft[data-key='back'] { font: 400 20px/1 var(--font-ui); letter-spacing: 0; }
+.bp-enter { border-width: 1.5px; box-shadow: 0 3px 0 color-mix(in srgb, var(--ink) 70%, transparent); letter-spacing: .3em; font-size: 14px; }
+.bp-hint { font-family: var(--font-head); font-style: italic; font-size: 15px; font-weight: 400; }
+
+/* ---------- the envelope, redrawn ---------- */
+.bp-env { animation: bpEnvBob 4.2s ease-in-out infinite; filter: drop-shadow(0 22px 26px rgba(91, 42, 60, .18)) drop-shadow(0 3px 5px rgba(91, 42, 60, .1)); }
+@keyframes bpEnvBob { 0%, 100% { transform: translate3d(0, 0, 0) rotate(-.6deg); } 50% { transform: translate3d(0, -6px, 0) rotate(.6deg); } }
+.bp-env__back { background: radial-gradient(circle, rgba(255, 255, 255, .78) 1.6px, transparent 2.1px) 0 0 / 13px 13px, var(--blush); box-shadow: inset 0 0 0 5px var(--paper); }
+.bp-env__front { border-radius: 10px; }
+.bp-env__flap { height: 69%; }
+.bp-flap__face { position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+.bp-flap__face svg { width: 100%; height: 100%; display: block; }
+.bp-flap__face--in { transform: rotateX(180deg); }
+.bp-env__ribbonwrap { position: absolute; inset: 0; z-index: 5; pointer-events: none; }
+.bp-env__ribbon { width: 100%; height: 100%; overflow: visible; filter: drop-shadow(0 2px 2px rgba(91, 42, 60, .15)); }
+.bp-ribbon__l, .bp-ribbon__r { transform-box: fill-box; transition: transform .8s cubic-bezier(.4, .1, .3, 1), opacity .7s ease; }
+.bp-env.is-cracked .bp-ribbon__l { transform: translateX(-34px); opacity: 0; }
+.bp-env.is-cracked .bp-ribbon__r { transform: translateX(34px); opacity: 0; }
+.bp-env__seal { z-index: 6; width: 30%; top: 67.4%; transform: translate(-50%, -50%); }
+.bp-seal__initial { font: 600 34px var(--font-head); fill: #000; fill-opacity: .26; stroke: #fff; stroke-opacity: .28; stroke-width: .8; paint-order: stroke; }
+.bp-seal__sprig { transition: opacity .5s ease; }
+.bp-env.is-cracked .bp-seal__sprig { opacity: 0; }
+.bp-env__to { bottom: 7%; font: 400 clamp(26px, 7vw, 34px)/1 var(--font-script); color: var(--accent); }
+.bp-env__tolabel { font: 800 10px/1 var(--font-ui); letter-spacing: .3em; text-transform: uppercase; color: var(--gold-ink); vertical-align: middle; margin-right: 4px; }
+.bp-env__stamp { right: 4.5%; bottom: 6%; top: auto; width: 12.5%; transform: rotate(4deg); }
+.bp-stamp { filter: drop-shadow(0 2px 3px rgba(91, 42, 60, .18)); }
+.bp-stamp__text { font: 800 6px var(--font-ui); letter-spacing: .12em; fill: var(--gold-ink); }
+.bp-env__postmark { position: absolute; z-index: 3; right: 10%; bottom: 10%; width: 25%; transform: rotate(-9deg); pointer-events: none; }
+.bp-postmark { width: 100%; height: auto; }
+.bp-postmark__text { font: 800 7px var(--font-ui); letter-spacing: .16em; fill: var(--ink); fill-opacity: .34; }
+.bp-env__hint { font: italic 400 19px/1 var(--font-head); letter-spacing: .03em; color: var(--ink-soft); }
+
+/* ---------- finale: pearl balloons ---------- */
+.bp-balloon--pearl { opacity: .85; filter: drop-shadow(0 8px 10px rgba(91, 42, 60, .12)); }
+.bp-riser { animation-timing-function: cubic-bezier(.25, .1, .4, 1); }
+
+/* ---------- round 2: responsive fit ---------- */
+/* Short portrait phones (iPhone SE, small Android): cameo beside the title, so the whole lock fits on one screen. */
+@media (max-width: 767px) and (max-height: 760px) and (orientation: portrait) {
+  .bp-unlock { padding-top: calc(var(--safe-t) + 52px); padding-bottom: calc(var(--safe-b) + 16px); }
+  .bp-unlock__hero { flex-direction: row; align-items: center; justify-content: center; gap: 14px; width: 100%; }
+  .bp-unlock__art { width: min(34vw, 128px); margin: 0; }
+  .bp-title { align-items: flex-start; text-align: left; }
+  .bp-title__orn { display: none; }
+  .bp-title__main { font-size: clamp(44px, 13.5vw, 58px); }
+  .bp-title__script { font-size: clamp(28px, 8.4vw, 36px); transform: rotate(-5deg) translateX(.3em); }
+  .bp-unlock__grid { gap: 10px; }
+  .bp-keypad { padding: 16px 18px 14px; }
+  .bp-keypad__label { margin-bottom: 8px; }
+  .bp-box { height: 46px; }
+  .bp-keypad__msg { margin: 4px 0 2px; min-height: 1.3em; }
+  .bp-key { width: clamp(50px, 15vw, 56px); }
+  .bp-keys { gap: 7px 14px; }
+  .bp-enter { margin-top: 10px; min-height: 48px; }
+  .bp-hint { margin-top: 8px; }
+}
+/* Landscape phones: photo and lock side by side, compact keys (still 44px+). */
+@media (orientation: landscape) and (max-height: 520px) {
+  .bp-screen { padding-top: calc(var(--safe-t) + 50px); padding-bottom: calc(var(--safe-b) + 12px); padding-left: max(18px, env(safe-area-inset-left)); padding-right: max(18px, env(safe-area-inset-right)); }
+  .bp-unlock__grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; align-items: center; }
+  .bp-unlock__art { width: min(26vw, 150px); }
+  .bp-title__orn { display: none; }
+  .bp-title__main { font-size: clamp(40px, 8vw, 64px); }
+  .bp-title__script { font-size: clamp(26px, 5vw, 38px); }
+  .bp-keypad { padding: 14px 18px 12px; width: min(100%, 330px); }
+  .bp-keypad__label { margin-bottom: 6px; }
+  .bp-box { width: 40px; height: 40px; }
+  .bp-keypad__msg { margin: 2px 0; min-height: 1.1em; font-size: 15px; }
+  .bp-key { width: 44px; font-size: 19px; }
+  .bp-keys { gap: 5px 12px; }
+  .bp-enter { margin-top: 8px; min-height: 44px; }
+  .bp-hint { display: none; }
+  .bp-env { width: min(62vw, 360px); }
+}
+/* Readable labels (≥12px) and comfortable tap areas without changing the look. */
+.bp-env__tolabel, .bp-key--soft, .bp-pola__turn { font-size: 12px; }
+.bp-pola__zoom::after { content: ''; position: absolute; inset: -7px; border-radius: 50%; }
+.bp-brand a { padding: 12px 16px; }
+.bp-iconbtn { width: 44px; height: 44px; }
+.bp-env__to { left: 7%; right: 38%; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-bottom: 2px; }
+@media (min-width: 1100px) and (min-height: 700px) { .bp-env { width: min(46vw, 540px); } }
+.bp-finale__title { font-weight: 600; font-variation-settings: 'SOFT' 50, 'WONK' 0, 'opsz' 144; text-shadow: 0 1px 0 rgba(255, 255, 255, .9), 0 16px 36px rgba(91, 42, 60, .16); }

@@ -20,7 +20,7 @@
   var LAST = steps.length - 1;
   var progress = Array.prototype.slice.call(document.querySelectorAll('#progress li'));
 
-  var state = { mainPhoto: '', voiceUrl: '', songUrl: '', photos: [], font: 'dreamy', screens: {}, showBrand: true };
+  var state = { mainPhoto: '', photoFocus: { x: 50, y: 50 }, voiceUrl: '', songUrl: '', photos: [], font: 'dreamy', screens: {}, showBrand: true };
   var step = 0, draftId = null, previewUrl = null, saving = null, dirty = false, published = false;
 
   function el(id) { return document.getElementById(id); }
@@ -38,7 +38,7 @@
     TEXT.forEach(function (k) { d[k] = val(k); });
     d.candles = Number(val('candles') || 5);
     LISTS.forEach(function (k) { d[k] = lines(k); });
-    d.mainPhoto = state.mainPhoto; d.voiceUrl = state.voiceUrl; d.songUrl = state.songUrl;
+    d.mainPhoto = state.mainPhoto; d.photoFocus = { x: Math.round(state.photoFocus.x), y: Math.round(state.photoFocus.y) }; d.voiceUrl = state.voiceUrl; d.songUrl = state.songUrl;
     d.photos = state.photos.map(function (p) { return { url: p.url, caption: p.caption || '', back: p.back || '' }; });
     d.palette = {}; COLORS.forEach(function (k) { d.palette[k] = el('pal-' + k).value; });
     var f = form.querySelector('input[name="font"]:checked'); d.font = f ? f.value : 'dreamy';
@@ -119,16 +119,36 @@
   function paintMain() {
     var img = el('mainPhotoImg');
     img.hidden = !state.mainPhoto; if (state.mainPhoto) img.src = state.mainPhoto;
+    img.style.objectPosition = state.photoFocus.x + '% ' + state.photoFocus.y + '%';
+    img.classList.toggle('bpw-focus', !!state.mainPhoto);
     el('mainPhotoRemove').hidden = !state.mainPhoto;
   }
   el('mainPhotoFile').addEventListener('change', function (e) {
     var f = e.target.files[0]; e.target.value = ''; if (!f) return;
     setError(''); say('Uploading photo…');
     resizeImage(f).then(function (b) { return upload('photo', b, 'image/jpeg'); })
-      .then(function (r) { state.mainPhoto = r.url; paintMain(); say('Photo added.'); changed(); })
+      .then(function (r) { state.mainPhoto = r.url; state.photoFocus = { x: 50, y: 50 }; paintMain(); say('Photo added — drag it to centre their face.'); changed(); })
       .catch(function (err) { say(''); setError(msg(err)); });
   });
   el('mainPhotoRemove').addEventListener('click', function () { state.mainPhoto = ''; paintMain(); changed(); });
+  /* drag the photo inside its circle to choose what stays centred (object-position) */
+  (function () {
+    var img = el('mainPhotoImg'), drag = null;
+    img.addEventListener('pointerdown', function (e) {
+      if (!state.mainPhoto) return;
+      drag = { x: e.clientX, y: e.clientY, fx: state.photoFocus.x, fy: state.photoFocus.y };
+      img.setPointerCapture(e.pointerId); e.preventDefault();
+    });
+    img.addEventListener('pointermove', function (e) {
+      if (!drag) return;
+      var k = 100 / Math.max(60, img.clientWidth);
+      state.photoFocus.x = Math.max(0, Math.min(100, drag.fx - (e.clientX - drag.x) * k));
+      state.photoFocus.y = Math.max(0, Math.min(100, drag.fy - (e.clientY - drag.y) * k));
+      img.style.objectPosition = state.photoFocus.x + '% ' + state.photoFocus.y + '%';
+    });
+    function end() { if (drag) { drag = null; changed(); } }
+    img.addEventListener('pointerup', end); img.addEventListener('pointercancel', end);
+  })();
 
   /* audio (voice + song) */
   function paintAudio(kind) {
@@ -355,6 +375,7 @@
     if (LISTS.indexOf(id) >= 0) { el(id).value = Array.isArray(v) ? v.join('\n') : String(v || ''); return false; }
     if (id === 'photos') { state.photos = Array.isArray(v) ? v.map(function (p) { return { url: p.url, caption: p.caption || '', back: p.back || '' }; }) : []; paintPhotos(); return false; }
     if (id === 'mainPhoto') { state.mainPhoto = v || ''; paintMain(); return false; }
+    if (id === 'photoFocus') { if (v && typeof v === 'object') state.photoFocus = { x: Number(v.x) || 50, y: Number(v.y) || 50 }; paintMain(); return false; }
     if (id === 'voiceUrl' || id === 'songUrl') { state[id] = v || ''; paintAudio(id === 'voiceUrl' ? 'voice' : 'song'); return false; }
     if (id === 'palette' && v && typeof v === 'object') { COLORS.forEach(function (k) { if (v[k]) el('pal-' + k).value = v[k]; }); return false; }
     if (id === 'font') { var r = form.querySelector('input[name="font"][value="' + v + '"]'); if (r) r.checked = true; return false; }

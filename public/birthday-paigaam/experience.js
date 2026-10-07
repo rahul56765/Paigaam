@@ -291,6 +291,7 @@
   var floaters = $('.bp-floaters'), floatTimer = 0, floatCount = 0;
   var BALLOON_TPL = '<svg class="bp-balloon" viewBox="0 0 60 132" aria-hidden="true"><path class="s-ink" fill="none" stroke-width="1.4" opacity=".55" d="M30 80 q-9 12 0 24 q9 12 0 26"/><path class="FILL s-ink" stroke-width="2.2" d="M30 4C48 4 58 20 58 37C58 57 44 73 30 77C16 73 2 57 2 37C2 20 12 4 30 4Z"/><path class="FILL s-ink" stroke-width="2" stroke-linejoin="round" d="M25 82 L30 75 L35 82Z"/><ellipse cx="19" cy="25" rx="6" ry="10" fill="#fff" opacity=".45" transform="rotate(20 19 25)"/></svg>';
   var RIBBON_TPL = '<svg class="bp-ribbon" viewBox="0 0 60 160" aria-hidden="true"><path class="STROKE" fill="none" stroke-width="5" stroke-linecap="round" d="M30 4 C6 24 54 40 30 60 S6 96 30 116 S54 140 32 156"/></svg>';
+  var PEARL_TPL = '<svg class="bp-balloon bp-balloon--pearl" viewBox="0 0 60 150" aria-hidden="true"><path fill="none" stroke="#C9A24A" stroke-opacity=".7" stroke-width=".9" d="M30 82 q-6 16 0 32 q6 16 -1 34"/><path fill="url(#bpPearl)" stroke="#fff" stroke-opacity=".7" stroke-width=".8" d="M30 3C46 3 56 18 56 36C56 56 43 75 30 79C17 75 4 56 4 36C4 18 14 3 30 3Z"/><path fill="#E9D08C" d="M26.5 84 L30 78 L33.5 84Z"/><ellipse cx="20" cy="24" rx="5" ry="10" fill="#fff" opacity=".55" transform="rotate(18 20 24)"/></svg>';
   var BALLOON_FILLS = ['f-blush', 'f-lav', 'f-peach', 'f-acc', 'f-blushdeep', 'f-lavdeep'];
   function balloonSvg(cls) { return BALLOON_TPL.replace(/FILL/g, cls || pick(BALLOON_FILLS)); }
   function spawnFloater() {
@@ -340,7 +341,7 @@
 
   resize();
   startLoop();
-  if (!THUMB) later(floatLoop, 2500);
+  // Round 2: no balloons or ribbons drifting past — the hearts, stars and glitter carry the background.
 
   /* ========================================================= screen machine */
   var screens = {};
@@ -871,12 +872,13 @@
       if (still) return;
       if (risers) risers.remove();
       risers = doc.createElement('div'); risers.className = 'bp-risers'; risers.setAttribute('aria-hidden', 'true');
-      var n = small ? 9 : 14;
+      // A few slim pearl balloons, drifting up once — quiet, not a party pack.
+      var n = small ? 3 : 4, lanes = [8, 82, 24, 66];
       for (var i = 0; i < n; i++) {
         var b = doc.createElement('div'); b.className = 'bp-riser';
-        b.style.setProperty('--x', rand(-2, 94) + '%'); b.style.setProperty('--w', rand(small ? 38 : 46, small ? 62 : 86) + 'px');
-        b.style.setProperty('--d', rand(6.5, 11) + 's'); b.style.setProperty('--delay', rand(0, 2.6) + 's'); b.style.setProperty('--dx', rand(-60, 60) + 'px');
-        b.innerHTML = balloonSvg(BALLOON_FILLS[i % BALLOON_FILLS.length]);
+        b.style.setProperty('--x', (lanes[i] + rand(-4, 4)) + '%'); b.style.setProperty('--w', rand(small ? 30 : 36, small ? 40 : 50) + 'px');
+        b.style.setProperty('--d', rand(13, 17) + 's'); b.style.setProperty('--delay', (i * 1.4 + rand(0, .8)) + 's'); b.style.setProperty('--dx', rand(-30, 30) + 'px');
+        b.innerHTML = PEARL_TPL;
         risers.appendChild(b);
       }
       s.insertBefore(risers, s.firstChild);

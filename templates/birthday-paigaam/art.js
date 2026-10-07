@@ -363,7 +363,207 @@ function signatureSwash() {
   return `<svg class="bp-swash" viewBox="0 0 240 30" preserveAspectRatio="none" aria-hidden="true"><path class="s-acc" fill="none" stroke-width="3" stroke-linecap="round" d="M4 20 C 40 4, 78 32, 118 15 S 196 8, 236 18"/></svg>`;
 }
 
+
+/* ===================================================== round 2: vintage */
+
+const GOLD_STOPS = '<stop offset="0" stop-color="#F7E9B8"/><stop offset=".3" stop-color="#C9A24A"/><stop offset=".52" stop-color="#F4E2A6"/><stop offset=".78" stop-color="#A8802F"/><stop offset="1" stop-color="#E9D08C"/>';
+const gold = id => `<linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1">${GOLD_STOPS}</linearGradient>`;
+const ring = (cx, cy, R, n, fn) => Array.from({ length: n }, (_, i) => { const t = (2 * Math.PI * i) / n - Math.PI / 2; return fn(cx + R * Math.cos(t), cy + R * Math.sin(t), t, i); }).join('');
+
+/**
+ * The cameo frame: a lace scallop with eyelets, double gold hairlines, a row
+ * of seed pearls, a silk bow and a small floral sprig. It is an OVERLAY — the
+ * photo sits underneath, a touch larger than the window, so the pearls always
+ * cover its edge (no gap can ever show).
+ */
+function cameoFrame() {
+  const pearls = ring(160, 160, 113.5, 60, (x, y) => `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="2.7"/>`);
+  const shine = ring(160, 160, 113.5, 60, (x, y) => `<circle cx="${(x - .8).toFixed(1)}" cy="${(y - .9).toFixed(1)}" r=".9"/>`);
+  const eyelets = ring(160, 160, 138.5, 44, (x, y) => `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="2"/>`);
+  const scallop = scallopPath(160, 160, 146, 44);
+  return `<svg class="bp-cameo" viewBox="0 0 320 320" aria-hidden="true" focusable="false">
+  <defs>${gold('bpCamGold')}
+    <mask id="bpCamMask"><rect width="320" height="320" fill="#fff"/><circle cx="160" cy="160" r="109" fill="#000"/></mask>
+  </defs>
+  <g mask="url(#bpCamMask)">
+    <path class="f-lace" d="${scallop}"/>
+    <path fill="none" stroke="url(#bpCamGold)" stroke-width="1.1" d="${scallop}"/>
+    <g fill="none" stroke="url(#bpCamGold)" stroke-width=".8" opacity=".85">${eyelets}</g>
+    <circle cx="160" cy="160" r="131" fill="none" stroke="url(#bpCamGold)" stroke-width=".8" stroke-dasharray="1 4.2" stroke-linecap="round"/>
+    <circle cx="160" cy="160" r="125" class="f-paper"/>
+    <circle cx="160" cy="160" r="125" fill="none" stroke="url(#bpCamGold)" stroke-width="1.8"/>
+    <circle cx="160" cy="160" r="119.5" fill="none" stroke="url(#bpCamGold)" stroke-width=".7"/>
+    <circle cx="160" cy="160" r="109.5" fill="none" stroke="url(#bpCamGold)" stroke-width="1.4"/>
+    <g fill="#FFFDF7" stroke="#D8BE84" stroke-width=".6">${pearls}</g>
+    <g fill="#fff" opacity=".95">${shine}</g>
+  </g>
+  <g class="bp-cameo__bow" transform="translate(160 22)">
+    <path class="f-blush" stroke="url(#bpCamGold)" stroke-width=".9" d="M0 0 C-14 -16 -40 -16 -38 -2 C-36 10 -14 6 0 0Z"/>
+    <path class="f-blush" stroke="url(#bpCamGold)" stroke-width=".9" d="M0 0 C14 -16 40 -16 38 -2 C36 10 14 6 0 0Z"/>
+    <path class="f-blushdeep" opacity=".35" d="M-6 -1 C-16 -9 -30 -10 -32 -3 C-22 -6 -14 -4 -6 -1Z M6 -1 C16 -9 30 -10 32 -3 C22 -6 14 -4 6 -1Z"/>
+    <path class="f-blush" stroke="url(#bpCamGold)" stroke-width=".9" d="M-3 2 L-16 26 L-10 24 L-7 31 L2 4Z"/>
+    <path class="f-blush" stroke="url(#bpCamGold)" stroke-width=".9" d="M3 2 L16 26 L10 24 L7 31 L-2 4Z"/>
+    <ellipse cx="0" cy="0" rx="6" ry="5" class="f-blushdeep" stroke="url(#bpCamGold)" stroke-width=".9"/>
+  </g>
+  <g class="bp-cameo__sprig" transform="translate(160 296)">
+    <path fill="none" class="s-sage" stroke-width="1.3" stroke-linecap="round" d="M0 0 C-14 -2 -30 -8 -44 -18 M0 0 C14 -2 30 -8 44 -18"/>
+    <g class="f-sage" opacity=".9">
+      <path d="M-16 -4 C-20 -12 -14 -16 -10 -10 C-12 -7 -13 -5 -16 -4Z"/><path d="M-30 -10 C-36 -17 -30 -22 -25 -16 C-27 -13 -28 -11 -30 -10Z"/>
+      <path d="M16 -4 C20 -12 14 -16 10 -10 C12 -7 13 -5 16 -4Z"/><path d="M30 -10 C36 -17 30 -22 25 -16 C27 -13 28 -11 30 -10Z"/>
+    </g>
+    <g class="f-blush" stroke="url(#bpCamGold)" stroke-width=".6">
+      <circle cx="0" cy="-2" r="5.5"/><circle cx="-42" cy="-19" r="3.4"/><circle cx="42" cy="-19" r="3.4"/>
+    </g>
+    <circle cx="0" cy="-2" r="1.8" fill="#E9D08C"/>
+  </g>
+</svg>`;
+}
+
+/** What sits inside the cameo until a photo is added. */
+function cameoPlaceholder(initial, invite) {
+  return `<span class="bp-frame__empty">
+    <svg viewBox="0 0 200 200" aria-hidden="true" focusable="false">
+      <defs>${gold('bpPhGold')}</defs>
+      <circle cx="100" cy="100" r="74" fill="none" stroke="url(#bpPhGold)" stroke-width=".8" stroke-dasharray="2 5" stroke-linecap="round"/>
+      <path fill="none" stroke="url(#bpPhGold)" stroke-width="1.3" stroke-linejoin="round" transform="translate(88 52) scale(1)" d="${HEART}"/>
+      <path fill="none" stroke="url(#bpPhGold)" stroke-width=".9" stroke-linecap="round" d="M74 140 H92 M108 140 H126"/>
+      <circle cx="100" cy="140" r="1.8" fill="#C9A24A"/>
+    </svg>
+    ${invite ? '<span class="bp-frame__invite">your photo<br>here</span>' : `<span class="bp-frame__mono">${initial}</span>`}
+  </span>`;
+}
+
+/* ---------------------------------------------------------- the envelope */
+
+/** Laid-paper texture + soft fibres, shared by the envelope faces. */
+function paperDefs(p) {
+  return `<pattern id="${p}Laid" width="6" height="6" patternUnits="userSpaceOnUse"><path d="M0 3H6" stroke="#8a6a4a" stroke-opacity=".07" stroke-width=".7"/></pattern>
+  <filter id="${p}Grain" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".85" numOctaves="2" seed="4"/><feColorMatrix values="0 0 0 0 .45  0 0 0 0 .33  0 0 0 0 .25  0 0 0 .09 0"/><feComposite in2="SourceGraphic" operator="in"/></filter>
+  ${gold(p + 'Gold')}`;
+}
+
+function envelopeFront2() {
+  return `<svg class="bp-env__front" viewBox="0 0 400 276" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+  <defs>${paperDefs('bpEf')}
+    <linearGradient id="bpEfShadeL" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#000" stop-opacity=".0"/><stop offset="1" stop-color="#000" stop-opacity=".06"/></linearGradient>
+    <linearGradient id="bpEfShadeB" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#fff" stop-opacity=".25"/><stop offset="1" stop-color="#000" stop-opacity=".05"/></linearGradient>
+  </defs>
+  <path class="f-envside" d="M0 0 L200 160 L0 276Z"/>
+  <path fill="url(#bpEfShadeL)" d="M0 0 L200 160 L0 276Z"/>
+  <path class="f-envside" d="M400 0 L200 160 L400 276Z"/>
+  <path class="f-envfront" d="M0 276 L200 134 L400 276Z"/>
+  <path fill="url(#bpEfShadeB)" d="M0 276 L200 134 L400 276Z"/>
+  <rect width="400" height="276" fill="url(#bpEfLaid)"/>
+  <rect width="400" height="276" filter="url(#bpEfGrain)" fill="#fff"/>
+  <path fill="none" stroke="#7a5a44" stroke-opacity=".14" stroke-width="1.4" d="M0 276 L200 134 L400 276 M0 0 L196 157 M400 0 L204 157"/>
+  <path fill="none" stroke="url(#bpEfGold)" stroke-width=".9" opacity=".75" d="M24 268 L200 146 L376 268"/>
+  <rect x="6" y="6" width="388" height="264" rx="8" fill="none" stroke="url(#bpEfGold)" stroke-width=".8" stroke-dasharray="1 3.5" opacity=".7"/>
+</svg>`;
+}
+
+/** The flap has two faces: laid paper outside, a floral lace liner inside (seen once it opens). */
+function envelopeFlap2() {
+  const out = 'M0 0 H400 L216 176 Q200 190 184 176 Z';
+  const inn = 'M0 190 H400 L216 14 Q200 0 184 14 Z'; // drawn tip-up: it is seen after the flap swings open
+  return `<div class="bp-flap__face bp-flap__face--out"><svg class="bp-env__flapart" viewBox="0 0 400 190" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+  <defs>${paperDefs('bpEl')}</defs>
+  <path class="f-envflap" d="${out}"/>
+  <path fill="url(#bpElLaid)" d="${out}"/>
+  <path filter="url(#bpElGrain)" fill="#fff" d="${out}"/>
+  <path fill="none" stroke="url(#bpElGold)" stroke-width=".9" opacity=".8" d="M22 8 L190 168 Q200 177 210 168 L378 8"/>
+</svg></div><div class="bp-flap__face bp-flap__face--in"><svg class="bp-env__flapart" viewBox="0 0 400 190" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+  <defs>${gold('bpLinGold')}
+    <pattern id="bpLiner" width="26" height="26" patternUnits="userSpaceOnUse">
+      <rect width="26" height="26" class="f-blush"/>
+      <g class="f-linerdot"><circle cx="13" cy="13" r="2.2"/><circle cx="13" cy="7.6" r="1.6"/><circle cx="13" cy="18.4" r="1.6"/><circle cx="7.6" cy="13" r="1.6"/><circle cx="18.4" cy="13" r="1.6"/><circle cx="0" cy="0" r="1"/><circle cx="26" cy="0" r="1"/><circle cx="0" cy="26" r="1"/><circle cx="26" cy="26" r="1"/></g>
+    </pattern>
+  </defs>
+  <path class="f-envflap" d="${inn}"/>
+  <path fill="url(#bpLiner)" transform="translate(0 6) scale(1 .96)" d="${inn}"/>
+  <path fill="none" stroke="url(#bpLinGold)" stroke-width="1" d="M16 186 L188 22 Q200 11 212 22 L384 186"/>
+</svg></div>`;
+}
+
+/** A satin ribbon across the envelope, held by the seal; the halves slide away when it cracks. */
+function envelopeRibbon() {
+  const band = (x, w) => `<rect x="${x}" y="178" width="${w}" height="16" fill="url(#bpRibSatin)"/><path d="M${x} 181 H${x + w} M${x} 191 H${x + w}" stroke="#fff" stroke-opacity=".35" stroke-width=".8"/>`;
+  return `<svg class="bp-env__ribbon" viewBox="0 0 400 276" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+  <defs><linearGradient id="bpRibSatin" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--blush-deep)"/><stop offset=".45" style="stop-color:var(--blush)"/><stop offset=".55" stop-color="#fff" stop-opacity=".9"/><stop offset=".62" style="stop-color:var(--blush)"/><stop offset="1" style="stop-color:var(--blush-deep)"/></linearGradient></defs>
+  <g class="bp-ribbon__l">${band(0, 200)}
+    <g transform="translate(92 186)">
+      <path fill="url(#bpRibSatin)" stroke="#fff" stroke-opacity=".5" stroke-width=".7" d="M0 0 C-12 -20 -40 -22 -38 -6 C-36 6 -14 6 0 0Z M0 0 C12 -20 40 -22 38 -6 C36 6 14 6 0 0Z"/>
+      <path fill="url(#bpRibSatin)" d="M-3 3 L-18 34 L-11 31 L-8 39 L3 5Z M3 3 L18 34 L11 31 L8 39 L-3 5Z"/>
+      <ellipse rx="6.5" ry="6" style="fill:var(--blush-deep)"/>
+    </g>
+  </g>
+  <g class="bp-ribbon__r">${band(200, 200)}</g>
+</svg>`;
+}
+
+/** Wax seal with a raised gold rim and an embossed initial, plus a lavender sprig tucked beneath. */
+function waxSeal2(initial) {
+  const blob = 'M50 5C64 3 78 11 86 23C96 35 97 52 93 64C89 80 75 92 59 95C42 98 24 91 14 79C4 66 3 47 9 33C17 16 34 6 50 5Z';
+  const body = `<path class="f-acc" d="${blob}"/>
+    <path fill="#000" opacity=".16" d="M86 23C96 35 97 52 93 64C89 80 75 92 59 95C70 86 80 72 82 56C84 44 82 32 86 23Z"/>
+    <circle cx="50" cy="50" r="31" fill="none" stroke="url(#bpSealGold)" stroke-width="2.6"/>
+    <circle cx="50" cy="50" r="27.5" fill="#000" opacity=".1"/>
+    <circle cx="50" cy="50" r="27.5" fill="none" stroke="#fff" stroke-opacity=".18" stroke-width="1"/>
+    <text x="50" y="61" text-anchor="middle" class="bp-seal__initial">${initial}</text>
+    <ellipse cx="34" cy="24" rx="12" ry="5.5" fill="#fff" opacity=".22" transform="rotate(-30 34 24)"/>`;
+  return `<svg class="bp-seal" viewBox="-30 -30 160 160" aria-hidden="true" focusable="false">
+  <defs>${gold('bpSealGold')}
+    <clipPath id="bpSealL"><path d="M-30 -30H52L45 30L56 50L43 70L53 130H-30Z"/></clipPath>
+    <clipPath id="bpSealR"><path d="M52 -30H130V130H53L43 70L56 50L45 30Z"/></clipPath>
+  </defs>
+  <g class="bp-seal__sprig">
+    <path fill="none" class="s-sage" stroke-width="1.6" stroke-linecap="round" d="M60 70 C 80 40, 96 18, 112 -6 M58 74 C 84 56, 104 46, 124 40"/>
+    <g class="f-lavdeep">${[[100, 10], [106, 1], [111, -7], [95, 18], [112, 44], [118, 41], [104, 48]].map(([x, y]) => `<ellipse cx="${x}" cy="${y}" rx="3.2" ry="4.6" transform="rotate(35 ${x} ${y})"/>`).join('')}</g>
+  </g>
+  <g class="bp-seal__half bp-seal__l" clip-path="url(#bpSealL)">${body}</g>
+  <g class="bp-seal__half bp-seal__r" clip-path="url(#bpSealR)">${body}</g>
+</svg>`;
+}
+
+function stamp2() {
+  const perf = Array.from({ length: 9 }, (_, i) => `<circle cx="${4 + i * 7}" cy="0" r="2.4"/><circle cx="${4 + i * 7}" cy="80" r="2.4"/>`).join('') +
+    Array.from({ length: 12 }, (_, i) => `<circle cx="0" cy="${3 + i * 6.8}" r="2.4"/><circle cx="64" cy="${3 + i * 6.8}" r="2.4"/>`).join('');
+  return `<svg class="bp-stamp" viewBox="-6 -6 76 92" aria-hidden="true" focusable="false">
+  <defs>${gold('bpStGold')}<mask id="bpStPerf"><rect x="-6" y="-6" width="76" height="92" fill="#fff"/><g fill="#000">${perf}</g></mask></defs>
+  <g mask="url(#bpStPerf)"><rect width="64" height="80" class="f-paper"/></g>
+  <rect x="6" y="6" width="52" height="68" class="f-cream"/>
+  <rect x="6" y="6" width="52" height="68" fill="none" stroke="url(#bpStGold)" stroke-width="1"/>
+  <g transform="translate(32 36)">
+    <path class="f-blush" stroke="url(#bpStGold)" stroke-width=".7" d="M0 -12 C8 -14 13 -6 9 1 C14 6 8 14 0 10 C-8 14 -14 6 -9 1 C-13 -6 -8 -14 0 -12Z"/>
+    <path class="f-blushdeep" d="M0 -6 C4 -7 6 -3 4 0 C6 3 3 6 0 4 C-3 6 -6 3 -4 0 C-6 -3 -4 -7 0 -6Z"/>
+    <path fill="none" class="s-sage" stroke-width="1.2" stroke-linecap="round" d="M0 10 C0 18 -2 24 -6 28 M0 18 C4 16 8 17 10 20"/>
+  </g>
+  <text x="32" y="69" text-anchor="middle" class="bp-stamp__text">WITH LOVE</text>
+</svg>`;
+}
+
+function postmark() {
+  return `<svg class="bp-postmark" viewBox="0 0 130 70" aria-hidden="true" focusable="false">
+  <g fill="none" class="s-ink" stroke-opacity=".32" stroke-width="1.3">
+    <circle cx="35" cy="35" r="27"/><circle cx="35" cy="35" r="21"/>
+    <path d="M66 22 q8 -5 16 0 t16 0 t16 0 t14 0 M66 35 q8 -5 16 0 t16 0 t16 0 t14 0 M66 48 q8 -5 16 0 t16 0 t16 0 t14 0"/>
+  </g>
+  <text x="35" y="33" text-anchor="middle" class="bp-postmark__text">SEALED</text>
+  <text x="35" y="44" text-anchor="middle" class="bp-postmark__text">♡</text>
+</svg>`;
+}
+
+/** A slim, translucent pearl balloon for the finale (gradient #bpPearl lives in the finale defs). */
+function pearlBalloon() {
+  return `<svg class="bp-balloon bp-balloon--pearl" viewBox="0 0 60 150" aria-hidden="true" focusable="false">
+  <path fill="none" stroke="#C9A24A" stroke-opacity=".7" stroke-width=".9" d="M30 82 q-6 16 0 32 q6 16 -1 34"/>
+  <path fill="url(#bpPearl)" stroke="#fff" stroke-opacity=".7" stroke-width=".8" d="M30 3C46 3 56 18 56 36C56 56 43 75 30 79C17 75 4 56 4 36C4 18 14 3 30 3Z"/>
+  <path fill="#E9D08C" d="M26.5 84 L30 78 L33.5 84Z"/>
+  <ellipse cx="20" cy="24" rx="5" ry="10" fill="#fff" opacity=".55" transform="rotate(18 20 24)"/>
+</svg>`;
+}
+
 module.exports = {
+  cameoFrame, cameoPlaceholder, envelopeFront2, envelopeFlap2, envelopeRibbon, waxSeal2, stamp2, postmark, pearlBalloon,
   HEART, SPARKLE, heart, sparkle, scallopPath, scallopFrame, partyCat, peekBunny, noDuo,
   waxSeal, envelopeFront, envelopeFlap, stamp, cassette, recordPlayer, cake, balloon, ribbon,
   starSticker, heartSticker, flowerSticker, doodle, signatureSwash,

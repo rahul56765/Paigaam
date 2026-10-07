@@ -58,9 +58,9 @@ function birthdayPaigaamCreatePage(opts = {}) {
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?${fontCss}&display=swap">
 <link rel="stylesheet" href="/saalgirah/create.css?v=3">
-<link rel="stylesheet" href="/birthday-paigaam/create.css?v=1">
+<link rel="stylesheet" href="/birthday-paigaam/create.css?v=2">
 <script type="application/json" id="bpwConfig">${JSON.stringify(config).replace(/</g, '\\u003c')}</script>
-<script src="/birthday-paigaam/create.js?v=1" defer></script>
+<script src="/birthday-paigaam/create.js?v=2" defer></script>
 <script src="/js/paigaam-pay.js?v=1" defer></script>
 ${boot ? `<script src="/js/resume.js?v=1" defer></script>
 <script type="application/json" id="wizardBoot">${JSON.stringify(boot).replace(/</g, '\\u003c')}</script>` : ''}
@@ -96,7 +96,7 @@ ${boot ? `<script src="/js/resume.js?v=1" defer></script>
               <label class="bpw-upload"><input type="file" id="mainPhotoFile" accept="image/*"><span>Choose a photo</span></label>
               <button type="button" class="bpw-x" id="mainPhotoRemove" hidden>Remove</button>
             </div>
-            <p class="hint">Sits in the scalloped frame on the very first screen.</p>
+            <p class="hint" id="mainPhotoHint">Sits in the vintage cameo frame on the very first screen. Once added, drag the photo to centre their face.</p>
           </div>
         </section>
 

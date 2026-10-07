@@ -53,20 +53,20 @@ function makeContext(d) {
 /* ----------------------------------------------------------------- screens */
 
 function unlockScreen(c, d, opts) {
+  const fx = d.photoFocus && Number.isFinite(d.photoFocus.x) ? d.photoFocus.x : 50;
+  const fy = d.photoFocus && Number.isFinite(d.photoFocus.y) ? d.photoFocus.y : 50;
   const photo = d.mainPhoto
-    ? `<img class="bp-frame__photo" src="${esc(d.mainPhoto)}" alt="${esc(c.name)}" decoding="async" fetchpriority="high">`
-    : `<span class="bp-frame__empty" aria-hidden="true">${art.heart('f-acc')}<span>${esc((c.name || '♡').slice(0, 1).toUpperCase())}</span></span>`;
+    ? `<img class="bp-frame__photo" src="${esc(d.mainPhoto)}" alt="${esc(c.name)}" decoding="async" fetchpriority="high" style="object-position:${fx}% ${fy}%">`
+    : art.cameoPlaceholder(esc((c.name || '♡').trim().slice(0, 1).toUpperCase()), opts.invite);
   const keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9'].map(k => `<button type="button" class="bp-key" data-key="${k}">${k}</button>`).join('');
   return `<section class="bp-screen bp-unlock" data-screen="unlock" aria-labelledby="bpUnlockTitle">
   <div class="bp-unlock__grid">
     <div class="bp-unlock__hero">
-      <h1 id="bpUnlockTitle" class="bp-title"><span class="bp-title__main">unlock</span><span class="bp-title__script">for surprise</span></h1>
+      <h1 id="bpUnlockTitle" class="bp-title"><span class="bp-title__orn" aria-hidden="true"><i></i>✦<i></i></span><span class="bp-title__main">unlock</span><span class="bp-title__script">for surprise</span></h1>
       <div class="bp-unlock__art">
-        <div class="bp-frame">${art.scallopFrame()}<div class="bp-frame__hole">${photo}</div></div>
-        <div class="bp-unlock__cat">${art.partyCat()}</div>
+        <div class="bp-frame"><div class="bp-frame__hole">${photo}</div>${art.cameoFrame()}<span class="bp-frame__glint" aria-hidden="true"></span></div>
         <span class="bp-deco bp-deco--s1">${art.sparkle()}</span>
-        <span class="bp-deco bp-deco--s2">${art.heart('f-blushdeep')}</span>
-        <span class="bp-deco bp-deco--s3">${art.sparkle('f-lavdeep')}</span>
+        <span class="bp-deco bp-deco--s3">${art.sparkle()}</span>
       </div>
     </div>
     <div class="bp-card bp-wavy bp-keypad">
@@ -119,11 +119,13 @@ function letterScreen(c) {
     <div class="bp-env" role="button" tabindex="0" aria-label="Open the envelope">
       <div class="bp-env__back"></div>
       <div class="bp-env__paper"><i></i><i></i><i></i></div>
-      ${art.envelopeFront()}
-      <p class="bp-env__to">To: ${esc(c.name)} <span aria-hidden="true">♡</span></p>
-      <div class="bp-env__stamp">${art.stamp()}</div>
-      <div class="bp-env__flap">${art.envelopeFlap()}</div>
-      <div class="bp-env__seal">${art.waxSeal()}</div>
+      ${art.envelopeFront2()}
+      <p class="bp-env__to"><span class="bp-env__tolabel">for</span> ${esc(c.name)}</p>
+      <div class="bp-env__stamp">${art.stamp2()}</div>
+      <div class="bp-env__postmark">${art.postmark()}</div>
+      <div class="bp-env__flap">${art.envelopeFlap2()}</div>
+      <div class="bp-env__ribbonwrap">${art.envelopeRibbon()}</div>
+      <div class="bp-env__seal">${art.waxSeal2(esc((c.sender || '♡').trim().slice(0, 1).toUpperCase()))}</div>
     </div>
     <p class="bp-env__hint">tap to open <span aria-hidden="true">✉</span></p>
     <article class="bp-letter" aria-label="Letter from ${esc(c.sender)}">
@@ -259,6 +261,7 @@ function finaleScreen(c, d, opts) {
     </div>` : '';
   const brand = d.showBrand === false ? '' : `<footer class="bp-brand"><a href="/" target="_blank" rel="noopener">Made with love by <b>Paigaam</b> ${art.heart('f-acc')}</a></footer>`;
   return `<section class="bp-screen bp-finale" data-screen="finale" aria-labelledby="bpFinaleTitle">
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs><radialGradient id="bpPearl" cx="38%" cy="30%" r="75%"><stop offset="0" stop-color="#fff" stop-opacity=".95"/><stop offset=".45" style="stop-color:var(--blush)" stop-opacity=".75"/><stop offset="1" style="stop-color:var(--blush-deep)" stop-opacity=".7"/></radialGradient></defs></svg>
   <div class="bp-finale__inner">
     <h2 id="bpFinaleTitle" class="bp-finale__title" data-type>${c.sub(c.t('finaleTitle'))}</h2>
     <p class="bp-finale__line">${c.sub(c.t('finaleLine'))}</p>
@@ -314,9 +317,9 @@ function renderBirthday(paigaam, opts = {}) {
   };
 
   const first = start || (payload.skipLock && order.length > 1 ? order[1] : 'unlock');
-  const opt = { showHint: isDemo || mode === 'live' || !!(d.passcodeHint && d.passcodeHint.trim()), thumb: mode === 'thumb' };
+  const opt = { invite: mode !== 'published', showHint: isDemo || mode === 'live' || !!(d.passcodeHint && d.passcodeHint.trim()), thumb: mode === 'thumb' };
   const html = {
-    unlock: unlockScreen(c, Object.assign({}, d, { mainPhoto: d.mainPhoto || (isDemo ? '/birthday-paigaam/demo-media/bp-portrait.jpg' : '') }), opt),
+    unlock: unlockScreen(c, d, opt),
     question: questionScreen(c),
     letter: letterScreen(c),
     voice: voiceScreen(c),
@@ -353,7 +356,7 @@ function renderBirthday(paigaam, opts = {}) {
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?${font.css}&family=Nunito:wght@600;800;900&display=swap">
-<link rel="stylesheet" href="/birthday-paigaam/experience.css?v=1">
+<link rel="stylesheet" href="/birthday-paigaam/experience.css?v=2">
 <script>document.documentElement.classList.add('js')</script>
 <style>:root{--blush:${palette.blush};--cream:${palette.cream};--peach:${palette.peach};--lavender:${palette.lavender};--accent:${palette.accent};--font-head:${font.heading};--font-script:${font.script};--font-hand:${font.hand}}</style>
 </head>
@@ -383,7 +386,7 @@ ${order.map(s => s === first ? html[s].replace('class="bp-screen', 'class="bp-sc
 <audio class="bp-audio-song" preload="none" loop${songUrl ? ` src="${esc(songUrl)}"` : ''}></audio>
 <script type="application/json" id="bpData">${safeJson(payload)}</script>
 <script src="/birthday-paigaam/sfx.js?v=1" defer></script>
-<script src="/birthday-paigaam/experience.js?v=1" defer></script>
+<script src="/birthday-paigaam/experience.js?v=2" defer></script>
 <noscript><style>.bp-screen{display:block!important;opacity:1!important;position:relative!important;min-height:auto!important;padding:40px 16px}.bp-q__no,.bp-env,.bp-env__hint,.bp-keypad,.bp-controls,.bp-progress{display:none!important}.bp-letter{opacity:1!important;transform:none!important}</style></noscript>
 </body>
 </html>`;
