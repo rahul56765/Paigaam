@@ -269,7 +269,7 @@ const q = {
   recentPaigaamsForOwner: (ownerHash, withinMs, limit = 3) => {
     if (!ownerHash) return [];
     const tables = ['maafi_owners', 'sawaal_owners', 'valentine_owners', 'love_owners', 'saalgirah_owners',
-                    'lavender_owners', 'love_awaits_owners', 'sau_wajah_owners', 'bfday_owners',
+                    'lavender_owners', 'love_awaits_owners', 'bp_owners', 'sau_wajah_owners', 'bfday_owners',
                     'ganapati_owners', 'ganpati_courtyard_owners'];
     const rows = [];
     for (const t of tables) {

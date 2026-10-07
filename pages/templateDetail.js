@@ -51,7 +51,7 @@ function templateDetail(tpl, { baseUrl = '' } = {}) {
   };
   const demoPath = DEMO_PATHS[tpl.slug] || tpl.slug;
   const hasDemo = !isCustom && (bfday.has(tpl.slug) || [
-    'ganapati-aagman', 'saalgirah', 'lavender-tic-tac-toe-bloom', 'ganpati-courtyard',
+    'ganapati-aagman', 'saalgirah', 'birthday-paigaam', 'lavender-tic-tac-toe-bloom', 'ganpati-courtyard',
     'maafi', 'love-awaits', 'sawaal', 'love-album', 'valentine-say-yes', 'sau-wajah',
   ].includes(tpl.slug));
   let previewInner;

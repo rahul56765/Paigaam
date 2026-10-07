@@ -189,7 +189,8 @@
       }
     }
     if (!target) {
-      var val = (input.value || '').trim();
+      var fieldEl = document.getElementById(fid) || document.getElementById('f-' + fid) || step.querySelector('input, textarea');
+      var val = fieldEl ? String(fieldEl.value || '').trim() : '';
       if (val.length > 1) {
         var all = doc.querySelectorAll('h1,h2,h3,p,span,div,td,li');
         for (var i = 0; i < all.length; i++) {
