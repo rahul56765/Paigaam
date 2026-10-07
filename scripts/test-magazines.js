@@ -51,7 +51,9 @@ const root = path.join(__dirname, '..');
     assert.equal((await req(null, 'GET', '/magazines')).status, 200);
     assert.ok(!(await (await req(null, 'GET', '/magazines')).text()).includes('Birthday Collage Poster'));
     assert.equal((await req(null, 'GET', '/magazines/birthday-collage')).status, 404);
+    assert.equal((await req(null, 'GET', '/magazines/birthday-story')).status, 404);
     assert.equal((await jsonReq(jar(), 'POST', '/api/magazines/drafts', { slug: 'birthday-collage' })).status, 404);
+    assert.equal((await jsonReq(jar(), 'POST', '/api/magazines/drafts', { slug: 'birthday-story' })).status, 404);
     assert.equal((await req(null, 'GET', '/admin/magazines')).status, 302);
     assert.equal((await req(null, 'POST', '/admin/magazines/birthday-collage/publish')).status, 302); // anonymous => login redirect
     ok('unpublished magazines are invisible; admin routes require login');
@@ -62,6 +64,7 @@ const root = path.join(__dirname, '..');
     assert.ok([302, 303].includes(login.status));
     const page0 = await (await req(admin, 'GET', '/admin/magazines')).text();
     assert.match(page0, /Not connected/); assert.ok(!/CANVA_CLIENT_SECRET.{0,40}test-secret/.test(page0));
+    assert.match(page0, /Birthday Story/); assert.match(page0, /EAHXVwHhiXs/); assert.match(page0, /Draft/);
     const csrf = await req(admin, 'POST', '/admin/canva/disconnect', { headers: { Origin: 'https://evil.example' } });
     assert.equal(csrf.status, 403); // cross-origin admin POST rejected
     const conn = await req(admin, 'GET', '/admin/canva/connect');

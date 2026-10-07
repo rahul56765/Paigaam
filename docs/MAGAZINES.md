@@ -44,8 +44,11 @@ Test-only (honoured only when `CANVA_TEST_MODE=1`): `CANVA_API_BASE`, `CANVA_AUT
 5. Add/adjust the entry in `lib/magazines/registry.js` (slug, name, `canvaTemplateId`, `pageCount`, fields, photo slots, limits).
 6. Admin → **Validate vs Canva**. Any missing/extra/mistyped field **blocks publishing** (and un-publishes a live design if it drifts later).
 
-Sample design: `birthday-collage` → Brand Template `EAHXVxrdrCk` (1 page): text `headline` (optional, default “HAPPY BIRTHDAY”) and photos `photo_1`…`photo_9` (all required).
-**Provisional values to confirm per design** (product decisions, not Canva limits): headline max 24 characters; photo max 8 MB, min 400 px short side, JPG/PNG/WebP.
+Sample designs:
+- `birthday-collage` → Brand Template `EAHXVxrdrCk` (1 page): text `headline` (optional, default “HAPPY BIRTHDAY”) and photos `photo_1`…`photo_9` (all required).
+- `birthday-story` → Brand Template `EAHXVwHhiXs` (7 pages): 19 required photos (`photo_1`…`photo_19`); optional 90-character `wish` on page 1 is split into `wish_line_1`, `wish_line_2`, `wish_line_3`; required `letter_page3` (450 characters) and `letter_page7` (900 characters). The page 6 decorative letter and other fixed text remain unchanged. This mapping is being added but remains unpublished until validation and review.
+
+**Paigaam image limits** (not Canva's API limits): max 8 MB, minimum 400 px short side, JPG/PNG/WebP. `birthday-collage` headline limit is 24 characters.
 
 ## Storage
 Magazines use `DATA_DIR/magazines/{uploads,output}`. Production (Railway `paigaam-web`) mounts a 5 GB volume at `/var/data` and `/healthz` reports `storage: persistent`. This is safe **only with a single replica**; before scaling horizontally, move output files to object storage. Abandoned drafts are deleted after 24 h, failed orders after 14 days, orphan files hourly; ready magazines are kept.
@@ -57,7 +60,7 @@ Drafts and their photos are readable only by the browser that created them (Http
 1. Deploy to a **staging** service (or locally with `BASE_URL=http://127.0.0.1:<port>` and the loopback redirect URL registered).
 2. Admin → Connect Canva; confirm the account name shows.
 3. **Validate vs Canva** → expect “fields match”. Confirm Autofill actually works for your plan (first call to `/autofills`).
-4. Publish → open `/magazines/birthday-collage` in a private window → add 9 photos → Create.
+4. Validate the desired design in admin and publish only after its live dataset matches. Open `/magazines/<slug>` in a private window; provide every required photo and text field, then Create. `birthday-collage` needs 9 photos; `birthday-story` needs 19 photos and both letters.
 5. Watch the steps; on *ready* confirm the PDF preview, PDF download and PNG download open correctly and the layout is right.
 6. In Canva confirm a **new** design was created and the Brand Template is unchanged.
 7. Retry check: generate once more; confirm a second, separate design appears.

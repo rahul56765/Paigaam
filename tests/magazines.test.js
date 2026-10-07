@@ -37,6 +37,47 @@ test('mapping validation: matches, missing, type mismatch and unmapped fields', 
   assert.equal(validate.compareDataset(m, null).ok, false);
 });
 
+test('Birthday Story maps exactly 24 live fields; 19 required photo slots and one logical wish to three Canva text targets', () => {
+  const m = registry.bySlug('birthday-story');
+  assert.ok(m); assert.equal(m.pageCount, 7); assert.equal(m.canvaTemplateId, 'EAHXVwHhiXs');
+  assert.equal(m.images.length, 19); assert.deepEqual(validate.missingImages(m, []).length, 19);
+  const ds = goodDataset(m);
+  assert.equal(Object.keys(ds).length, 24);
+  assert.equal(validate.compareDataset(m, ds).ok, true);
+  delete ds.photo_19; ds.wish_line_2 = { type: 'image' }; ds.unmapped = { type: 'text' };
+  const result = validate.compareDataset(m, ds);
+  assert.equal(result.ok, false);
+  assert.deepEqual(result.problems.map(p => `${p.code}:${p.field}`).sort(), [
+    'missing_in_canva:photo_19', 'type_mismatch:wish_line_2', 'unmapped_in_canva:unmapped',
+  ]);
+});
+
+test('one Birthday Story wish is split across all three text fields without losing words', () => {
+  const m = registry.bySlug('birthday-story');
+  const text = 'Happy birthday to my favorite person. I love you so much and wish you joy!';
+  const valid = validate.validateFields(m, { wish: text, letter_page3: 'A'.repeat(450), letter_page7: 'B'.repeat(900) });
+  assert.equal(valid.ok, true);
+  const data = validate.canvaText(m, valid.values);
+  const pieces = ['wish_line_1', 'wish_line_2', 'wish_line_3'].map(k => data[k]);
+  assert.equal(pieces.join(' '), text);
+  assert.ok(pieces.every(p => p.length <= 32));
+  assert.deepEqual(validate.canvaText(m, { wish: '', letter_page3: 'A', letter_page7: 'B' }).wish_line_1,
+    'I hope this year brings growth,');
+  assert.equal(validate.validateFields(m, { wish: 'x'.repeat(91), letter_page3: 'a', letter_page7: 'b' }).errors.wish, 'too_long');
+  assert.equal(validate.validateFields(m, { wish: '', letter_page3: '', letter_page7: '' }).errors.letter_page3, 'required');
+  assert.equal(validate.validateFields(m, { wish: '', letter_page3: 'x'.repeat(451), letter_page7: 'b' }).errors.letter_page3, 'too_long');
+  assert.equal(validate.validateFields(m, { wish: '', letter_page3: 'a', letter_page7: 'x'.repeat(901) }).errors.letter_page7, 'too_long');
+});
+
+test('Birthday Story long letter fields render as textareas', () => {
+  const views = require('../lib/magazines/views');
+  const html = views.formPage(registry.bySlug('birthday-story'));
+  assert.match(html, /<textarea data-field="letter_page3" maxlength="450"/);
+  assert.match(html, /<textarea data-field="letter_page7" maxlength="900"/);
+  assert.match(html, /<input type="text" data-field="wish" maxlength="90"/);
+  assert.equal((html.match(/class="mag-slot" data-slot=/g) || []).length, 19);
+});
+
 test('required/optional text fields, limits, control characters, unknown keys', () => {
   const m = M();
   assert.equal(validate.validateFields(m, {}).ok, true); // headline is optional
