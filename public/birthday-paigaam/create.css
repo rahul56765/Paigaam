@@ -1,0 +1,68 @@
+/* Birthday Paigaam wizard — extends the shared builder shell + Saalgirah form styles. */
+:root { --bpw-accent: #C2185B; --bpw-ink: #5B2A3C; --bpw-soft: #FFF4D6; --bpw-line: rgba(91, 42, 60, .16); }
+.shell .step code { background: #FCE4EC; color: var(--bpw-accent); padding: 1px 6px; border-radius: 6px; font-size: .92em; }
+.bpw-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.bpw-row .field { min-width: 0; }
+.shell .label { display: block; margin: 16px 0 8px; font-size: 13px; color: var(--shell-muted, #8A7A6E); }
+.shell textarea { resize: vertical; }
+
+.bpw-upload { position: relative; display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 0 18px; border-radius: 999px; border: 1.5px dashed var(--bpw-accent); color: var(--bpw-accent); font-weight: 700; font-size: 14px; cursor: pointer; background: #fff; overflow: hidden; }
+.bpw-upload input { position: absolute; inset: 0; opacity: 0; cursor: pointer; font-size: 0; }
+.bpw-upload:focus-within { box-shadow: 0 0 0 3px rgba(194, 24, 91, .2); }
+.bpw-upload--big { width: 100%; min-height: 56px; border-radius: 16px; font-size: 15px; }
+.bpw-x { border: 0; background: none; color: var(--bpw-ink); text-decoration: underline; font-size: 13px; cursor: pointer; padding: 8px; }
+
+.bpw-photo { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.bpw-photo img { width: 72px; height: 72px; border-radius: 50%; object-fit: cover; border: 3px solid #D9C8F5; }
+
+.bpw-audio { border: 1px solid var(--bpw-line); border-radius: 18px; padding: 14px 16px 6px; margin: 0 0 16px; background: #fff; }
+.bpw-audio legend { padding: 0 6px; font-weight: 700; color: var(--bpw-ink); }
+.bpw-audio audio { width: 100%; margin: 6px 0 10px; }
+.bpw-audio__actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.bpw-rec { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 18px; border-radius: 999px; border: 1.5px solid var(--bpw-ink); background: #fff; font-weight: 700; font-size: 14px; color: var(--bpw-ink); cursor: pointer; }
+.bpw-rec .dot { width: 10px; height: 10px; border-radius: 50%; background: #E53935; }
+.bpw-rec.is-rec { background: #E53935; border-color: #E53935; color: #fff; }
+.bpw-rec.is-rec .dot { background: #fff; animation: bpwBlink 1s steps(1) infinite; }
+.bpw-rec__time { font-size: 13px; font-variant-numeric: tabular-nums; color: #E53935; font-weight: 700; }
+@keyframes bpwBlink { 50% { opacity: .2; } }
+
+.bpw-photos { margin-bottom: 14px; }
+.bpw-photos__list { list-style: none; margin: 0 0 10px; padding: 0; display: grid; gap: 10px; }
+.bpw-ph { display: grid; grid-template-columns: 64px 1fr auto; gap: 10px; align-items: center; padding: 8px; border: 1px solid var(--bpw-line); border-radius: 14px; background: #fff; cursor: grab; }
+.bpw-ph.is-drag { opacity: .5; }
+.bpw-ph img { width: 64px; height: 80px; object-fit: cover; border-radius: 4px; border: 4px solid #fff; box-shadow: 0 2px 6px rgba(0, 0, 0, .15); }
+.bpw-ph__fields { display: grid; gap: 6px; min-width: 0; }
+.shell .bpw-ph__fields input { min-height: 38px; padding: 6px 10px; font-size: 14px; }
+.bpw-ph__tools { display: flex; flex-direction: column; gap: 4px; }
+.bpw-ph__tools button { width: 32px; height: 28px; border-radius: 8px; border: 1px solid var(--bpw-line); background: #FFFBF0; cursor: pointer; font-size: 13px; color: var(--bpw-ink); }
+
+.bpw-presets { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.bpw-preset { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0; padding: 0 0 6px; border: 1px solid var(--bpw-line); border-radius: 14px; background: #fff; cursor: pointer; overflow: hidden; }
+.bpw-preset > span { display: block; height: 30px; }
+.bpw-preset b { grid-column: 1 / -1; padding-top: 6px; font-size: 12px; text-transform: capitalize; color: var(--bpw-ink); }
+.bpw-preset:focus-visible, .bpw-preset:hover { box-shadow: 0 0 0 3px rgba(194, 24, 91, .18); }
+.bpw-colors { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+.bpw-color { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 12px; color: var(--bpw-ink); }
+.bpw-color input { width: 48px; height: 48px; padding: 0; border: 2px solid #fff; border-radius: 50%; box-shadow: 0 0 0 1px var(--bpw-line); cursor: pointer; background: none; }
+.bpw-color input::-webkit-color-swatch-wrapper { padding: 0; }
+.bpw-color input::-webkit-color-swatch { border: 0; border-radius: 50%; }
+.bpw-color input::-moz-color-swatch { border: 0; border-radius: 50%; }
+
+.bpw-fonts { display: grid; gap: 8px; }
+.bpw-font { display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto; column-gap: 12px; align-items: center; padding: 10px 14px; border: 1px solid var(--bpw-line); border-radius: 14px; background: #fff; cursor: pointer; }
+.bpw-font input { grid-row: span 2; accent-color: var(--bpw-accent); width: 18px; height: 18px; }
+.bpw-font__name { font-size: 22px; font-weight: 800; color: var(--bpw-ink); }
+.bpw-font__sample { font-size: 24px; color: var(--bpw-accent); grid-column: 2; }
+.bpw-font__hand { display: none; }
+.bpw-font:has(input:checked) { border-color: var(--bpw-accent); box-shadow: 0 0 0 3px rgba(194, 24, 91, .12); }
+
+.bpw-toggles { display: grid; gap: 4px; margin-bottom: 8px; }
+.bpw-toggle { display: flex; align-items: center; gap: 10px; padding: 8px 2px; font-size: 14px; color: var(--bpw-ink); cursor: pointer; }
+.bpw-toggle input { width: 20px; height: 20px; accent-color: var(--bpw-accent); flex: none; }
+#savePreview { width: 100%; margin: 6px 0 4px; min-height: 48px; border-radius: 24px; }
+#previewDialog { width: min(440px, 96vw); height: min(860px, 94vh); padding: 0; border: 0; border-radius: 20px; overflow: hidden; }
+#previewDialog #frameHost, #previewDialog #frameHost iframe { width: 100%; height: calc(100% - 56px); border: 0; display: block; }
+#previewDialog .preview-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 12px; height: 56px; }
+#previewDialog .preview-toolbar h2 { font-size: 16px; margin: 0; }
+#previewDialog .preview-toolbar .button { min-height: 38px; padding: 0 14px; font-size: 13px; }
+@media (max-width: 420px) { .bpw-presets { grid-template-columns: repeat(2, 1fr); } .bpw-row { grid-template-columns: 1fr; } }
