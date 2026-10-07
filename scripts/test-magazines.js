@@ -99,7 +99,14 @@ const root = path.join(__dirname, '..');
     assert.match(decodeURIComponent(r.headers.get('location')), /now live/);
     assert.match(await (await req(null, 'GET', '/magazines')).text(), /Birthday Collage Poster/);
     const detail = await req(null, 'GET', '/magazines/birthday-collage');
-    assert.equal(detail.status, 200); assert.match(await detail.text(), /photo_1|Photo 1/);
+    assert.equal(detail.status, 200); const detailHtml = await detail.text(); assert.match(detailHtml, /photo_1|Photo 1/);
+    assert.match(detailHtml, /id="magBulk"[^>]*multiple/); // select-all-at-once picker
+    assert.match(detailHtml, /class="mag-hero" src="\/magazines\/preview\/birthday-collage"/); // sample image on the design page
+    const cat = await (await req(null, 'GET', '/magazines')).text(); assert.match(cat, /<img src="\/magazines\/preview\/birthday-collage"/); // sample on the catalogue card
+    const prev = await req(null, 'GET', '/magazines/preview/birthday-collage');
+    assert.equal(prev.status, 200); assert.equal(prev.headers.get('content-type'), 'image/png'); assert.ok((await prev.arrayBuffer()).byteLength > 50);
+    assert.equal((await req(null, 'GET', '/magazines/preview/nope')).status, 404);
+    assert.equal((await req(null, 'GET', '/magazines/preview/..%2F..%2Fpaigaam')).status, 404);
     ok('publish is gated on a clean live-dataset validation; mismatch shows admin-facing detail');
 
     /* --- reader flow: ownership + upload validation --- */
@@ -143,7 +150,7 @@ const root = path.join(__dirname, '..');
     assert.equal((await put(alice, id, 'photo_1', pngBuffer(500, 500), 'image/png')).status, 409); // locked once generated
     const result = await req(null, 'GET', `/magazines/m/${id}`);
     assert.equal(result.status, 200); const html = await result.text();
-    assert.match(html, /<object[^>]+application\/pdf/); assert.match(html, /Download PDF/); assert.match(html, /Download PNG/);
+    assert.match(html, /class="mag-result-img" src="\/magazines\/m\/[a-f0-9]{32}\/magazine\.png"/); assert.ok(!html.includes('<object')); assert.match(html, /Download PDF/); assert.match(html, /Download PNG/);
     assert.match(result.headers.get('x-robots-tag') || '', /noindex/);
     const pdf = await req(null, 'GET', `/magazines/m/${id}/magazine.pdf`);
     assert.equal(pdf.status, 200); assert.equal(pdf.headers.get('content-type'), 'application/pdf'); assert.match(pdf.headers.get('content-disposition'), /^inline/);
