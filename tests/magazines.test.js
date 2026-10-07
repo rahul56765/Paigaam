@@ -49,6 +49,13 @@ test('required/optional text fields, limits, control characters, unknown keys', 
   assert.deepEqual(validate.missingImages(m, [{ slot: 'photo_1' }]).length, 8);
 });
 
+test('preview helper: unknown/hostile slugs resolve to nothing', () => {
+  const preview = require('../lib/magazines/preview');
+  assert.equal(preview.find('birthday-collage'), null);
+  assert.equal(preview.find('../etc/passwd'), null);
+  assert.equal(typeof preview.refresh, 'function');
+});
+
 test('image sniffing trusts contents, not claimed type', () => {
   assert.equal(imageLib.sniffImage(pngBuffer(500, 400)).mime, 'image/png');
   assert.equal(imageLib.sniffImage(Buffer.from('this is plainly not an image at all, just text')), null);
