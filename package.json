@@ -1,14 +1,14 @@
 {
   "name": "paigaam",
   "version": "0.1.0",
-  "description": "Paigaam — beautiful greetings, made personal.",
+  "description": "Paigaam \u2014 beautiful greetings, made personal.",
   "type": "commonjs",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch server.js",
-    "build": "node scripts/prepare-ganapati.js",
-    "postinstall": "node scripts/prepare-ganapati.js",
+    "build": "node scripts/prepare-ganapati.js && node scripts/prepare-wedding-video.js",
+    "postinstall": "node scripts/prepare-ganapati.js && node scripts/prepare-wedding-video.js",
     "test": "node scripts/test-builder.js && node scripts/test-premium-ux.js && node scripts/test-razorpay.js && node scripts/test-pricing-resume.js && node scripts/test-ganapati.js && node scripts/test-saalgirah.js && node scripts/test-birthday-paigaam.js && node scripts/test-courtyard.js && node scripts/test-lavender.js && node scripts/test-valentine.js && node scripts/test-love.js && node scripts/test-maafi.js && node --test tests/qr-card.test.js && node scripts/test-sauwajah.js && node scripts/test-sawaal.js && node scripts/test-bfday.js && node scripts/test-premium-ux.js && node --test tests/magazines.test.js && node scripts/test-magazines.js",
     "test:saalgirah": "node scripts/test-saalgirah.js",
     "test:birthday-paigaam": "node scripts/test-birthday-paigaam.js",
@@ -23,7 +23,9 @@
     "test:razorpay": "node scripts/test-razorpay.js",
     "test:bfday": "node scripts/test-bfday.js",
     "test:pricing": "node scripts/test-pricing-resume.js",
-    "test:magazines": "node --test tests/magazines.test.js && node scripts/test-magazines.js"
+    "test:magazines": "node --test tests/magazines.test.js && node scripts/test-magazines.js",
+    "test:wedding-video": "node --test wedding-video/tests/timeline.test.js && node --test tests/wedding-video.test.js",
+    "wedding-video:setup": "npm --prefix wedding-video ci && npm --prefix wedding-video run build:editor && cd wedding-video && npx remotion browser ensure"
   },
   "engines": {
     "node": ">=22.5.0 <25"
