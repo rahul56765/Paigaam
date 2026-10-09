@@ -28,3 +28,6 @@ wedding-video/public/brand/
 wedding-video/public/stories/
 # reference-derived sample clips: internal comparison only, never shipped
 wedding-video/public/sample/
+public/shaadi-paigaam/art/
+public/shaadi-paigaam/music/
+public/shaadi-paigaam/fonts/
