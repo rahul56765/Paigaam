@@ -10,7 +10,7 @@
  *
  * Everything the couple writes is data (public/shaadi-paigaam/core.js schema);
  * the art is layered & recoloured live from 8 palettes or 3 custom colours.
- * Free to preview; priced by the owner in Admin (publishing goes through the
+ * Free (price 0, set in Admin). If priced later, publishing goes through the
  * same inline Razorpay checkout as every bespoke template).
  * Routes: lib/shaadiPaigaamRoutes.js · Editor: pages/shaadiPaigaamCreate.js
  */
@@ -18,7 +18,7 @@ module.exports = {
   slug: 'shaadi-paigaam',
   name: 'Shaadi Paigaam',
   category: 'Wedding',
-  price: 999,
+  price: 0,
   currency: 'INR',
   description: 'A royal wedding invitation website: embossed doors that open on a silk-draped garden courtyard, a scratch-to-reveal date, live countdown, maps, events, RSVP with your own guest dashboard, and Hindi, Marathi & 6 more languages. Eight palettes or your own colours.',
   thumbnail_url: '',

@@ -21,8 +21,8 @@
   `assets/shaadi-paigaam/*.b64` and restored at boot by `lib/shaadiPaigaamMedia.js`.
 
 ## Managing it (admin)
-- **Price:** Admin › Templates › Shaadi Paigaam. It is seeded at ₹999. Customers create and preview
-  free and pay through the normal inline Razorpay checkout when they publish. Set 0 to make it free.
+- **Price:** Admin › Templates › Shaadi Paigaam. It is free (price 0). If you set a price, customers still
+  create and preview free and pay through the normal inline Razorpay checkout when they publish.
 - **Hide or unhide:** set the template status to draft or published in Admin.
 - **Invitations:** Admin › Paigaams lists every draft and published invitation (mark paid,
   unpublish, archive) as for every other template.
