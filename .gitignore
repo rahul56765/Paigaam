@@ -17,6 +17,17 @@ public/brand/dove-ivory.png
 public/brand/logo-full-ivory.png
 public/brand/og-default.png
 public/birthday-paigaam/demo-media/
+
+# wedding video: generated from assets/wedding-video by scripts/prepare-wedding-video.js
+wedding-video/node_modules/
+wedding-video/dist/
+wedding-video/out/
+wedding-video/public/art/
+wedding-video/public/fonts/
+wedding-video/public/brand/
+wedding-video/public/stories/
+# reference-derived sample clips: internal comparison only, never shipped
+wedding-video/public/sample/
 public/shaadi-paigaam/art/
 public/shaadi-paigaam/music/
 public/shaadi-paigaam/fonts/
