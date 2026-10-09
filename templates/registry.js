@@ -65,6 +65,7 @@ const TEMPLATES = [
   require('./lavender-bloom/config'),
   require('./ganpati-courtyard/config'),
   require('./saalgirah/config'),
+  require('./shaadi-paigaam/config'),
   require('./birthday-paigaam/config'),
   require('./ganapati-aagman/config'),
   {
@@ -155,6 +156,7 @@ function displayNames(tplSlug, data) {
   if (tplSlug === 'lavender-tic-tac-toe-bloom') return [d.recipientName || 'You'];
   if (tplSlug === 'saalgirah') return [d.recipientName || 'You'];
   if (tplSlug === 'birthday-paigaam') return [d.recipientName || 'You'];
+  if (tplSlug === 'shaadi-paigaam') return [(d.couple && d.couple.groom && d.couple.groom.first) || 'Groom', (d.couple && d.couple.bride && d.couple.bride.first) || 'Bride'];
   if (tplSlug === 'sau-wajah') return [d.recipientName || 'You'];
   if (tplSlug === 'noor')  return [d.brideName || 'The Bride', d.groomName || 'The Groom'];
   if (tplSlug === 'meher') return [d.personName || 'Someone lovely'];

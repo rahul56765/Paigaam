@@ -42,6 +42,7 @@ const valentine = require('./lib/valentineRoutes');
 const sauwajah = require('./lib/sauwajahRoutes');
 const loveAwaits = require('./lib/loveAwaitsRoutes');
 const birthdayPaigaam = require('./lib/birthdayPaigaamRoutes');
+const shaadiPaigaam = require('./lib/shaadiPaigaamRoutes');   // wedding invitation website + customizer (also serves root short links)
 const { streamFile } = require('./lib/streamFile');
 const razorpay = require('./lib/razorpay');
 const { ensureSawaalMedia } = require('./lib/sawaalMedia');
@@ -116,7 +117,9 @@ function publishPaigaam(pg) {
   const slug = pg.slug || uniquePaigaamSlug(slugifyNames(baseName));
   q.paigaamUpdate(pg.id, { slug, status: 'published', payment_status: 'paid', published_at: pg.published_at || new Date().toISOString().replace('T', ' ').slice(0, 19) });
   q.ordersAll().filter(o => o.paigaam_id === pg.id && o.status === 'pending').forEach(o => q.orderUpdate(o.id, 'paid'));
-  return q.paigaamById(pg.id);
+  const out = q.paigaamById(pg.id);
+  if (out && out.template_slug === 'shaadi-paigaam') require('./lib/shaadiPaigaamRoutes').afterPaidPublish(out);
+  return out;
 }
 
 /* ---------------- seed ---------------- */
@@ -182,6 +185,7 @@ const server = http.createServer(async (req, res) => {
     const method = req.method;
     let m;
 
+    if (await shaadiPaigaam.handle(req, res, u, { baseUrl: BASE_URL, isAdmin: !!getAdmin(req) })) return;
     if (await ganapati.handle(req, res, u, { baseUrl: BASE_URL, isAdmin: !!getAdmin(req) })) return;
     if (await saalgirah.handle(req, res, u, { baseUrl: BASE_URL, isAdmin: !!getAdmin(req) })) return;
     if (await lavender.handle(req, res, u, { baseUrl: BASE_URL, isAdmin: !!getAdmin(req) })) return;
@@ -313,6 +317,10 @@ const server = http.createServer(async (req, res) => {
       if (pg.template_slug === loveAwaits.SLUG) {
         if (!getAdmin(req) && !loveAwaits.owned(req, pg.id)) return json(res, 403, { error: 'forbidden' });
         return redirect(res, '/love-awaits/preview/' + pg.id);
+      }
+      if (pg.template_slug === shaadiPaigaam.SLUG) {
+        if (!getAdmin(req) && !shaadiPaigaam.owned(req, pg.id)) return json(res, 403, { error: 'forbidden' });
+        return redirect(res, '/shaadi-paigaam/preview/' + pg.id);
       }
       if (pg.template_slug === birthdayPaigaam.SLUG) {
         if (!getAdmin(req) && !birthdayPaigaam.owned(req, pg.id)) return json(res, 403, { error: 'forbidden' });
@@ -793,6 +801,9 @@ if (courtyardHealed.length) console.log('[ganpati-courtyard] restored missing me
 const { ensureValentineMedia } = require('./lib/valentineMedia');
 const valentineHealed = ensureValentineMedia();
 if (valentineHealed.length) console.log('[valentine-say-yes] restored missing media files:', valentineHealed.join(', '));
+const { ensureShaadiPaigaamMedia } = require('./lib/shaadiPaigaamMedia');
+const spHealed = ensureShaadiPaigaamMedia();
+if (spHealed.length) console.log('[shaadi-paigaam] restored media:', spHealed.length, 'files');
 const { ensureBirthdayPaigaamMedia } = require('./lib/birthdayPaigaamMedia');
 const bpHealed = ensureBirthdayPaigaamMedia();
 if (bpHealed.length) console.log('[birthday-paigaam] restored demo media:', bpHealed.join(', '));
