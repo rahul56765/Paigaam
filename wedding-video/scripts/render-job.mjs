@@ -6,7 +6,7 @@ import { renderInvite } from './render-lib.mjs';
 
 const spec = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
 const resolveMedia = (src) => {
-  const m = /^\/wedding-video\/media\/([a-f0-9]{32}\.(?:jpg|png|webp|mp4|mp3|m4a))$/.exec(src || '');
+  const m = /^\/wedding-video\/media\/([a-f0-9]{32}\.(?:mp3|m4a))$/.exec(src || '');
   if (m) { const f = path.join(spec.mediaDir, m[1]); return fs.existsSync(f) ? f : null; }
   return null;
 };

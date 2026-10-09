@@ -164,3 +164,12 @@ export function themeFor(event) {
   }
   return base;
 }
+
+// Fixed, pre-produced story scenes (painted once at template-build time with an original
+// cast; never generated per customer). focus = where the fabric/stamp transitions dive in.
+export const STORY_LIBRARY = {
+  cycling: { label: 'First ride together', src: 'stories/story1.mp4', poster: 'stories/story1.jpg', clipSec: 8, focus: [0.5, 0.6] },
+  proposal: { label: 'The proposal', src: 'stories/story2.mp4', poster: 'stories/story2.jpg', clipSec: 8, focus: [0.5, 0.6] },
+  blessing: { label: "Grandmother's blessing", src: 'stories/story3.mp4', poster: 'stories/story3.jpg', clipSec: 8, focus: [0.5, 0.74] },
+  walk: { label: 'Walking to the mandap', src: 'stories/story4.mp4', poster: 'stories/story4.jpg', clipSec: 8, focus: [0.5, 0.72] },
+};

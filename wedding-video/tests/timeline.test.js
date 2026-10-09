@@ -43,7 +43,7 @@ test('normalize clamps and sanitises input', () => {
   const d = clone(SAMPLE);
   d.couple.bride = 'x'.repeat(999);
   d.events = Array.from({ length: 40 }, (_, i) => ({ preset: 'nope', title: 'E' + i }));
-  d.stories = [{ src: 'javascript:alert(1)' }, { src: 'https://cdn.example.com/a.mp4', after: 'zzz' }];
+  d.stories = [{ src: 'javascript:alert(1)' }, { scene: 'blessing', src: 'https://cdn.example.com/a.mp4', after: 'zzz' }];
   d.meta.rsvpUrl = 'javascript:alert(1)';
   const n = normalize(d);
   assert.equal(n.couple.bride.length, LIMITS.name);
@@ -51,8 +51,9 @@ test('normalize clamps and sanitises input', () => {
   assert.equal(n.events[0].preset, 'custom');
   assert.equal(n.stories.length, 1);
   assert.equal(n.stories[0].after, n.events[n.events.length - 1].id);
+  assert.equal(n.stories[0].src, 'stories/story3.mp4', 'src always comes from the template library');
   assert.equal(n.meta.rsvpUrl, '');
-  assert.equal(normalize({ stories: [{ src: 'http://127.0.0.1:9/x.mp4' }] }).stories.length, 0, 'local URLs only for the renderer');
+  assert.equal(normalize({ stories: [{ scene: 'walk', frameSeq: { base: 'http://127.0.0.1:9/s', count: 5 } }] }).stories[0].frameSeq, null, 'local frame URLs only for the renderer');
 });
 
 test('validate flags missing names', () => {

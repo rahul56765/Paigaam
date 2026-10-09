@@ -2,7 +2,7 @@
 // normalize() is the single gate used by the composition, the editor and the
 // server, so every render sees clean, length-limited data.
 
-import { PRESETS, THEMES, LANDMARKS } from './themes.js';
+import { PRESETS, THEMES, LANDMARKS, STORY_LIBRARY } from './themes.js';
 import { LANGUAGES } from './i18n.js';
 
 export const LIMITS = {
@@ -49,11 +49,12 @@ export const SAMPLE = {
       venue: 'Green Valley', address: 'Jaypee Palace, Agra', dressCode: '', holdSec: 6.0 },
   ],
   // Stories play after the event named in `after` ('main' = before the first event).
+  // Fixed template story scenes (see STORY_LIBRARY). 'after' = event id or 'main'.
   stories: [
-    { id: 's1', clipSec: 3.2, after: 'e1', src: 'sample/story1.mp4', caption: 'First bike ride', holdSec: 4.8, focus: [0.5, 0.6] },
-    { id: 's2', clipSec: 4.1, after: 'e1', src: 'sample/story2.mp4', caption: 'The proposal', holdSec: 4.2, focus: [0.5, 0.6] },
-    { id: 's3', clipSec: 3.6, after: 'e3', src: 'sample/story3.mp4', caption: "Maa's blessing", holdSec: 5.8, focus: [0.62, 0.7] },
-    { id: 's4', clipSec: 2.8, after: 'e3', src: 'sample/story4.mp4', caption: 'Walking with Papa', holdSec: 2.9, focus: [0.5, 0.72] },
+    { id: 's1', scene: 'cycling', after: 'e1', holdSec: 4.8 },
+    { id: 's2', scene: 'proposal', after: 'e1', holdSec: 4.2 },
+    { id: 's3', scene: 'blessing', after: 'e3', holdSec: 5.8 },
+    { id: 's4', scene: 'walk', after: 'e3', holdSec: 2.9 },
   ],
   closing: {
     title: 'Sharing the Joy',
@@ -129,18 +130,21 @@ function normalizeInner(input) {
   const eventIds = new Set(events.map((e) => e.id));
 
   const stories = arr(d.stories, L.stories)
-    .map((s, i) => ({
-      id: id(s && s.id, i, 's'),
-      after: s && (s.after === 'main' || eventIds.has(s.after)) ? s.after : events.length ? events[events.length - 1].id : 'main',
-      src: media(s && s.src),
-      poster: media(s && s.poster),
-      caption: str(s && s.caption, L.line),
-      holdSec: num(s && s.holdSec, 2.5, 12, 6.0),
-      clipSec: num(s && s.clipSec, 1, 30, 8),
-      frameSeq: s && s.frameSeq && media(s.frameSeq.base) ? { base: media(s.frameSeq.base), count: num(s.frameSeq.count, 0, 2000, 0), fps: num(s.frameSeq.fps, 1, 60, 30) } : null,
-      focus: Array.isArray(s && s.focus) && s.focus.length === 2 ? [num(s.focus[0], 0, 1, 0.5), num(s.focus[1], 0, 1, 0.6)] : [0.5, 0.6],
-    }))
-    .filter((s) => s.src);
+    .filter((s) => s && STORY_LIBRARY[s.scene])
+    .map((s, i) => {
+      const lib = STORY_LIBRARY[s.scene];
+      return {
+        id: id(s.id, i, 's'),
+        scene: s.scene,
+        after: s.after === 'main' || eventIds.has(s.after) ? s.after : events.length ? events[events.length - 1].id : 'main',
+        src: lib.src,
+        holdSec: num(s.holdSec, 2.5, 12, 5.0),
+        clipSec: num(s.clipSec, 1, 30, lib.clipSec),
+        // frame sequences are only injected by the render worker (local URLs)
+        frameSeq: s.frameSeq && media(s.frameSeq.base) ? { base: media(s.frameSeq.base), count: num(s.frameSeq.count, 0, 2000, 0), fps: num(s.frameSeq.fps, 1, 60, 30) } : null,
+        focus: lib.focus,
+      };
+    });
 
   return {
     version: 1,
@@ -202,6 +206,6 @@ export function validate(input) {
     if (!String(e.title || '').trim()) errors.push(`Event ${i + 1}: title is required.`);
     if (e.date && !/^\d{4}-\d{2}-\d{2}$/.test(e.date)) errors.push(`Event ${i + 1}: date must be YYYY-MM-DD.`);
   });
-  if ((d.stories || []).length > LIMITS.stories) errors.push(`At most ${LIMITS.stories} story clips.`);
+  if ((d.stories || []).length > LIMITS.stories) errors.push(`At most ${LIMITS.stories} story scenes.`);
   return errors;
 }

@@ -1,7 +1,9 @@
 # Paigaam wedding invitation films
 
-A template-driven animated wedding invitation (1080×1920, 30fps, H.264) with a customer
-editor, live preview, AI-painted story clips and server-side rendering.
+A fixed, template-driven animated wedding invitation (1080×1920, 30fps, H.264) with a customer
+editor, live preview and server-side rendering. Customers change words, events, scene order
+and music only. The four hand-painted story scenes (`public/stories/`) were produced once
+at template-build time with an original cast; there is no per-customer AI generation and no API key.
 
 ```
 wedding-video/
@@ -24,23 +26,22 @@ wedding-video/
   tests/timeline.test.js
 ```
 
-Server side lives in `lib/weddingVideoRoutes.js` and `lib/weddingVideo/` (store, jobs, veo).
+Server side lives in `lib/weddingVideoRoutes.js` and `lib/weddingVideo/` (store, jobs).
+
+To add or replace a story scene: paint a 9:16 keyframe, animate it to an 8s clip, encode to
+900×1600 H.264 (CRF 24) as `public/stories/storyN.mp4` + a poster `.jpg`, register it in
+`STORY_LIBRARY` (src/lib/themes.js), then run `node scripts/pack-wedding-video-assets.js`.
 
 ## Routes
 - `/wedding-video` editor · `/w/:id` share page (film, MP4 downloads, RSVP + wishes)
 - `POST /api/wedding-video/invites` · `GET|PUT /api/wedding-video/invites/:id` (owner cookie)
-- `POST /api/wedding-video/invites/:id/media?kind=photo|music|clip` (raw body, magic-byte sniffed)
-- `POST /api/wedding-video/invites/:id/stories/:sid/generate` → job (photo → painted keyframe → Veo clip)
+- `POST /api/wedding-video/invites/:id/media?kind=music` (raw body, magic-byte sniffed)
 - `POST /api/wedding-video/invites/:id/render {format:'9x16'|'16x9'}` → job · `GET /api/wedding-video/jobs/:id`
 - `POST /api/wedding-video/w/:id/rsvp` · `GET /api/wedding-video/invites/:id/rsvps(.csv)` (owner)
 
 ## Environment (names only)
 | Variable | Purpose |
 |---|---|
-| `GEMINI_API_KEY` | Enables AI story clips (Gemini image model + Veo 3.1). Without it the editor offers upload-your-own clip. |
-| `WEDDING_IMAGE_MODEL` | default `gemini-nano-banana-2.1` |
-| `WEDDING_VEO_MODEL` | default `veo-3.1-generate-preview` |
-| `WEDDING_VEO_RESOLUTION` | `720p` (default) or `1080p` |
 | `WEDDING_RENDER_CONCURRENCY` | Chrome tabs per render (default = CPUs, max 4) |
 | `WEDDING_X264_PRESET` | default `slow` (CRF 16, High profile) |
 | `DATA_DIR` | must be a persistent volume on Railway: invites, uploads, clips and renders live under `DATA_DIR/wedding-video` |

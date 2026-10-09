@@ -10,7 +10,6 @@ import './styles.js';
 
 const root = document.getElementById('wv-root');
 const ASSET_BASE = root.dataset.assetBase || '/wedding-video/assets';
-const VEO = root.dataset.veo === '1';
 
 const api = async (url, opts = {}) => {
   const r = await fetch(url, { credentials: 'same-origin', ...opts, headers: { ...(opts.body && !(opts.body instanceof Blob) ? { 'Content-Type': 'application/json' } : {}), ...(opts.headers || {}) } });
@@ -29,11 +28,9 @@ const setIn = (obj, path, value) => {
 const uid = (p) => p + Math.random().toString(36).slice(2, 8);
 const ERR = {
   rate_limited: 'Too many requests right now — please try again a little later.',
-  story_generation_not_configured: 'Story clip generation is not switched on yet (missing Gemini API key on the server).',
   unsupported_file: 'That file type is not supported.',
   too_large: 'That file is too large.',
   too_many_files: 'Upload limit reached for this invitation.',
-  photo_required: 'Upload a photo first.',
 };
 const friendly = (e) => ERR[e.message] || e.message || 'Something went wrong.';
 
@@ -68,70 +65,23 @@ async function pollJob(id, onTick) {
   }
 }
 
-/* ---------- story clip card ---------- */
-function StoryCard({ story, index, events, inviteId, ensureInvite, onChange, onRemove, onMove, count }) {
-  const [busy, setBusy] = useState('');
-  const [err, setErr] = useState('');
-  const [prompt, setPrompt] = useState(story.extraPrompt || '');
+/* ---------- story scene card (fixed template scenes) ---------- */
+function StoryCard({ story, index, events, library, onChange, onRemove, onMove, count }) {
   const set = (k, v) => onChange({ ...story, [k]: v });
-  const pick = async (kind, file) => {
-    setErr('');
-    try {
-      const id = await ensureInvite();
-      setBusy('Uploading…');
-      const url = await upload(id, kind, file);
-      if (kind === 'photo') onChange({ ...story, photo: url, src: story.src || url });
-      else onChange({ ...story, src: url, clipSec: 8 });
-    } catch (e) { setErr(friendly(e)); } finally { setBusy(''); }
-  };
-  const generate = async (reuse) => {
-    setErr('');
-    try {
-      const id = await ensureInvite();
-      setBusy('Painting your photo…');
-      const { jobId } = await api(`/api/wedding-video/invites/${id}/stories/${story.id}/generate`, { method: 'POST', body: JSON.stringify({ photo: story.photo, caption: story.caption, extraPrompt: prompt, reuseKeyframe: reuse ? story.poster : '' }) });
-      const done = await pollJob(jobId, (j) => setBusy(j.stage === 'animating' ? `Animating… ${Math.round(j.progress * 100)}%` : j.stage === 'painting' ? 'Painting your photo…' : 'Queued…'));
-      if (done.status === 'failed') throw new Error(done.error || 'Generation failed');
-      onChange({ ...story, src: done.result.clipUrl, poster: done.result.keyframeUrl, clipSec: done.result.clipSec, extraPrompt: prompt });
-    } catch (e) { setErr(friendly(e)); } finally { setBusy(''); }
-  };
-  const isVideo = /\.mp4$/.test(story.src || '');
+  const lib = library[story.scene];
   return (
     <div className="card">
-      <div className="cardh"><b>Story {index + 1}</b>
+      <div className="cardh"><b>Scene {index + 1}{lib ? ` · ${lib.label}` : ''}</b>
         <span><IconBtn title="Move up" onClick={() => onMove(-1)} disabled={index === 0}>↑</IconBtn><IconBtn title="Move down" onClick={() => onMove(1)} disabled={index === count - 1}>↓</IconBtn><IconBtn title="Remove" onClick={onRemove}>✕</IconBtn></span>
       </div>
-      <Row>
-        <Field label="Plays after"><Select value={story.after} onChange={(v) => set('after', v)} options={[['main', 'Main card (before events)'], ...events.map((e) => [e.id, e.title || 'Event'])]} /></Field>
-        <Field label="Hold (seconds)"><input type="number" min="2.5" max="12" step="0.1" value={story.holdSec} onChange={(e) => set('holdSec', Number(e.target.value))} /></Field>
-      </Row>
-      <Field label="Moment / caption" hint="Used to guide the painting, e.g. “first bike ride”, “the proposal”, “Maa's blessing”. It is not printed on the video.">
-        <Text value={story.caption} max={120} onChange={(v) => set('caption', v)} />
-      </Field>
       <div className="media">
-        <div className="thumbs">
-          {story.photo ? <figure><img src={story.photo} alt="Uploaded photo" /><figcaption>Photo</figcaption></figure> : null}
-          {story.poster ? <figure><img src={story.poster} alt="Painted keyframe" /><figcaption>Painting</figcaption></figure> : null}
-          {isVideo ? <figure><video src={story.src.startsWith('/') ? story.src : `${ASSET_BASE}/${story.src}`} muted loop autoPlay playsInline /><figcaption>Clip</figcaption></figure> : null}
-        </div>
-        <div className="mbtns">
-          <label className="btn ghost">Upload photo<input type="file" accept="image/jpeg,image/png,image/webp" hidden onChange={(e) => e.target.files[0] && pick('photo', e.target.files[0])} /></label>
-          <label className="btn ghost">Upload my own clip<input type="file" accept="video/mp4" hidden onChange={(e) => e.target.files[0] && pick('clip', e.target.files[0])} /></label>
+        {lib ? <div className="thumbs"><figure><video src={`${ASSET_BASE}/${lib.src}`} poster={`${ASSET_BASE}/${lib.poster}`} muted loop autoPlay playsInline preload="none" /></figure></div> : null}
+        <div style={{ flex: 1, minWidth: 220 }}>
+          <Field label="Scene"><Select value={story.scene} onChange={(v) => set('scene', v)} options={Object.entries(library).map(([k, l]) => [k, l.label])} /></Field>
+          <Field label="Plays after"><Select value={story.after} onChange={(v) => set('after', v)} options={[['main', 'Main card (before events)'], ...events.map((e) => [e.id, e.title || 'Event'])]} /></Field>
+          <Field label={`On-screen time: ${Number(story.holdSec).toFixed(1)}s`}><input type="range" min="2.5" max="8" step="0.1" value={story.holdSec} onChange={(e) => set('holdSec', Number(e.target.value))} /></Field>
         </div>
       </div>
-      {VEO ? (
-        <div className="gen">
-          <Field label="Extra direction (optional)" hint="Edit the prompt, e.g. “sunset light, marigold petals drifting”. Faces, outfits and skin tone are always preserved.">
-            <Area value={prompt} rows={2} max={400} onChange={setPrompt} />
-          </Field>
-          <div className="mbtns">
-            <button type="button" className="btn" disabled={!story.photo || !!busy} onClick={() => generate(false)}>{story.poster ? 'Regenerate painting + clip' : 'Generate painted clip'}</button>
-            {story.poster ? <button type="button" className="btn ghost" disabled={!!busy} onClick={() => generate(true)}>Re-animate same painting</button> : null}
-          </div>
-        </div>
-      ) : <p className="note">AI story clips need a Gemini API key on the server. Until then you can upload your own painted clip, or use the photo as a still.</p>}
-      {busy ? <p className="busy" role="status">{busy}</p> : null}
-      {err ? <p className="err" role="alert">{err}</p> : null}
     </div>
   );
 }
@@ -189,6 +139,7 @@ function App() {
   const [renders, setRenders] = useState({});
   const [toast, setToast] = useState('');
   const [library, setLibrary] = useState([]);
+  const [stories, setStories] = useState({});
   const player = useRef(null);
   const creating = useRef(null);
 
@@ -198,6 +149,7 @@ function App() {
       const q = new URLSearchParams(location.search).get('invite') || localStorage.getItem('wv_invite');
       const cfg = await api('/api/wedding-video/config');
       setLibrary(cfg.music || []);
+      setStories(cfg.stories || {});
       if (q) {
         try {
           const inv = await api(`/api/wedding-video/invites/${q}`);
@@ -266,7 +218,7 @@ function App() {
   };
 
   const scenes = tl.segments.filter((s) => s.kind !== 'end');
-  const label = (s) => s.kind === 'event' ? s.event.title : s.kind === 'story' ? `Story: ${s.story.caption || 'clip'}` : { opener: 'Opening', main: 'Main card', closing: 'Sharing the Joy' }[s.kind];
+  const label = (s) => s.kind === 'event' ? s.event.title : s.kind === 'story' ? `Scene: ${(stories[s.story.scene] || {}).label || 'story'}` : { opener: 'Opening', main: 'Main card', closing: 'Sharing the Joy' }[s.kind];
   const totalSec = (tl.durationInFrames / FPS).toFixed(1);
 
   return (
@@ -274,7 +226,7 @@ function App() {
       <div className="form">
         <header className="top">
           <h1>Wedding invitation film</h1>
-          <p>Edit the words, events and story clips. The cards, artwork, motion and timing stay exactly as designed.</p>
+          <p>Edit the words, events and story scenes. The cards, artwork, motion and timing stay exactly as designed.</p>
           {errors.length ? <ul className="errs">{errors.map((e) => <li key={e}>{e}</li>)}</ul> : null}
         </header>
 
@@ -360,14 +312,18 @@ function App() {
           ) : null}
         </Section>
 
-        <Section title={`Story clips (${data.stories.length})`} open>
-          <p className="note">Upload 3–6 photos and describe each moment. Each photo becomes a hand-painted clip in the same watercolour style, framed by the same stamp border.</p>
+        <Section title={`Story scenes (${data.stories.length})`} open>
+          <p className="note">Hand-painted story scenes that come with this template. Pick the scenes you like, place them between events and set how long each plays.</p>
           {data.stories.map((s, i) => (
-            <StoryCard key={s.id} story={s} index={i} count={data.stories.length} events={data.events} inviteId={inviteId} ensureInvite={ensureInvite}
+            <StoryCard key={s.id} story={s} index={i} count={data.stories.length} events={data.events} library={stories}
               onChange={(n) => set(['stories', i], n)} onMove={(d) => moveIn('stories', i, d)}
               onRemove={() => set(['stories'], data.stories.filter((_, j) => j !== i))} />
           ))}
-          {data.stories.length < LIMITS.stories ? <button type="button" className="btn ghost" onClick={() => set(['stories'], [...data.stories, { id: uid('s'), after: data.events[0] ? data.events[0].id : 'main', src: '', caption: '', holdSec: 6, clipSec: 8, focus: [0.5, 0.6] }])}>+ Add story clip</button> : null}
+          {data.stories.length < LIMITS.stories && Object.keys(stories).length ? (
+            <div className="add"><span>Add scene:</span>
+              {Object.entries(stories).map(([k, l]) => <button type="button" className="chip" key={k} onClick={() => set(['stories'], [...data.stories, { id: uid('s'), scene: k, after: data.events[0] ? data.events[0].id : 'main', holdSec: 5 }])}>{l.label}</button>)}
+            </div>
+          ) : null}
         </Section>
 
         <Section title="Sharing the Joy (closing card)">
