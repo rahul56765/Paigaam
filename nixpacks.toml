@@ -1,17 +1,10 @@
 # Paigaam needs Node 22.5+ for node:sqlite. Pin Node 24.
 # ffmpeg (nixpkgs build includes libass + fontconfig) renders the
 # Ganpati Courtyard MP4 exports at /api/ganpati-courtyard/export and
-# encodes the wedding invitation films.
+# encodes the wedding invitation films (system Chrome libraries come from
+# RAILPACK_DEPLOY_APT_PACKAGES / scripts/build-wedding-video.sh).
 [phases.setup]
 nixPkgs = ["nodejs_24", "ffmpeg"]
-# Shared libraries for Remotion's headless Chrome (wedding invitation films).
-aptPkgs = ["libnss3", "libdbus-1-3", "libatk1.0-0", "libatk-bridge2.0-0", "libgbm1", "libasound2", "libxrandr2", "libxkbcommon0", "libxfixes3", "libxcomposite1", "libxdamage1", "libpango-1.0-0", "libcairo2", "libcups2", "libdrm2", "libxshmfence1"]
-
-[phases.install]
-cmds = ["npm ci", "npm --prefix wedding-video ci"]
-
-[phases.build]
-cmds = ["node scripts/prepare-ganapati.js", "node scripts/prepare-wedding-video.js", "npm --prefix wedding-video run build:editor", "cd wedding-video && npx remotion browser ensure"]
 
 [start]
 cmd = "node server.js"
