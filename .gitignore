@@ -28,6 +28,15 @@ wedding-video/public/brand/
 wedding-video/public/stories/
 # reference-derived sample clips: internal comparison only, never shipped
 wedding-video/public/sample/
+
+# Vivah video: generated from assets/vivah-video by scripts/prepare-vivah-video.js
+vivah-video/dist/
+vivah-video/out/
+vivah-video/public/art/
+vivah-video/public/fonts/
+vivah-video/public/brand/
+vivah-video/public/stories/
+vivah-video/public/music/
 public/shaadi-paigaam/art/
 public/shaadi-paigaam/music/
 public/shaadi-paigaam/fonts/

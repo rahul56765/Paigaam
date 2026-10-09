@@ -1,0 +1,27 @@
+{
+  "name": "paigaam-vivah-video",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Paigaam animated wedding invitation video generator (Remotion).",
+  "type": "module",
+  "scripts": {
+    "studio": "remotion studio src/index.ts",
+    "build:editor": "node scripts/build-editor.mjs",
+    "render:sample": "node scripts/render.mjs --sample",
+    "test": "node --test tests/timeline.test.js"
+  },
+  "dependencies": {
+    "@remotion/bundler": "^4.0.534",
+    "@remotion/cli": "^4.0.534",
+    "@remotion/fonts": "^4.0.534",
+    "@remotion/layout-utils": "^4.0.534",
+    "@remotion/player": "^4.0.534",
+    "@remotion/renderer": "^4.0.534",
+    "@types/react": "^19.3.0",
+    "esbuild": "^0.28.2",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "remotion": "^4.0.534",
+    "typescript": "^7.0.2"
+  }
+}

@@ -30,6 +30,7 @@ const love = require('./lib/loveRoutes');
 const sawaal = require('./lib/sawaalRoutes');
 const magazines = require('./lib/magazineRoutes');   // Canva-powered personalised magazines (isolated feature)
 const weddingVideo = require('./lib/weddingVideoRoutes');   // animated wedding invitation films (isolated feature)
+const vivahVideo = require('./lib/vivahVideoRoutes');       // second original animated wedding-film template
 const bfday = require('./lib/bfdayRoutes');   // the Boyfriend Day family (templates/bfday.js)
 const { ensureBrandAssets } = require('./lib/brand-assets');
 const { ensureGanapatiMedia } = require('./lib/ganapatiMedia');
@@ -200,6 +201,7 @@ const server = http.createServer(async (req, res) => {
     if (await bfday.handle(req, res, u, { baseUrl: BASE_URL, isAdmin: !!getAdmin(req) })) return;
     if (await magazines.handle(req, res, u, { baseUrl: BASE_URL, admin: getAdmin(req) })) return;
     if (await weddingVideo.handle(req, res, u, { baseUrl: BASE_URL })) return;
+    if (await vivahVideo.handle(req, res, u, { baseUrl: BASE_URL })) return;
     if (['GET', 'HEAD'].includes(method) && serveStatic(req, res, p)) return;
 
     /* ---------- health (checks storage persistence) ---------- */
