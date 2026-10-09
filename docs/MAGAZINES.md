@@ -3,7 +3,7 @@
 Readers pick a design, fill in the fields, upload photos, and Paigaam builds a personalised magazine through
 **Canva Connect REST (Autofill + Exports)**. They preview it on Paigaam and download a PDF (PNG too, for single-page designs).
 Readers never need a Canva account. One Paigaam-owned Canva Pro account owns the master Brand Templates and all generated designs.
-This feature is isolated from greeting templates, Razorpay and publishing, and is **free** (no pricing/payment is attached).
+This feature is isolated from greeting templates, Razorpay and publishing, and is **free** (no pricing/payment is attached). Multi-page templates also get a fictional Canva Autofill sample so readers can flip through the actual layout before choosing it.
 
 ## How it works
 ```
@@ -14,8 +14,16 @@ reader form ─▶ private draft + photos (DATA_DIR/magazines/uploads/<id>)
             ─▶ exporting   PDF (+ PNG only when the design is 1 page) -> copied to DATA_DIR/magazines/output/<id>
             ─▶ ready       preview + downloads are served from Paigaam's stored files, never Canva's expiring URLs
 ```
-Every Canva id is saved the moment it is known, so **retry resumes** and never creates a second design.
+Every Canva id is saved the moment it is known, so **retry resumes** and never creates a second customer design.
 `update_design` is never called. Source photos are deleted when the magazine is ready.
+
+## Fictional sample previews
+- A successful admin validation generates one clearly titled Canva Autofill sample for each multi-page template, using generic demo copy and the bundled AI-generated fictional photo pool. The sample design is saved in the connected Canva account's root folder.
+- The generated PDF is cached under `DATA_DIR/magazines/previews/<slug>.sample.pdf`; a private sidecar stores Canva job/design IDs so interrupted work resumes rather than creating duplicate samples.
+- Sample Canva asset IDs are cached and reused across templates. A mapping fingerprint prevents repeat validation from creating another sample; changing the template mapping generates a refreshed one.
+- `/magazines` displays a “Flip through sample” link when the PDF is ready. It opens the same PDF.js reader, 3D paper turn, swipe, keyboard and arrow controls used for finished magazines.
+- Existing published multi-page templates are checked on startup. New templates use the same automatic path after successful Admin → Validate vs Canva; no repeated assistant handoff is required.
+- Fictional photos are bundled as base64 text under `lib/magazines/sample-assets/` so they can be stored through text-based repository tooling.
 
 ## Environment variables (names only — set values in Railway, never in git or chat)
 | Name | Purpose |
@@ -46,7 +54,7 @@ Test-only (honoured only when `CANVA_TEST_MODE=1`): `CANVA_API_BASE`, `CANVA_AUT
 
 Sample designs:
 - `birthday-collage` → Brand Template `EAHXVxrdrCk` (1 page): text `headline` (optional, default “HAPPY BIRTHDAY”) and photos `photo_1`…`photo_9` (all required).
-- `birthday-story` → Brand Template `EAHXVwHhiXs` (7 pages): 19 required photos (`photo_1`…`photo_19`); optional 90-character `wish` on page 1 is split into `wish_line_1`, `wish_line_2`, `wish_line_3`; required `letter_page3` (450 characters) and `letter_page7` (900 characters). The page 6 decorative letter and other fixed text remain unchanged. This mapping is being added but remains unpublished until validation and review.
+- `birthday-story` → Brand Template `EAHXVwHhiXs` (7 pages): 19 required photos (`photo_1`…`photo_19`); optional 90-character `wish` on page 1 is split into `wish_line_1`, `wish_line_2`, `wish_line_3`; required `letter_page3` (450 characters) and `letter_page7` (900 characters). The page 6 decorative letter and other fixed text remain unchanged. The template is published; its fictional sample PDF is generated automatically if missing.
 
 **Paigaam image limits** (not Canva's API limits): max 8 MB, minimum 400 px short side, JPG/PNG/WebP. `birthday-collage` headline limit is 24 characters.
 
@@ -61,13 +69,14 @@ Drafts and their photos are readable only by the browser that created them (Http
 2. Admin → Connect Canva; confirm the account name shows.
 3. **Validate vs Canva** → expect “fields match”. Confirm Autofill actually works for your plan (first call to `/autofills`).
 4. Validate the desired design in admin and publish only after its live dataset matches. Open `/magazines/<slug>` in a private window; provide every required photo and text field, then Create. `birthday-collage` needs 9 photos; `birthday-story` needs 19 photos and both letters.
-5. Watch the steps; on *ready* confirm the PDF preview, PDF download and PNG download open correctly and the layout is right.
-6. In Canva confirm a **new** design was created and the Brand Template is unchanged.
-7. Retry check: generate once more; confirm a second, separate design appears.
+5. On `/magazines`, flip through each multi-page design's fictional sample; confirm every page and the page-turn controls work.
+6. Watch the customer steps; on *ready* confirm the PDF preview, PDF download and single-page PNG download open correctly and the layout is right.
+7. In Canva confirm the clearly titled **PAIGAAM Fictional Sample** design exists and the Brand Template is unchanged.
+8. Retry check: generate a customer magazine once; confirm it is a separate design from the fictional sample.
 8. Admin → Disconnect; confirm creation is hidden and the earlier download still works.
 
 ## Tests
-`npm run test:magazines` → `tests/magazines.test.js` (in-process, mocked Canva: mapping, fields, OAuth/PKCE, refresh rotation, 429, state machine, retry/resume, PNG gating, cleanup) and `scripts/test-magazines.js` (HTTP e2e: gating, admin, uploads/ownership, downloads, restart, regression of existing pages). No real Canva credentials are needed. The mock lives in `tests/helpers/canvaMock.js`.
+`npm run test:magazines` → `tests/magazines.test.js`, `tests/magazine-preview.test.js`, `tests/magazine-sample-flow.test.js`, and `scripts/test-magazines.js`. This includes mocked sample Autofill/PDF export, one-sample idempotence, asset-cache reuse, field/photo mapping, page-flip result markup, and the existing HTTP magazine flow. No real Canva credentials are needed; the API mock lives in `tests/helpers/canvaMock.js`.
 
 ## Rollback
 - Fast, no deploy: Admin → **Unpublish** the design (or Disconnect Canva). Public pages return 404 and nothing is generated.
@@ -81,3 +90,4 @@ Drafts and their photos are readable only by the browser that created them (Http
 - Canva rate limits (e.g. 30 asset uploads/min) are respected with `Retry-After` backoff and a 2-job concurrency cap, but a burst of readers will queue.
 - If a request to create an Autofill/Export job times out *after* Canva accepted it, a retry may create one extra design (the job id could not be saved). Rare; harmless but visible in Canva.
 - Readers get no Canva edit link (not supported for this ownership model).
+- Each multi-page template retains one clearly titled fictional Canva sample design in the connected account's root folder; its exported PDF is cached on PAIGAAM's persistent volume and served only on the published sample route.
