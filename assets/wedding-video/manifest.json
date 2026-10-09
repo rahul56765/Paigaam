@@ -58,5 +58,13 @@
  "fonts/NotoSerifGujarati-Regular.ttf": "878ec7410951db00e2a826cb97e5fd46da9b92aab8a04aa856e0ad3aad1ed30d",
  "fonts/NotoSerifGurmukhi-Regular.ttf": "7ec896c4dbaa6bba99c67931e6ffe26209747cef46f49b7f4dc34377872a5c35",
  "fonts/PinyonScript-Regular.ttf": "3683830e3bb3f1a2138b6098f8663ca5ceb66b1f397a4f30639aae139e344bb8",
- "brand/logo.png": "f1e5c10a5c57bb763df4f6e5028ef5ee20887d25805be37e6dc5a91bc5978b42"
+ "brand/logo.png": "f1e5c10a5c57bb763df4f6e5028ef5ee20887d25805be37e6dc5a91bc5978b42",
+ "stories/story1.jpg": "fcea69fedbd5a3f2a4af25523c93f0a276f4dd1efa2978a9af48795da739f96e",
+ "stories/story1.mp4": "f3c99246b89ecafe5ae240bfbfedc0a5347a2c036c7258d7fbcd23edd10a9ac3",
+ "stories/story2.jpg": "d266e8da7d16984d60fa17d538b4465fe6220d8d0ff4600ba5bbf5b8ed44828d",
+ "stories/story2.mp4": "59c9c8137ba329549adcac65728a8723a32051a9b95c3768e3537d3acac7605a",
+ "stories/story3.jpg": "c5551e0889889282dc78fbe433469b0f4751292f860e6a43f26072a3c81e6d04",
+ "stories/story3.mp4": "d9890d1b27de190b05bdf81b3ff7fc634b06e5df16ae87cf12871919aff0e780",
+ "stories/story4.jpg": "166df0654487554f0e93bf184e3f63977dfb8a6ed9761b104ea59a6a31b7107b",
+ "stories/story4.mp4": "843db348e05eedbb130af94a50bf648f802ef8cbc67b1868a2f97ddaa30b8592"
 }
