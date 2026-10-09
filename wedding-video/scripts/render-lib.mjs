@@ -34,6 +34,19 @@ const run = (cmd, args, opts = {}) => new Promise((resolve, reject) => {
   p.on('close', (code) => (code === 0 ? resolve() : reject(new Error(`${cmd} exited ${code}: ${err.slice(-1500)}`))));
 });
 
+/** System Chromium (from the Nix package on Railway) if present, else Remotion's own headless shell.
+ *  WEDDING_CHROME_PATH overrides. */
+export function findChrome() {
+  if (process.env.WEDDING_CHROME_PATH && fs.existsSync(process.env.WEDDING_CHROME_PATH)) return process.env.WEDDING_CHROME_PATH;
+  for (const dir of (process.env.PATH || '').split(path.delimiter)) {
+    for (const name of ['chromium', 'chromium-browser', 'google-chrome-stable']) {
+      const f = path.join(dir, name);
+      try { if (fs.statSync(f).isFile()) return f; } catch { /* not here */ }
+    }
+  }
+  return null;
+}
+
 export function probeDuration(file) {
   return new Promise((resolve) => {
     execFile('ffprobe', ['-v', 'error', '-show_entries', 'format=duration', '-of', 'default=nw=1:nk=1', file], (e, out) => resolve(e ? 0 : Number(String(out).trim()) || 0));
@@ -101,14 +114,16 @@ export async function renderInvite(o) {
     // 1. story clips -> frame sequences
     await prepareStories(data, work, base, resolveMedia, (p) => progress('prepare', p));
     // 2. frames via Chrome
-    await ensureBrowser();
+    const browserExecutable = findChrome();
+    if (!browserExecutable) await ensureBrowser();
     const serveUrl = await getBundle();
     const inputProps = { data: withLocal(), assetBase: '', allowLocal: true };
-    const composition = await selectComposition({ serveUrl, id: comp, inputProps });
+    const composition = await selectComposition({ serveUrl, id: comp, inputProps, browserExecutable });
     const framesDir = path.join(work, 'frames');
     fs.mkdirSync(framesDir);
+    if (browserExecutable) console.log('[render] using', browserExecutable);
     await renderFrames({
-      composition, serveUrl, inputProps, outputDir: framesDir, imageFormat: 'jpeg', jpegQuality: 94,
+      composition, serveUrl, inputProps, outputDir: framesDir, imageFormat: 'jpeg', jpegQuality: 94, browserExecutable,
       concurrency: Number(process.env.WEDDING_RENDER_CONCURRENCY || Math.max(1, Math.min(4, os.cpus().length))),
       onStart: () => progress('frames', 0),
       onFrameUpdate: (done) => progress('frames', done / composition.durationInFrames),

@@ -4,7 +4,7 @@
 # encodes the wedding invitation films (system Chrome libraries come from
 # RAILPACK_DEPLOY_APT_PACKAGES / scripts/build-wedding-video.sh).
 [phases.setup]
-nixPkgs = ["nodejs_24", "ffmpeg"]
+nixPkgs = ["nodejs_24", "ffmpeg", "chromium"]
 
 [start]
 cmd = "node server.js"
