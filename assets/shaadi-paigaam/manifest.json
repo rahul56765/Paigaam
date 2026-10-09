@@ -1,0 +1,23 @@
+{
+ "art/demo-1.webp": "d3d974410abe65659dcba318aed64acec83f9fc4d7c754f849b502f41f52374e",
+ "art/demo-2.webp": "9ec246c5aa2c5ece8817e348cce6062419a8fac87684d43150698b4e06ffe147",
+ "art/demo-3.webp": "94d70e22f67214e91559b07a12a14718c66291f3662b859b7656a33ba58edd09",
+ "art/demo-4.webp": "4cafba09b80940684690e68662498a99a946dbf0ca4331d948c22d7266808c93",
+ "art/demo-5.webp": "fc14d2342cfe425e8fbc04d1393ad8634d3ff54f63df2bbb315dce4df62ef6f2",
+ "art/door-relief.webp": "816a6d19b680ca2cb99085acfdca9cfe189ddbb673481c806762d2f260027c69",
+ "art/scene-base.webp": "47fac7b68916ee0376a0629d5d1cfdab66f6b04301ed158229763cb09a081ae9",
+ "art/scene-rose.webp": "7610f75a9e8fda82e291e4e4c9d3f69572d3187b177cc25cf8712566571fc64a",
+ "music/acoustic-courtyard.mp3": "fdcf6e02193c5237ef7b44bd9346a8973dab0512407a6b791300033bd3a73e55",
+ "music/bansuri-mist.mp3": "60b2495a2dc8d85a6864b4938326acedeeb2901f9d3a6be0142991e08dba2952",
+ "music/harp-garden.mp3": "363e3aa948f00f18540fdec6a534243b1fdbf90d31ffb759ee64f421191589e3",
+ "music/piano-strings-forever.mp3": "f01a13294d7bea980fa69c30ac27f6023a6610d890bb0f9a4604fb79ee91dc25",
+ "music/piano-vows.mp3": "9b0c616ab858d888e7d904c7d716e21381d917b4ee25d1521b4c25003a559142",
+ "music/santoor-mehendi.mp3": "0c1a1bc92bde0dec9dd2c93a11f43c1f1c57d6ee6501c067388481dae2f43029",
+ "music/sarangi-reception.mp3": "6a8c439de7d117a6fa86cbfc0143d7645f85a2650e282cb03dae76a3ce2e8ab9",
+ "music/shehnai-dawn.mp3": "3da08ec8e95e70a81de296f7d097eec7aaafb9fd371816fa01b67a5c42065dea",
+ "music/sitar-sandhya.mp3": "0b177bf076e5a43d0e9cd452479a55765193dff46107e1b4b453759c84adf849",
+ "music/veena-temple.mp3": "765c8028b82c6afa8f33c37937ed1d77ab301a46be40b84f9e31220b330e6589",
+ "fonts/cormorant.ttf": "b20b7d9626dd956b2c5e558692ad328b1f19e3275e2782db4fa07670d83f35e0",
+ "fonts/great-vibes.ttf": "8d509802186f1b51572531ecf313e8098f9a5bfdfaca93f0c9b34467f9982d15",
+ "fonts/tiro-deva.ttf": "d2abcb4d352f0bfab91632df5d9c8173882073c182e662fa731a5a738e6681d7"
+}
