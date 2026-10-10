@@ -4,7 +4,7 @@ const pending = new Map();
 
 function getWorker() {
   if (!worker) {
-    worker = new Worker(new URL('./magazine-face-detector-worker.mjs', import.meta.url), { type: 'module' });
+    worker = new Worker(new URL('./magazine-face-detector-worker.js', import.meta.url));
     worker.addEventListener('message', (event) => {
       const { id, faces, error } = event.data || {};
       const request = pending.get(id);

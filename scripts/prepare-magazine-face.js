@@ -18,7 +18,7 @@ const pkg = JSON.parse(fs.readFileSync(path.join(packageRoot, 'package.json'), '
 if (pkg.version !== expectedVersion) throw new Error(`Expected @mediapipe/tasks-vision ${expectedVersion}, got ${pkg.version}. Review and pin the asset runtime before upgrading.`);
 fs.mkdirSync(wasmDest, { recursive: true });
 fs.mkdirSync(modelDest, { recursive: true });
-for (const file of ['vision_bundle.mjs']) fs.copyFileSync(path.join(packageRoot, file), path.join(dest, file));
+for (const file of ['vision_bundle.js']) fs.copyFileSync(path.join(packageRoot, file), path.join(dest, file));
 for (const file of ['vision_wasm_internal.js', 'vision_wasm_internal.wasm']) fs.copyFileSync(path.join(packageRoot, 'wasm', file), path.join(wasmDest, file));
 const model = Buffer.from(fs.readFileSync(assetPath, 'utf8').trim(), 'base64');
 const actualModelSha256 = crypto.createHash('sha256').update(model).digest('hex');
