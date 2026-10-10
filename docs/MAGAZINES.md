@@ -9,13 +9,21 @@ This feature is isolated from greeting templates, Razorpay and publishing, and i
 ```
 reader form ─▶ private draft + photos (DATA_DIR/magazines/uploads/<id>)
             ─▶ preparing   live-dataset check vs. the mapping (blocks on drift)
-            ─▶ uploading   each photo -> Canva asset (asset ids, never URLs)
+            ─▶ framing     browser detects faces and prepares a per-slot focal crop (no identity recognition)
+            ─▶ uploading   framed photo -> Canva asset (asset ids, never URLs)
             ─▶ generating  POST /autofills (create_from_brand_template) -> NEW design per reader
             ─▶ exporting   PDF (+ PNG only when the design is 1 page) -> copied to DATA_DIR/magazines/output/<id>
             ─▶ ready       preview + downloads are served from Paigaam's stored files, never Canva's expiring URLs
 ```
 Every Canva id is saved the moment it is known, so **retry resumes** and never creates a second customer design.
 `update_design` is never called. Source photos are deleted when the magazine is ready.
+
+## Face-aware framing
+- Photo face detection uses MediaPipe BlazeFace Full Range Sparse (better suited to wider group photos) in a local browser Web Worker before any photo is sent to Paigaam. It detects face boxes only; it does not identify people or create face embeddings. See [MediaPipe model overview](https://github.com/google-ai-edge/mediapipe/blob/master/docs/solutions/models.md#face-detection).
+- If one or more faces are confidently detected, the uploaded image is reframed for that slot's target aspect ratio. Groups are kept together; if a tight crop cannot include everyone, the full image is fitted over a softly blurred background. No detection or detector failure leaves the source image unchanged.
+- Only the prepared image (face-framed, or unchanged if there are no confident detections / detection fails) is uploaded to Paigaam and then Canva. The existing upload privacy, cleanup, size, and validation rules remain in place.
+- Runtime/model assets are pinned, self-hosted, and prepared by `scripts/prepare-magazine-face.js` during `npm run build` and `postinstall`; the model is SHA-256 verified.
+- MediaPipe documents that source image inputs are processed on-device and not sent to Google; its library may send performance/utilization metrics. See [Face Detector for Web](https://ai.google.dev/edge/mediapipe/solutions/vision/face_detector/web_js).
 
 ## Fictional sample previews
 - A successful admin validation generates one clearly titled Canva Autofill sample for each multi-page template, using generic demo copy and the bundled AI-generated fictional photo pool. The sample design is saved in the connected Canva account's root folder.
