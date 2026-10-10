@@ -12,60 +12,92 @@ const STATUS_LABEL = {
 const badge = (s) => `<span class="badge badge--${esc(String(s || '').toLowerCase())}">${esc(STATUS_LABEL[s] || s || '—')}</span>`;
 const money = (n, cur) => (cur === 'INR' ? '₹' : '') + Number(n || 0).toLocaleString('en-IN');
 const fmtDT = (s) => s ? new Date(s.replace(' ', 'T') + 'Z').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
+const ADMIN_ICONS = {
+  home: '<path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/><path d="M3 10h18"/>',
+  templates: '<rect x="4" y="4" width="12" height="15" rx="1.5"/><path d="M8 8h7M8 11h7M8 14h4M16 7h4v13a1 1 0 0 1-1 1H8"/>',
+  paigaams: '<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/>',
+  orders: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M7 15h4"/>',
+  settings: '<circle cx="12" cy="12" r="3"/><path d="m19.4 15 .1.1 1.3 1-1.5 2.6-1.6-.7a8 8 0 0 1-1.6.9l-.3 1.8h-3l-.3-1.8a8 8 0 0 1-1.6-.9l-1.6.7-1.5-2.6 1.4-1.1a7 7 0 0 1 0-1.9l-1.4-1.1 1.5-2.6 1.6.7a8 8 0 0 1 1.6-.9l.3-1.8h3l.3 1.8a8 8 0 0 1 1.6.9l1.6-.7 1.5 2.6-1.4 1.1a7 7 0 0 1 0 1.9Z" transform="translate(-1.2 -1.2) scale(1.1)"/>',
+  magazine: '<path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v17H6.5A2.5 2.5 0 0 0 4 22z"/><path d="M4 5.5v14A2.5 2.5 0 0 1 6.5 17H20M8 7h8M8 10h8"/>',
+  video: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m10 9 5 3-5 3z"/>',
+  exit: '<path d="M10 17l5-5-5-5M15 12H3M12 3h6a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-6"/>',
+  more: '<circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/>',
+};
+const adminIcon = (name) => `<svg class="admin__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${ADMIN_ICONS[name] || ADMIN_ICONS.home}</svg>`;
 
 function adminShell(current, title, inner, opts = {}) {
-  const link = (href, label) => `<a href="${href}" ${current === href || (href !== '/admin' && current.startsWith(href + '/')) ? 'aria-current="page"' : ''}>${label}</a>`;
+  const link = (href, label, icon) => `<a href="${href}" aria-label="${esc(label)}" ${current === href || (href !== '/admin' && current.startsWith(href + '/')) ? 'aria-current="page"' : ''}>${adminIcon(icon)}<span>${label}</span></a>`;
   return page(title, `
 <div class="admin">
   <aside class="admin__side">
-    <a href="/" class="nav__brand" aria-label="Paigaam home">
-      ${logoFull(120, 'Paigaam')}
-    </a>
+    <div class="admin__brand-row">
+      <a href="/" class="nav__brand" aria-label="Paigaam home">${logoFull(120, 'Paigaam')}</a>
+      <span class="admin__brand-note">STUDIO CONSOLE</span>
+    </div>
     <nav class="admin__navigation" aria-label="Admin navigation">
+      <div class="admin__nav-caption">Workspace</div>
       <ul class="admin__nav">
-        <li>${link('/admin', 'Dashboard')}</li>
-        <li>${link('/admin/templates', 'Templates')}</li>
-        <li>${link('/admin/paigaams', 'Paigaams')}</li>
-        <li>${link('/admin/orders', 'Orders')}</li>
-        <li>${link('/admin/settings', 'Settings')}</li>
-        <li class="admin__nav-label">Paigaam tools</li>
-        <li>${link('/admin/magazines', 'Magazines')}</li>
-        <li>${link('/wedding-video', 'Video templates')}</li>
-        <li class="admin__nav-signout"><a href="/admin/logout">Sign out</a></li>
+        <li>${link('/admin', 'Overview', 'home')}</li>
+        <li>${link('/admin/templates', 'Templates', 'templates')}</li>
+        <li>${link('/admin/paigaams', 'Paigaams', 'paigaams')}</li>
+        <li>${link('/admin/orders', 'Orders', 'orders')}</li>
+        <li class="admin__nav-label">Creative studio</li>
+        <li>${link('/admin/magazines', 'Magazines', 'magazine')}</li>
+        <li>${link('/wedding-video', 'Video templates', 'video')}</li>
+        <li class="admin__nav-label">Configuration</li>
+        <li>${link('/admin/settings', 'Settings', 'settings')}</li>
       </ul>
     </nav>
+    <div class="admin__side-bottom"><div class="admin__side-foot"><span class="admin__status-dot"></span><span><b>Paigaam</b><small>STUDIO ADMIN</small></span></div><a class="admin__signout" href="/admin/logout">${adminIcon('exit')}<span>Sign out</span></a></div>
   </aside>
+  <nav class="admin__mobile-nav" aria-label="Quick admin navigation">
+    ${link('/admin', 'Home', 'home')}
+    ${link('/admin/templates', 'Templates', 'templates')}
+    ${link('/admin/paigaams', 'Paigaams', 'paigaams')}
+    ${link('/admin/orders', 'Orders', 'orders')}
+    <details class="admin__more">
+      <summary>${adminIcon('more')}<span>More</span></summary>
+      <div class="admin__more-panel">
+        ${link('/admin/magazines', 'Magazines', 'magazine')}
+        ${link('/wedding-video', 'Video templates', 'video')}
+        ${link('/admin/settings', 'Settings', 'settings')}
+        <a href="/admin/logout">${adminIcon('exit')}<span>Sign out</span></a>
+      </div>
+    </details>
+  </nav>
   <main class="admin__main">${inner}</main>
 </div>`, { noNav: true, noFooter: true, scripts: opts.scripts || '' });
 }
 
 /* ---------- login ---------- */
 function loginPage(error) {
-  return head('Admin sign in') + `
-<body>
-<main class="login">
-  <div class="login__card">
-    <div style="margin:0 auto 22px;display:flex;justify-content:center">${logoFull(170, 'Paigaam')}</div>
-    <h1>Welcome back.</h1>
-    <p class="sub">The quiet room where Paigaams are kept.</p>
-    ${error ? `<div class="form-error" role="alert">${esc(error)}</div>` : ''}
-    <form method="POST" action="/admin/login">
-      <div class="field"><label for="email">Email</label>
-        <input class="input" style="font-size:19px" type="email" id="email" name="email" required autocomplete="email"></div>
-      <div class="field"><label for="password">Password</label>
-        <input class="input" style="font-size:19px" type="password" id="password" name="password" required autocomplete="current-password"></div>
-      <button class="btn btn--primary" type="submit">Sign in</button>
-    </form>
-    <p style="margin-top:28px"><a href="/" style="font-size:13px;color:var(--taupe)">← Back to Paigaam</a></p>
-  </div>
+  return head('Paigaam Studio — Admin sign in') + `
+<body class="admin-login">
+<main class="admin-login__layout">
+  <section class="admin-login__story" aria-label="Paigaam Studio">
+    <a href="/" class="admin-login__brand" aria-label="Paigaam home">${logoFull(138, 'Paigaam')}</a>
+    <p class="admin__eyebrow">PRIVATE STUDIO · EST. IN CARE</p>
+    <div class="admin-login__story-copy"><span class="admin-login__seal" aria-hidden="true">P</span><h1>Meaningful things,<br>beautifully made.</h1><p>A quieter place to tend every note, keepsake and celebration.</p></div>
+    <div class="admin-login__story-foot"><span>PAIGAAM · STUDIO ADMIN</span><span aria-hidden="true">✳</span></div>
+  </section>
+  <section class="admin-login__form" aria-labelledby="adminLoginTitle">
+    <div class="admin-login__form-inner">
+      <p class="admin__eyebrow">YOUR WORKSPACE</p><h2 id="adminLoginTitle">Welcome back.</h2><p class="admin-login__lede">Sign in to manage the studio.</p>
+      ${error ? `<div class="form-error" role="alert">${esc(error)}</div>` : ''}
+      <form method="POST" action="/admin/login" class="admin-login__fields">
+        <div class="field"><label for="email">Email</label><input class="input" type="email" id="email" name="email" required autocomplete="username" inputmode="email"></div>
+        <div class="field"><label for="password">Password</label><input class="input" type="password" id="password" name="password" required autocomplete="current-password"></div>
+        <button class="btn btn--primary" type="submit">Enter the studio <span aria-hidden="true">→</span></button>
+      </form>
+      <a class="admin-login__back" href="/">← Back to Paigaam</a>
+    </div>
+  </section>
 </main>
 </body></html>`;
 }
 
 /* ---------- dashboard ---------- */
 function dashboard(stats, recent, opts = {}) {
-  const hr = new Date().getHours();
-  const greet = hr < 12 ? 'Good morning.' : hr < 17 ? 'Good afternoon.' : 'Good evening.';
   const today = new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
   const storageWarn = opts.persistent === false ? `
   <div style="border:1px solid #E4C08B;background:#FBF3E2;color:#8A6A2B;padding:18px 22px;margin:22px 0 0;border-radius:4px;font-size:14px;line-height:1.5">
@@ -73,32 +105,47 @@ function dashboard(stats, recent, opts = {}) {
     Attach a disk at <code style="font-size:12px">/var/data</code> (Render: Settings → Disks → Add Disk) and set <code style="font-size:12px">DATA_DIR=/var/data</code> to fix it permanently.
   </div>` : '';
   const inner = `
-  <p class="admin__greet">${greet}</p>
-  <p class="admin__date">${esc(today)}</p>
+  <section class="admin__welcome" aria-labelledby="adminWelcome">
+    <div class="admin__welcome-copy"><p class="admin__eyebrow">OVERVIEW · ${esc(today)}</p><h1 id="adminWelcome">Your Paigaam, in good order.</h1><p>One calm place to tend every greeting, keepsake and invitation.</p></div>
+    <span class="admin__welcome-mark" aria-hidden="true">P<span>✳</span></span>
+  </section>
   ${storageWarn}
-  <div class="stats">
-    <div class="stat"><div class="stat__num">${stats.templates}</div><div class="stat__label">Templates</div></div>
-    <div class="stat"><div class="stat__num">${stats.paigaams}</div><div class="stat__label">Paigaams</div></div>
-    <div class="stat"><div class="stat__num">${stats.orders}</div><div class="stat__label">Orders</div></div>
-    <div class="stat"><div class="stat__num">${stats.published}</div><div class="stat__label">Published</div></div>
-  </div>
-  <div class="admin__head"><h1>Recent Paigaams</h1><a class="btn btn--small" href="/admin/paigaams">View all</a></div>
+  <section class="admin__metrics" aria-label="Paigaam activity">
+    <div class="admin__metric"><span class="admin__metric-label">Templates</span><strong>${stats.templates}</strong><span class="admin__metric-note">Ready to personalize</span></div>
+    <div class="admin__metric"><span class="admin__metric-label">Paigaams</span><strong>${stats.paigaams}</strong><span class="admin__metric-note">Created with care</span></div>
+    <div class="admin__metric"><span class="admin__metric-label">Orders</span><strong>${stats.orders}</strong><span class="admin__metric-note">Across your studio</span></div>
+    <div class="admin__metric"><span class="admin__metric-label">Published</span><strong>${stats.published}</strong><span class="admin__metric-note">Out in the world</span></div>
+  </section>
+  <section class="admin__studio" aria-labelledby="adminStudioTitle">
+    <div class="admin__section-head"><div><p class="admin__eyebrow">CREATIVE STUDIO</p><h2 id="adminStudioTitle">Make something memorable</h2></div><span>Two ways to begin</span></div>
+    <div class="admin__tool-cards">
+      <a class="admin__tool-card admin__tool-card--magazine" href="/admin/magazines">
+        <span class="admin__tool-icon">${adminIcon('magazine')}</span><span class="admin__tool-index">01 / PRINT</span><h3>Magazines</h3><p>Shape photo stories, manage Canva designs and check generation.</p><span class="admin__tool-link">Open studio <b aria-hidden="true">↗</b></span>
+      </a>
+      <a class="admin__tool-card admin__tool-card--video" href="/wedding-video">
+        <span class="admin__tool-icon">${adminIcon('video')}</span><span class="admin__tool-index">02 / MOTION</span><h3>Video invitations</h3><p>Open the Remotion editor and compose a wedding invitation film.</p><span class="admin__tool-link">Open editor <b aria-hidden="true">↗</b></span>
+      </a>
+    </div>
+  </section>
+  <section class="admin__activity" aria-labelledby="adminActivityTitle">
+    <div class="admin__section-head"><div><p class="admin__eyebrow">THE LATEST</p><h2 id="adminActivityTitle">Recent Paigaams</h2></div><a class="admin__text-link" href="/admin/paigaams">View all <span aria-hidden="true">↗</span></a></div>
   ${recent.length ? `<div class="admin__table-wrap"><table class="table"><thead><tr>
     <th>Customer</th><th>Template</th><th>Status</th><th>Payment</th><th>Created</th><th></th>
   </tr></thead><tbody>
     ${recent.map(p => `<tr>
-      <td class="serif">${esc(p.customer_name || '—')}</td>
-      <td>${esc(p.template_name)}</td>
-      <td>${badge(p.status)}</td>
-      <td>${badge(p.payment_status)}</td>
-      <td style="color:var(--taupe)">${fmtDT(p.created_at)}</td>
-      <td><a class="link-btn" href="/admin/paigaams/${esc(p.id)}">Open</a></td>
+      <td data-label="Customer" class="serif">${esc(p.customer_name || '—')}</td>
+      <td data-label="Template">${esc(p.template_name)}</td>
+      <td data-label="Status">${badge(p.status)}</td>
+      <td data-label="Payment">${badge(p.payment_status)}</td>
+      <td data-label="Created" style="color:var(--taupe)">${fmtDT(p.created_at)}</td>
+      <td data-label="Open"><a class="link-btn" href="/admin/paigaams/${esc(p.id)}">Open <span aria-hidden="true">↗</span></a></td>
     </tr>`).join('')}
   </tbody></table></div>` : `
   <div class="empty" style="padding:70px 20px">
     <h1 style="font-size:34px">No Paigaams yet.</h1>
     <p>They'll appear here the moment a customer personalizes one.</p>
-  </div>`}`;
+  </div>`}
+  </section>`;
   return adminShell('/admin', 'Dashboard', inner);
 }
 
@@ -110,12 +157,12 @@ function templatesAdmin(templates) {
     <th>Name</th><th>Category</th><th>Price</th><th>Status</th><th>Created</th><th>Actions</th>
   </tr></thead><tbody>
   ${templates.map(t => `<tr>
-    <td class="serif">${esc(t.name)}</td>
-    <td>${esc(t.category)}</td>
-    <td>${money(t.price, t.currency)}</td>
-    <td>${badge(t.status)}</td>
-    <td style="color:var(--taupe)">${fmtDT(t.created_at)}</td>
-    <td><div class="table-actions">
+    <td data-label="Template" class="serif">${esc(t.name)}</td>
+    <td data-label="Category">${esc(t.category)}</td>
+    <td data-label="Price">${money(t.price, t.currency)}</td>
+    <td data-label="Status">${badge(t.status)}</td>
+    <td data-label="Created" style="color:var(--taupe)">${fmtDT(t.created_at)}</td>
+    <td data-label="Actions"><div class="table-actions">
       <a class="link-btn link-btn--muted" href="/templates/${esc(t.slug)}" target="_blank" rel="noopener">View</a>
       <a class="link-btn" href="/admin/templates/${esc(t.id)}">Edit</a>
       <form method="POST" action="/admin/templates/${esc(t.id)}/duplicate" style="display:inline"><button class="link-btn link-btn--muted" type="submit">Duplicate</button></form>
@@ -209,13 +256,13 @@ function paigaamsAdmin(paigaams) {
     <th>Customer</th><th>Template</th><th>Created</th><th>Payment</th><th>Status</th><th>Published</th><th>Actions</th>
   </tr></thead><tbody>
   ${paigaams.map(p => `<tr>
-    <td class="serif">${esc(p.customer_name || '—')}</td>
-    <td>${esc(p.template_name)}</td>
-    <td style="color:var(--taupe)">${fmtDT(p.created_at)}</td>
-    <td>${badge(p.payment_status)}</td>
-    <td>${badge(p.status)}</td>
-    <td>${p.slug ? `<a class="link-btn link-btn--muted" href="/p/${esc(p.slug)}" target="_blank" rel="noopener">/p/${esc(p.slug)}</a>` : '—'}</td>
-    <td><div class="table-actions"><a class="link-btn" href="/admin/paigaams/${esc(p.id)}">Open</a></div></td>
+    <td data-label="Customer" class="serif">${esc(p.customer_name || '—')}</td>
+    <td data-label="Template">${esc(p.template_name)}</td>
+    <td data-label="Created" style="color:var(--taupe)">${fmtDT(p.created_at)}</td>
+    <td data-label="Payment">${badge(p.payment_status)}</td>
+    <td data-label="Status">${badge(p.status)}</td>
+    <td data-label="Published">${p.slug ? `<a class="link-btn link-btn--muted" href="/p/${esc(p.slug)}" target="_blank" rel="noopener">/p/${esc(p.slug)}</a>` : '—'}</td>
+    <td data-label="Actions"><div class="table-actions"><a class="link-btn" href="/admin/paigaams/${esc(p.id)}">Open <span aria-hidden="true">↗</span></a></div></td>
   </tr>`).join('')}
   </tbody></table></div>` : `
   <div class="empty" style="padding:70px 20px">
@@ -366,13 +413,13 @@ function ordersAdmin(orders) {
     <th>Order</th><th>Customer</th><th>Paigaam</th><th>Amount</th><th>Status</th><th>Created</th><th></th>
   </tr></thead><tbody>
   ${orders.map(o => `<tr>
-    <td style="font-family:ui-monospace,monospace;font-size:12.5px">#${esc(o.id.slice(0, 8).toUpperCase())}${o.razorpay_payment_id ? `<br><span style="font-size:10.5px;color:var(--taupe)">rzp pay: ${esc(String(o.razorpay_payment_id).slice(0, 18))}</span>` : ''}</td>
-    <td class="serif">${esc(o.customer_name || '—')}</td>
-    <td>${esc(o.template_name || '—')}</td>
-    <td>${money(o.amount, o.currency)}</td>
-    <td>${badge(o.status)}</td>
-    <td style="color:var(--taupe)">${fmtDT(o.created_at)}</td>
-    <td><div class="table-actions">
+    <td data-label="Order" style="font-family:ui-monospace,monospace;font-size:12.5px">#${esc(o.id.slice(0, 8).toUpperCase())}${o.razorpay_payment_id ? `<br><span style="font-size:10.5px;color:var(--taupe)">rzp pay: ${esc(String(o.razorpay_payment_id).slice(0, 18))}</span>` : ''}</td>
+    <td data-label="Customer" class="serif">${esc(o.customer_name || '—')}</td>
+    <td data-label="Paigaam">${esc(o.template_name || '—')}</td>
+    <td data-label="Amount">${money(o.amount, o.currency)}</td>
+    <td data-label="Status">${badge(o.status)}</td>
+    <td data-label="Created" style="color:var(--taupe)">${fmtDT(o.created_at)}</td>
+    <td data-label="Actions"><div class="table-actions">
       ${o.status === 'pending' ? `
       <form method="POST" action="/admin/orders/${esc(o.id)}/status" style="display:inline"><input type="hidden" name="status" value="paid"><button class="link-btn" type="submit">Mark paid</button></form>
       <form method="POST" action="/admin/orders/${esc(o.id)}/status" style="display:inline"><input type="hidden" name="status" value="cancelled"><button class="link-btn link-btn--danger" type="submit">Cancel</button></form>` : ''}
