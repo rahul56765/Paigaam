@@ -5,6 +5,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const admin = require('../pages/admin');
 const magazineViews = require('../lib/magazines/views');
+const { head } = require('../lib/layout');
 
 const stats = { templates: 1, paigaams: 2, orders: 3, published: 1 };
 const pages = [
@@ -14,6 +15,10 @@ const pages = [
   admin.ordersAdmin([]),
   admin.settingsAdmin({ whatsapp_number: '', business_name: '', currency: 'INR', contact_message: '' }, false),
 ];
+
+test('shared page shell cache-busts the updated stylesheet', () => {
+  assert.match(head('Admin test'), /href="\/css\/paigaam\.css\?v=20261011-admin-mobile"/);
+});
 
 test('admin navigation exposes core pages and Paigaam tools from every admin screen', () => {
   for (const html of pages) {
