@@ -52,6 +52,22 @@ test('Birthday Story maps exactly 24 live fields; 19 required photo slots and on
   ]);
 });
 
+test('A Little Love Story maps 12 required photo slots to Canva fields with exact capitalization', () => {
+  const m = registry.bySlug('little-love-story');
+  assert.ok(m); assert.equal(m.pageCount, 12); assert.equal(m.canvaTemplateId, 'EAHXm76f8Ik');
+  assert.equal(m.fields.length, 0);
+  assert.equal(m.images.length, 12); assert.equal(validate.missingImages(m, []).length, 12);
+  assert.deepEqual(m.images.map(i => i.canvaName), Array.from({ length: 12 }, (_, i) => `Photo_${i + 1}`));
+  const ds = goodDataset(m);
+  assert.equal(Object.keys(ds).length, 12);
+  assert.equal(validate.compareDataset(m, ds).ok, true);
+  ds.photo_1 = { type: 'image' };
+  assert.equal(validate.compareDataset(m, ds).ok, false); // Canva names are case-sensitive and exact
+  const html = require('../lib/magazines/views').formPage(m);
+  assert.equal((html.match(/class="mag-slot" data-slot=/g) || []).length, 12);
+  assert.doesNotMatch(html, /<(?:input|textarea)[^>]*data-field=/);
+});
+
 test('one Birthday Story wish is split across all three text fields without losing words', () => {
   const m = registry.bySlug('birthday-story');
   const text = 'Happy birthday to my favorite person. I love you so much and wish you joy!';

@@ -55,7 +55,7 @@ Test-only (honoured only when `CANVA_TEST_MODE=1`): `CANVA_API_BASE`, `CANVA_AUT
 ## Preparing a Canva Brand Template
 1. Work on a **copy** of the design (never the master you rely on).
 2. Desktop editor → Apps → **Data autofill** → *Custom* → tick "I've connected Canva…" → Continue.
-3. Select each changeable element → **Data field** → name it. Names must match `canvaName` in `lib/magazines/registry.js` exactly: lowercase, underscores, unique.
+3. Select each changeable element → **Data field** → name it. Names must match `canvaName` in `lib/magazines/registry.js` exactly, including capitalization; each name must be unique.
 4. Continue → **Publish as Brand Template**. Note the template ID from its URL (`/brand/brand-templates/<ID>`).
 5. Add/adjust the entry in `lib/magazines/registry.js` (slug, name, `canvaTemplateId`, `pageCount`, fields, photo slots, limits).
 6. Admin → **Validate vs Canva**. Any missing/extra/mistyped field **blocks publishing** (and un-publishes a live design if it drifts later).
@@ -63,6 +63,7 @@ Test-only (honoured only when `CANVA_TEST_MODE=1`): `CANVA_API_BASE`, `CANVA_AUT
 Sample designs:
 - `birthday-collage` → Brand Template `EAHXVxrdrCk` (1 page): text `headline` (optional, default “HAPPY BIRTHDAY”) and photos `photo_1`…`photo_9` (all required).
 - `birthday-story` → Brand Template `EAHXVwHhiXs` (7 pages): 19 required photos (`photo_1`…`photo_19`); optional 90-character `wish` on page 1 is split into `wish_line_1`, `wish_line_2`, `wish_line_3`; required `letter_page3` (450 characters) and `letter_page7` (900 characters). The page 6 decorative letter and other fixed text remain unchanged. The template is published; its fictional sample PDF is generated automatically if missing.
+- `little-love-story` → Brand Template `EAHXm76f8Ik` (12 pages): 12 required photo fields named exactly `Photo_1`…`Photo_12`; no text fields are reader-editable. PDF only; its fictional sample PDF is generated automatically after successful validation and publication.
 
 **Paigaam image limits** (not Canva's API limits): max 8 MB, minimum 400 px short side, JPG/PNG/WebP. `birthday-collage` headline limit is 24 characters.
 
