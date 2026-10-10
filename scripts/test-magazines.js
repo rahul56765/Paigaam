@@ -108,6 +108,11 @@ const root = path.join(__dirname, '..');
     const cat = await (await req(null, 'GET', '/magazines')).text(); assert.match(cat, /<img src="\/magazines\/preview\/birthday-collage"/); // sample on the catalogue card
     const prev = await req(null, 'GET', '/magazines/preview/birthday-collage');
     assert.equal(prev.status, 200); assert.equal(prev.headers.get('content-type'), 'image/png'); assert.ok((await prev.arrayBuffer()).byteLength > 50);
+    for (const asset of ['/js/magazine-face-framing.mjs', '/js/magazine-face-detector-worker.mjs', '/vendor/mediapipe/vision_bundle.mjs', '/vendor/mediapipe/wasm/vision_wasm_internal.wasm', '/vendor/mediapipe/models/blaze_face_full_range_sparse.tflite']) {
+      const response = await req(null, 'HEAD', asset);
+      assert.equal(response.status, 200, `face-framing asset is served: ${asset}`);
+      assert.ok(Number(response.headers.get('content-length')) > 1000, `asset is not empty: ${asset}`);
+    }
     assert.equal((await req(null, 'GET', '/magazines/preview/nope')).status, 404);
     assert.equal((await req(null, 'GET', '/magazines/preview/..%2F..%2Fpaigaam')).status, 404);
     ok('publish is gated on a clean live-dataset validation; mismatch shows admin-facing detail');
