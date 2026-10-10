@@ -1,11 +1,14 @@
-import { FaceDetector, FilesetResolver } from '/vendor/mediapipe/vision_bundle.mjs';
-
+'use strict';
+// MediaPipe 1.1.0's WASM loader needs a classic worker (importScripts), not an ESM worker.
+importScripts('/vendor/mediapipe/vision_bundle.js');
+const { FaceDetector, FilesetResolver } = self.Vision;
 let detector;
+
 async function getDetector() {
   if (!detector) {
-    const vision = await FilesetResolver.forVisionTasks('/vendor/mediapipe/wasm');
+    const vision = await FilesetResolver.forVisionTasks(new URL('/vendor/mediapipe/wasm/', self.location.href).href);
     detector = await FaceDetector.createFromOptions(vision, {
-      baseOptions: { modelAssetPath: '/vendor/mediapipe/models/blaze_face_full_range_sparse.tflite', delegate: 'CPU' },
+      baseOptions: { modelAssetPath: new URL('/vendor/mediapipe/models/blaze_face_full_range_sparse.tflite', self.location.href).href, delegate: 'CPU' },
       runningMode: 'IMAGE',
       minDetectionConfidence: 0.55,
       minSuppressionThreshold: 0.3,
