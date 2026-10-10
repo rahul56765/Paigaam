@@ -52,13 +52,15 @@ Test-only (honoured only when `CANVA_TEST_MODE=1`): `CANVA_API_BASE`, `CANVA_AUT
 5. Railway → service variables: set the three `CANVA_*` names above, then deploy.
 6. Admin → **Magazines** (`/admin/magazines`) → **Connect Canva account** → approve in Canva.
 
-## Preparing a Canva Brand Template
+## Adding a Canva Brand Template without a code change
 1. Work on a **copy** of the design (never the master you rely on).
-2. Desktop editor → Apps → **Data autofill** → *Custom* → tick "I've connected Canva…" → Continue.
-3. Select each changeable element → **Data field** → name it. Names must match `canvaName` in `lib/magazines/registry.js` exactly, including capitalization; each name must be unique.
-4. Continue → **Publish as Brand Template**. Note the template ID from its URL (`/brand/brand-templates/<ID>`).
-5. Add/adjust the entry in `lib/magazines/registry.js` (slug, name, `canvaTemplateId`, `pageCount`, fields, photo slots, limits).
-6. Admin → **Validate vs Canva**. Any missing/extra/mistyped field **blocks publishing** (and un-publishes a live design if it drifts later).
+2. In Canva, add Data Autofill fields to every changeable text/photo element. Give each a unique name and publish the copy as a Brand Template. Note the ID from `/brand/brand-templates/<ID>`.
+3. In Paigaam Admin → **Magazines** → **Add magazine from Canva**, paste the ID and choose **Fetch Canva fields**. Paigaam imports the Canva title and exact dataset field names/types.
+4. Configure the URL slug, catalogue name/description, page count, reader labels, required/optional fields, text limits, image-frame ratios, and hints. Canva does not expose a reliable page count, so enter it from the design. Save as a draft.
+5. Saving rechecks the form against Canva's current dataset. **Validate vs Canva** then records a successful live check and refreshes the template preview; any missing, extra, unsupported, or mistyped field blocks publication. Dataset drift later blocks generation and returns the template to draft.
+6. Publish from Admin. The catalogue card, reader form, preview, and generation flow use the saved mapping—no registry code edit or redeploy is needed for newly imported templates.
+
+The three original code-defined designs are seeded into SQLite once for backward compatibility; new templates are stored as editable admin mappings. Published admin-managed mappings must be unpublished before editing; edits clear validation. Orders keep a configuration snapshot so a later mapping edit does not change an existing draft or retry.
 
 Sample designs:
 - `birthday-collage` → Brand Template `EAHXVxrdrCk` (1 page): text `headline` (optional, default “HAPPY BIRTHDAY”) and photos `photo_1`…`photo_9` (all required).

@@ -37,6 +37,27 @@ test('mapping validation: matches, missing, type mismatch and unmapped fields', 
   assert.equal(validate.compareDataset(m, null).ok, false);
 });
 
+test('admin mapping import derives stable keys and requires exact complete Canva field coverage', () => {
+  const build = require('../lib/magazines/templateConfig');
+  const dataset = { Photo_1: { type: 'image' }, Couple_Name: { type: 'text' } };
+  const mapping = build.fromDataset({ name: 'A New Story', tagline: 'A photo story.', canvaTemplateId: 'TEMPLATE123', pageCount: 8, dataset });
+  assert.equal(mapping.slug, 'a-new-story');
+  assert.deepEqual(mapping.images.map(x => x.canvaName), ['Photo_1']);
+  assert.deepEqual(mapping.fields.map(x => x.canvaName), ['Couple_Name']);
+  assert.equal(build.validateMapping(mapping, dataset).ok, true);
+  const missing = build.validateMapping({ ...mapping, images: [] }, dataset);
+  assert.equal(missing.ok, false);
+  assert.ok(missing.errors.some(x => x.code === 'unmapped_in_canva' && x.field === 'Photo_1'));
+  const wrong = build.validateMapping({ ...mapping, images: [{ ...mapping.images[0], canvaName: 'Photo_2' }] }, dataset);
+  assert.equal(wrong.ok, false);
+  assert.ok(wrong.errors.some(x => x.code === 'missing_in_canva' && x.field === 'Photo_2'));
+  assert.ok(wrong.errors.some(x => x.code === 'unmapped_in_canva' && x.field === 'Photo_1'));
+  assert.equal(build.validateMapping({ ...mapping, pageCount: 0 }, dataset).ok, false);
+  const unknownPages = build.fromDataset({ name: 'No Page Count', dataset, canvaTemplateId: 'TEMPLATE123' });
+  assert.equal(unknownPages.pageCount, 0);
+  assert.equal(build.validateMapping(unknownPages, dataset).ok, false);
+});
+
 test('Birthday Story maps exactly 24 live fields; 19 required photo slots and one logical wish to three Canva text targets', () => {
   const m = registry.bySlug('birthday-story');
   assert.ok(m); assert.equal(m.pageCount, 7); assert.equal(m.canvaTemplateId, 'EAHXVwHhiXs');
@@ -50,6 +71,22 @@ test('Birthday Story maps exactly 24 live fields; 19 required photo slots and on
   assert.deepEqual(result.problems.map(p => `${p.code}:${p.field}`).sort(), [
     'missing_in_canva:photo_19', 'type_mismatch:wish_line_2', 'unmapped_in_canva:unmapped',
   ]);
+});
+
+test('admin import/editor UI exposes Canva dataset fields and lets admins configure a draft', () => {
+  const views = require('../lib/magazines/views');
+  const importHtml = views.adminImportPage();
+  assert.match(importHtml, /Canva Brand Template ID/);
+  assert.match(importHtml, /Fetch Canva fields/);
+  const html = views.adminEditorPage({ mapping: {
+    slug: 'new-story', name: 'New Story', tagline: 'Photos together.', canvaTemplateId: 'TEMPLATE123', pageCount: 8,
+    fields: [{ key: 'couple_name', canvaName: 'Couple_Name', label: 'Couple name', type: 'text', required: true, maxLength: 60 }],
+    images: [{ key: 'photo_1', canvaName: 'Photo_1', label: 'Photo 1', type: 'image', required: true, frameAspect: 1.2 }],
+    limits: require('../lib/magazines/registry').IMAGE_LIMITS, adminManaged: true,
+  }, editableSlug: true });
+  assert.match(html, /Couple_Name/); assert.match(html, /Photo_1/);
+  assert.match(html, /data-meta="pageCount"/); assert.match(html, /Save draft/);
+  assert.match(html, /\/admin\/magazines\/save/);
 });
 
 test('A Little Love Story maps 12 required photo slots to Canva fields with exact capitalization', () => {
@@ -66,6 +103,22 @@ test('A Little Love Story maps 12 required photo slots to Canva fields with exac
   const html = require('../lib/magazines/views').formPage(m);
   assert.equal((html.match(/class="mag-slot" data-slot=/g) || []).length, 12);
   assert.doesNotMatch(html, /<(?:input|textarea)[^>]*data-field=/);
+});
+
+test('template edits invalidate validation while existing orders retain their mapping snapshot', () => {
+  const m = { ...M(), slug: 'admin-snapshot-test', name: 'Before Edit', canvaTemplateId: 'SNAPSHOT1', adminManaged: true };
+  store.createTemplate(m);
+  store.saveValidation(m.slug, { ok: true, problems: [], checkedFields: 10 });
+  store.setTemplateStatus(m.slug, 'published');
+  const order = store.createOrder(m.slug, store.hashOwner(crypto.randomBytes(32).toString('hex')), m);
+  store.setTemplateStatus(m.slug, 'draft');
+  const updated = { ...m, name: 'After Edit', tagline: 'Updated reader copy.' };
+  assert.ok(store.saveTemplateMapping(m.slug, updated));
+  const row = store.getTemplate(m.slug);
+  assert.equal(row.mapping.name, 'After Edit');
+  assert.equal(row.status, 'draft'); assert.equal(row.validated_at, null); assert.deepEqual(row.validation, {});
+  assert.equal(store.getOrder(order.id).mapping.name, 'Before Edit');
+  assert.equal(store.getOrder(order.id).mapping.canvaTemplateId, 'SNAPSHOT1');
 });
 
 test('one Birthday Story wish is split across all three text fields without losing words', () => {
@@ -206,7 +259,7 @@ function seedOrder(slug = 'birthday-collage', fields = { headline: '' }) {
   }
   return order.id;
 }
-const publish = (slug) => { const m = registry.bySlug(slug); mock.st.dataset = goodDataset(m); store.saveValidation(slug, validate.compareDataset(m, mock.st.dataset)); store.setTemplateStatus(slug, 'published'); };
+const publish = (slug) => { const m = registry.bySlug(slug) || store.getMapping(slug); mock.st.dataset = goodDataset(m); store.saveValidation(slug, validate.compareDataset(m, mock.st.dataset)); store.setTemplateStatus(slug, 'published'); };
 
 test('happy path: preparing→uploading→generating→exporting→ready; asset ids (not URLs); new design; durable files', async () => {
   publish('birthday-collage');
@@ -312,6 +365,19 @@ test('live dataset drift blocks generation and un-publishes the design', async (
   assert.equal(store.getTemplate(m.slug).status, 'draft');
   assert.equal(store.getTemplate(m.slug).validation.ok, false);
   publish(m.slug); // restore for later tests
+});
+
+test('optional image slots may be omitted and are not sent to Canva Autofill', async () => {
+  const mapping = { ...M(), slug: 'optional-photo-test', name: 'Optional Photo', canvaTemplateId: 'OPTIONAL1',
+    images: [{ ...M().images[0], key: 'optional_photo', canvaName: 'optional_photo', required: false }] };
+  store.createTemplate(mapping);
+  mock.st.dataset = goodDataset(mapping); publish(mapping.slug);
+  const id = store.createOrder(mapping.slug, store.hashOwner(crypto.randomBytes(32).toString('hex')), mapping).id;
+  assert.equal(generate.start(id).started, true);
+  await waitFor(() => store.getOrder(id).status === 'ready');
+  const data = mock.st.autofills.at(-1).data;
+  assert.equal('optional_photo' in data, false);
+  mock.st.dataset = goodDataset(M());
 });
 
 test('PNG is produced only for single-page designs (multi-page: PDF only)', async () => {
