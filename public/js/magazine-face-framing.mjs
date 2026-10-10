@@ -1,5 +1,5 @@
-import { getFaces } from './magazine-face-worker-client.mjs';
-import { faceCropRect } from './magazine-face-geometry.mjs';
+import { getFaces } from './magazine-face-worker-client.mjs?v=3';
+import { faceCropRect } from './magazine-face-geometry.mjs?v=3';
 
 export { faceCropRect };
 

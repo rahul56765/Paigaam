@@ -1,6 +1,6 @@
 'use strict';
 // MediaPipe 1.1.0's WASM loader needs a classic worker (importScripts), not an ESM worker.
-importScripts('/vendor/mediapipe/vision_bundle.js');
+importScripts('/vendor/mediapipe/vision_bundle.js?v=3');
 const { FaceDetector, FilesetResolver } = self.Vision;
 let detector;
 
