@@ -14,21 +14,26 @@ const money = (n, cur) => (cur === 'INR' ? '₹' : '') + Number(n || 0).toLocale
 const fmtDT = (s) => s ? new Date(s.replace(' ', 'T') + 'Z').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
 
 function adminShell(current, title, inner, opts = {}) {
-  const link = (href, label) => `<a href="${href}" ${current === href ? 'aria-current="page"' : ''}>${label}</a>`;
+  const link = (href, label) => `<a href="${href}" ${current === href || (href !== '/admin' && current.startsWith(href + '/')) ? 'aria-current="page"' : ''}>${label}</a>`;
   return page(title, `
 <div class="admin">
   <aside class="admin__side">
-    <a href="/" class="nav__brand" aria-label="Paigaam home" style="display:inline-block">
+    <a href="/" class="nav__brand" aria-label="Paigaam home">
       ${logoFull(120, 'Paigaam')}
     </a>
-    <ul class="admin__nav">
-      <li>${link('/admin', 'Dashboard')}</li>
-      <li>${link('/admin/templates', 'Templates')}</li>
-      <li>${link('/admin/paigaams', 'Paigaams')}</li>
-      <li>${link('/admin/orders', 'Orders')}</li>
-      <li>${link('/admin/settings', 'Settings')}</li>
-      <li><a href="/admin/logout">Sign out</a></li>
-    </ul>
+    <nav class="admin__navigation" aria-label="Admin navigation">
+      <ul class="admin__nav">
+        <li>${link('/admin', 'Dashboard')}</li>
+        <li>${link('/admin/templates', 'Templates')}</li>
+        <li>${link('/admin/paigaams', 'Paigaams')}</li>
+        <li>${link('/admin/orders', 'Orders')}</li>
+        <li>${link('/admin/settings', 'Settings')}</li>
+        <li class="admin__nav-label">Paigaam tools</li>
+        <li>${link('/admin/magazines', 'Magazines')}</li>
+        <li>${link('/wedding-video', 'Video templates')}</li>
+        <li class="admin__nav-signout"><a href="/admin/logout">Sign out</a></li>
+      </ul>
+    </nav>
   </aside>
   <main class="admin__main">${inner}</main>
 </div>`, { noNav: true, noFooter: true, scripts: opts.scripts || '' });
@@ -78,7 +83,7 @@ function dashboard(stats, recent, opts = {}) {
     <div class="stat"><div class="stat__num">${stats.published}</div><div class="stat__label">Published</div></div>
   </div>
   <div class="admin__head"><h1>Recent Paigaams</h1><a class="btn btn--small" href="/admin/paigaams">View all</a></div>
-  ${recent.length ? `<table class="table"><thead><tr>
+  ${recent.length ? `<div class="admin__table-wrap"><table class="table"><thead><tr>
     <th>Customer</th><th>Template</th><th>Status</th><th>Payment</th><th>Created</th><th></th>
   </tr></thead><tbody>
     ${recent.map(p => `<tr>
@@ -89,7 +94,7 @@ function dashboard(stats, recent, opts = {}) {
       <td style="color:var(--taupe)">${fmtDT(p.created_at)}</td>
       <td><a class="link-btn" href="/admin/paigaams/${esc(p.id)}">Open</a></td>
     </tr>`).join('')}
-  </tbody></table>` : `
+  </tbody></table></div>` : `
   <div class="empty" style="padding:70px 20px">
     <h1 style="font-size:34px">No Paigaams yet.</h1>
     <p>They'll appear here the moment a customer personalizes one.</p>
@@ -101,7 +106,7 @@ function dashboard(stats, recent, opts = {}) {
 function templatesAdmin(templates) {
   const inner = `
   <div class="admin__head"><h1>Templates</h1><a class="btn btn--primary btn--small" href="/admin/templates/new">New template</a></div>
-  <table class="table"><thead><tr>
+  <div class="admin__table-wrap"><table class="table"><thead><tr>
     <th>Name</th><th>Category</th><th>Price</th><th>Status</th><th>Created</th><th>Actions</th>
   </tr></thead><tbody>
   ${templates.map(t => `<tr>
@@ -121,7 +126,7 @@ function templatesAdmin(templates) {
       <form method="POST" action="/admin/templates/${esc(t.id)}/delete" style="display:inline" onsubmit="return confirm('Delete ${esc(t.name)}? Paigaams made with it will also be removed.')"><button class="link-btn link-btn--danger" type="submit">Delete</button></form>
     </div></td>
   </tr>`).join('')}
-  </tbody></table>`;
+  </tbody></table></div>`;
   return adminShell('/admin/templates', 'Templates', inner);
 }
 
@@ -135,7 +140,7 @@ function templateForm(tpl, isNew) {
   const inner = `
   <div class="admin__head"><h1>${isNew ? 'New template' : 'Edit — ' + esc(tpl.name)}</h1></div>
   <form method="POST" action="${action}" style="max-width:760px">
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 36px">
+    <div class="admin__form-grid" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 36px">
       <div class="field"><label for="name">Template name <span class="req">*</span></label>
         <input class="input" style="font-size:19px" id="name" name="name" value="${esc(tpl.name || '')}" required></div>
       <div class="field"><label for="slug">Slug <span class="req">*</span></label>
@@ -163,7 +168,7 @@ function templateForm(tpl, isNew) {
 
     <h2 style="font-size:26px;margin:46px 0 8px">Theme</h2>
     <p class="hint" style="margin-bottom:22px">Palette and motif for the published experience.</p>
-    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:0 36px">
+    <div class="admin__form-grid" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 36px">
       ${[['bg', 'Background', '#FBF4ED'], ['ink', 'Ink', '#3B2420'], ['accent', 'Accent', '#8F1018'], ['soft', 'Soft section', '#EFE3D6']].map(([k, lbl, dflt]) => `
       <div class="field"><label for="theme_${k}">${lbl}</label>
         <input class="input" style="font-size:17px" id="theme_${k}" name="theme_${k}" value="${esc(theme[k] || dflt)}"></div>`).join('')}
@@ -200,7 +205,7 @@ function templateForm(tpl, isNew) {
 function paigaamsAdmin(paigaams) {
   const inner = `
   <div class="admin__head"><h1>Paigaams</h1></div>
-  ${paigaams.length ? `<table class="table"><thead><tr>
+  ${paigaams.length ? `<div class="admin__table-wrap"><table class="table"><thead><tr>
     <th>Customer</th><th>Template</th><th>Created</th><th>Payment</th><th>Status</th><th>Published</th><th>Actions</th>
   </tr></thead><tbody>
   ${paigaams.map(p => `<tr>
@@ -212,7 +217,7 @@ function paigaamsAdmin(paigaams) {
     <td>${p.slug ? `<a class="link-btn link-btn--muted" href="/p/${esc(p.slug)}" target="_blank" rel="noopener">/p/${esc(p.slug)}</a>` : '—'}</td>
     <td><div class="table-actions"><a class="link-btn" href="/admin/paigaams/${esc(p.id)}">Open</a></div></td>
   </tr>`).join('')}
-  </tbody></table>` : `
+  </tbody></table></div>` : `
   <div class="empty" style="padding:70px 20px">
     <h1 style="font-size:34px">No Paigaams yet.</h1>
     <p>Share your templates, and they'll begin to arrive.</p>
@@ -257,9 +262,9 @@ function paigaamDetail(p, baseUrl) {
     </div>
   </div>` : ''}
 
-  <div style="display:grid;grid-template-columns:1.2fr 1fr;gap:44px;align-items:start" class="pg-detail-grid">
+  <div style="display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:44px;align-items:start" class="pg-detail-grid">
     <div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:22px;margin-bottom:34px">
+      <div class="admin__detail-stats" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px;margin-bottom:34px">
         <div class="stat"><div class="stat__label" style="margin-bottom:8px">Template</div><div class="serif" style="font-size:24px">${esc(p.template_name)}</div></div>
         <div class="stat"><div class="stat__label" style="margin-bottom:8px">Amount</div><div class="serif" style="font-size:24px">${money(p.template_price, p.template_currency)}</div></div>
         <div class="stat"><div class="stat__label" style="margin-bottom:8px">Payment</div>${badge(p.payment_status)}</div>
@@ -357,7 +362,7 @@ function qrCardHTML(url, names) {
 function ordersAdmin(orders) {
   const inner = `
   <div class="admin__head"><h1>Orders</h1></div>
-  ${orders.length ? `<table class="table"><thead><tr>
+  ${orders.length ? `<div class="admin__table-wrap"><table class="table"><thead><tr>
     <th>Order</th><th>Customer</th><th>Paigaam</th><th>Amount</th><th>Status</th><th>Created</th><th></th>
   </tr></thead><tbody>
   ${orders.map(o => `<tr>
@@ -374,7 +379,7 @@ function ordersAdmin(orders) {
       <a class="link-btn link-btn--muted" href="/admin/paigaams/${esc(o.paigaam_id)}">Paigaam</a>
     </div></td>
   </tr>`).join('')}
-  </tbody></table>` : `
+  </tbody></table></div>` : `
   <div class="empty" style="padding:70px 20px">
     <h1 style="font-size:34px">No orders yet.</h1>
     <p>When a customer continues on WhatsApp, their order waits here for your confirmation.</p>

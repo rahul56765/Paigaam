@@ -63,6 +63,7 @@ limits), `lib/weddingVideo/store.js` (SQLite tables `wv_*`, media on disk), `lib
 ## Routes
 
 - `GET /wedding-video` editor · `GET /w/:id` share page (film, MP4 downloads, RSVP, wishes)
+- Admin navigation provides a “Video templates” shortcut to `/wedding-video`; the editor remains at its existing route.
 - `GET /wedding-video/assets/...` template art, fonts, stories · `GET /wedding-video/static/editor.js`
 - `GET /api/wedding-video/config` sample data, music library, story library
 - `POST /api/wedding-video/invites` create (owner cookie is set) · `GET|PUT /api/wedding-video/invites/:id`
@@ -157,6 +158,7 @@ node scripts/stills.mjs 9 17 26                      # quick visual checks
 
 ## Changelog
 
+- **2026-10-11** The Paigaam admin panel adds mobile-friendly navigation to the video editor; the existing `/wedding-video` route and video-generation behavior are unchanged.
 - **2026-10-10** Deployed to production (PR #19). Story scenes replace per-customer generation. The
   Railway build script and Nix packages were added (PRs #20, #21, #22). First production render verified
   at 31.6 s. README rewritten as the standing reference.
