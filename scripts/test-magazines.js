@@ -11,6 +11,13 @@ const root = path.join(__dirname, '..');
   const sock = net.createServer(); sock.listen(0, '127.0.0.1'); await once(sock, 'listening');
   const port = sock.address().port; await new Promise(r => sock.close(r));
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'paigaam-mag-e2e-')), base = 'http://127.0.0.1:' + port;
+  // Start from the pre-dynamic schema to verify additive migration and order-config backfill.
+  const legacyDb = new (require('node:sqlite').DatabaseSync)(path.join(dir, 'paigaam.db'));
+  legacyDb.exec(`CREATE TABLE magazine_templates (slug TEXT PRIMARY KEY, status TEXT NOT NULL DEFAULT 'draft', canva_template_id TEXT NOT NULL DEFAULT '', validation_json TEXT NOT NULL DEFAULT '{}', validated_at INTEGER, published_at INTEGER, updated_at INTEGER);
+    CREATE TABLE magazine_orders (id TEXT PRIMARY KEY, template_slug TEXT NOT NULL, owner_hash TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'draft', fields_json TEXT NOT NULL DEFAULT '{}', design_id TEXT, autofill_job_id TEXT, pdf_job_id TEXT, png_job_id TEXT, pdf_file TEXT, png_file TEXT, error_code TEXT, error_stage TEXT, attempts INTEGER NOT NULL DEFAULT 0, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL, ready_at INTEGER);
+    INSERT INTO magazine_templates (slug,status,canva_template_id,validation_json,updated_at) VALUES ('birthday-collage','draft','EAHXVxrdrCk','{}',${Date.now()});
+    INSERT INTO magazine_orders (id,template_slug,owner_hash,status,created_at,updated_at) VALUES ('${'f'.repeat(32)}','birthday-collage','${'a'.repeat(64)}','draft',${Date.now()},${Date.now()});`);
+  legacyDb.close();
   const mock = await createCanvaMock({ dataset: {} });
   const m = registry.bySlug('birthday-collage');
   let server;
@@ -46,6 +53,16 @@ const root = path.join(__dirname, '..');
     /* --- existing flows are untouched --- */
     for (const url of ['/', '/templates', '/healthz', '/contact']) assert.equal((await req(null, 'GET', url)).status, 200, url + ' still serves');
     ok('existing public pages and health check unaffected');
+    const migrated = new (require('node:sqlite').DatabaseSync)(path.join(dir, 'paigaam.db'));
+    const templateColumns = migrated.prepare('PRAGMA table_info(magazine_templates)').all().map(c => c.name);
+    const orderColumns = migrated.prepare('PRAGMA table_info(magazine_orders)').all().map(c => c.name);
+    assert.ok(templateColumns.includes('mapping_json') && orderColumns.includes('mapping_json'));
+    const legacyTemplate = JSON.parse(migrated.prepare("SELECT mapping_json FROM magazine_templates WHERE slug='birthday-collage'").get().mapping_json);
+    const legacyOrder = JSON.parse(migrated.prepare("SELECT mapping_json FROM magazine_orders WHERE id=?").get('f'.repeat(32)).mapping_json);
+    assert.equal(legacyTemplate.canvaTemplateId, 'EAHXVxrdrCk');
+    assert.equal(legacyOrder.slug, 'birthday-collage');
+    migrated.close();
+    ok('additive migration seeds existing mapping and snapshots legacy orders without losing their config');
 
     /* --- nothing public until admin connects + validates + publishes --- */
     assert.equal((await req(null, 'GET', '/magazines')).status, 200);
@@ -85,6 +102,45 @@ const root = path.join(__dirname, '..');
     const row = sqlite.prepare('SELECT access_enc, refresh_enc FROM canva_connection').get(); sqlite.close();
     assert.ok(row.access_enc.startsWith('v1:') && row.refresh_enc.startsWith('v1:') && !/AT-|RT-/.test(row.access_enc + row.refresh_enc));
     ok('OAuth connect: PKCE, state forgery rejected, admin-only, CSRF origin check, tokens sealed at rest');
+
+    /* --- admin imports and configures a new magazine without changing source code --- */
+    assert.equal((await req(null, 'GET', '/admin/magazines/new')).status, 302);
+    assert.match(await (await req(admin, 'GET', '/admin/magazines')).text(), /Add magazine from Canva/);
+    const adminDataset = { cover_photo: { type: 'image' }, reader_title: { type: 'text' } };
+    mock.st.dataset = adminDataset;
+    const imported = await req(admin, 'POST', '/admin/magazines/import', { body: 'canvaTemplateId=ADMINTEST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' } });
+    assert.equal(imported.status, 200);
+    const editorHtml = await imported.text();
+    assert.match(editorHtml, /Mock template ADMINTEST/); assert.match(editorHtml, /cover_photo/); assert.match(editorHtml, /reader_title/);
+    const configBuilder = require('../lib/magazines/templateConfig');
+    const newMapping = configBuilder.fromDataset({ slug: 'admin-created-story', name: 'Admin Created Story', tagline: 'A new story.', canvaTemplateId: 'ADMINTEST', pageCount: 1, dataset: adminDataset });
+    const saved = await jsonReq(admin, 'POST', '/admin/magazines/save', newMapping);
+    assert.equal(saved.status, 200); assert.equal(saved.body.slug, 'admin-created-story');
+    assert.equal((await req(null, 'GET', '/magazines/admin-created-story')).status, 404);
+    const draftAdmin = await (await req(admin, 'GET', '/admin/magazines')).text();
+    assert.match(draftAdmin, /Admin Created Story/); assert.match(draftAdmin, /Not validated/);
+    const validation = await req(admin, 'POST', '/admin/magazines/admin-created-story/validate', {});
+    assert.match(decodeURIComponent(validation.headers.get('location')), /fields match the live Canva/);
+    const publication = await req(admin, 'POST', '/admin/magazines/admin-created-story/publish', {});
+    assert.match(decodeURIComponent(publication.headers.get('location')), /now live/);
+    const newForm = await req(null, 'GET', '/magazines/admin-created-story');
+    assert.equal(newForm.status, 200); const newHtml = await newForm.text();
+    assert.match(newHtml, /Photo 1/); assert.match(newHtml, /reader_title/);
+    const edit = await (await req(admin, 'GET', '/admin/magazines/admin-created-story/edit')).text();
+    assert.match(edit, /Unpublish before editing/);
+    await req(admin, 'POST', '/admin/magazines/admin-created-story/unpublish', {});
+    const editable = await (await req(admin, 'GET', '/admin/magazines/admin-created-story/edit')).text();
+    assert.match(editable, /Save draft/);
+    const reconfigured = { ...newMapping, tagline: 'Updated copy from admin.' };
+    const savedEdit = await jsonReq(admin, 'POST', '/admin/magazines/save', reconfigured);
+    assert.equal(savedEdit.status, 200);
+    const afterEdit = await (await req(admin, 'GET', '/admin/magazines')).text();
+    assert.match(afterEdit, /Admin Created Story[\s\S]{0,1500}Not validated[\s\S]{0,300}Draft/);
+    const revalidated = await req(admin, 'POST', '/admin/magazines/admin-created-story/validate', {});
+    assert.match(decodeURIComponent(revalidated.headers.get('location')), /match the live Canva/);
+    const republished = await req(admin, 'POST', '/admin/magazines/admin-created-story/publish', {});
+    assert.match(decodeURIComponent(republished.headers.get('location')), /now live/);
+    ok('admin imports Canva title/dataset, configures a draft, validates, publishes, and protects published mappings');
 
     /* --- validate against the live dataset; mismatch blocks publish --- */
     mock.st.dataset = { ...goodDataset(m), photo_9: { type: 'text' }, rogue: { type: 'image' } };

@@ -70,7 +70,7 @@ function createCanvaMock({ dataset }) {
 
     if (req.method === 'GET' && p === '/users/me/profile') return json(res, 200, { profile: { display_name: 'Paigaam Studio' } });
     let m;
-    if (req.method === 'GET' && (m = p.match(/^\/brand-templates\/([^/]+)$/))) return json(res, 200, { brand_template: { id: m[1], thumbnail: { width: 40, height: 40, url: `${base}/files/thumb-${m[1]}.png` } } });
+    if (req.method === 'GET' && (m = p.match(/^\/brand-templates\/([^/]+)$/))) return json(res, 200, { brand_template: { id: m[1], title: `Mock template ${m[1]}`, thumbnail: { width: 40, height: 40, url: `${base}/files/thumb-${m[1]}.png` } } });
     if (req.method === 'GET' && (m = p.match(/^\/brand-templates\/([^/]+)\/dataset$/))) return json(res, 200, { dataset: st.dataset });
     if (req.method === 'POST' && p === '/asset-uploads') {
       if (req.headers['content-type'] !== 'application/octet-stream' || !req.headers['asset-upload-metadata']) return json(res, 400, { code: 'bad_request' });
