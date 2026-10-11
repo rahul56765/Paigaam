@@ -43,6 +43,9 @@ function sample() {
   let passed = 0; const ok = (cond, msg) => { assert.ok(cond, msg); passed++; console.log('  ✓', msg); };
   try {
     await start();
+    // This flow tests both paid/offline and free publishing. The live template now
+    // seeds at ₹0, so make the isolated test row nominally paid for its first pass.
+    { const { DatabaseSync } = require('node:sqlite'); const db = new DatabaseSync(path.join(dir, 'paigaam.db')); db.prepare("UPDATE templates SET price=1 WHERE slug='shaadi-paigaam'").run(); db.close(); }
     let r = await J('/shaadi-paigaam/demo'); let html = await r.text();
     ok(r.status === 200 && html.includes('Aarav') && html.includes('sp-boot'), 'demo renders the sample couple');
     ok((await J('/create/shaadi-paigaam')).status === 200, 'editor page loads');
