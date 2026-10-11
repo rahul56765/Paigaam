@@ -16,13 +16,15 @@ function photo(src, alt, cls = '') {
   return `<img class="wp-photo${cls ? ' ' + cls : ''}" src="${escape(src || '/assets/bfday-demo/couple-1.jpg')}" alt="${escape(alt)}" loading="lazy" decoding="async">`;
 }
 function nameSearchWord(value) {
-  const first = String(value || '').trim().split(/\s+/)[0] || '';
-  const letters = first.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toUpperCase().replace(/[^A-Z]/g, '');
-  return letters.length <= 20 ? first : Array.from(first).slice(0, 20).join('');
+  const full = String(value || '').trim().replace(/\s+/g, ' ');
+  const letters = value => value.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toUpperCase().replace(/[^A-Z]/g, '');
+  if (letters(full).length <= 20) return full;
+  const first = full.split(/\s+/)[0] || '';
+  return Array.from(letters(first)).slice(0, 20).join('') || first;
 }
 function wordSearchWords(data) {
   const coupleNames = [nameSearchWord(data.groomName), nameSearchWord(data.brideName)].filter(Boolean);
-  const currentNames = new Set(coupleNames);
+  const currentNames = new Set([...coupleNames, data.groomName, data.brideName].map(value => String(value || '').trim().split(/\s+/)[0] || '').map(value => value.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toUpperCase().replace(/[^A-Z]/g, '')).filter(Boolean));
   // Older saved drafts inherited these two sample entries as ordinary words.
   // Drop them when the couple fields change so stale sample names never remain.
   const legacySampleNames = new Set(['RAGHAV', 'RAGINI']);
@@ -165,11 +167,11 @@ function render(paigaam, opts = {}) {
     ${head({ paigaam, opts, title, description, themeColor: bg, image: d.frontPhoto || config.ogImage })}
     <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz,wght@6..96,400;6..96,500;6..96,600;6..96,700&family=DM+Sans:wght@400;500;600;700&family=Great+Vibes&family=IM+Fell+English:ital@0;1&family=UnifrakturCook:wght@700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/wedding-post/post.css?v=2">
+    <link rel="stylesheet" href="/wedding-post/post.css?v=3">
   </head><body class="wp-body" data-preview="${!!opts.isPreview}">
     ${previewBadge(opts)}
     <main class="wp-reader"><div class="wp-book" id="wpBook">${pages.join('')}</div>${controls}<p class="wp-footer-mark">A keepsake edition · made with Paigaam</p></main>
-    <script src="/wedding-post/games.js?v=2" defer></script><script src="/wedding-post/post.js?v=2" defer></script>
+    <script src="/wedding-post/games.js?v=3" defer></script><script src="/wedding-post/post.js?v=3" defer></script>
   </body></html>`;
 }
 
