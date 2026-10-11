@@ -47,8 +47,8 @@ module.exports = {
   displayField: 'groomName',
 
   fields: [
-    { id: 'groomName', type: 'text', label: 'Groom’s name', required: true, maxLength: 40, placeholder: 'Raghav', hint: 'The first name is included automatically in the Wedding Word Search; change it here to update the puzzle.' },
-    { id: 'brideName', type: 'text', label: 'Bride’s name', required: true, maxLength: 40, placeholder: 'Ragini', hint: 'The first name is included automatically in the Wedding Word Search; change it here to update the puzzle.' },
+    { id: 'groomName', type: 'text', label: 'Groom’s name', required: true, maxLength: 40, placeholder: 'Raghav', hint: 'This name is included automatically in the Wedding Word Search; change it here to update the puzzle.' },
+    { id: 'brideName', type: 'text', label: 'Bride’s name', required: true, maxLength: 40, placeholder: 'Ragini', hint: 'This name is included automatically in the Wedding Word Search; change it here to update the puzzle.' },
     { id: 'groomParents', type: 'textarea', label: 'Groom’s parents', maxLength: 120, rows: 2, default: 'Mr. Suresh & Mrs. Meenakshi Kulkarni' },
     { id: 'brideParents', type: 'textarea', label: 'Bride’s parents', maxLength: 120, rows: 2, default: 'Mr. Anil & Mrs. Sunita Joshi' },
 
