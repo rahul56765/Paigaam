@@ -10,7 +10,7 @@ const fs = require('node:fs');
   page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
   await page.goto('http://localhost:3000/wedding-post/demo', { waitUntil: 'networkidle' });
   await page.evaluate(() => document.fonts.ready);
-  const sizes = [];
+  const sizes = [], turnMetrics = [];
   for (let i = 0; i < 5; i++) {
     const pageNode = page.locator('.wp-page.is-active');
     await pageNode.screenshot({ path: `/tmp/wedding-post-page-${i + 1}.png` });
@@ -20,8 +20,63 @@ const fs = require('node:fs');
       const node = document.querySelector('.wp-page.is-active');
       return { page: Number(node.dataset.page) + 1, pageWidth: Math.round(active.width), pageHeight: Math.round(active.height), ratio: +(active.width / active.height).toFixed(4), pageContentOverhang: node.scrollHeight - node.clientHeight, viewport: [innerWidth, innerHeight], scrollWidth: document.documentElement.scrollWidth, book: [Math.round(book.width), Math.round(book.height)] };
     }));
-    if (i < 4) await page.click('#wpNext');
+    if (i < 4) {
+      await page.click('#wpNext');
+      const turn = await page.locator('.wp-page.wp-turning-forward').count();
+      if (turn !== 1) throw new Error('Forward navigation did not start a 3D turn.');
+      if (i === 0) {
+        await page.waitForFunction(() => {
+          const leaf = document.querySelector('.wp-page.wp-turning-forward');
+          if (!leaf) return false;
+          const transform = getComputedStyle(leaf).transform;
+          return transform !== 'none' && Math.abs(new DOMMatrixReadOnly(transform).m11) < .6;
+        }, undefined, { timeout: 1200 });
+        turnMetrics.push(await page.evaluate(() => {
+          const leaf = document.querySelector('.wp-page.wp-turning-forward');
+          return { transform: getComputedStyle(leaf).transform, shadow: getComputedStyle(leaf).boxShadow };
+        }));
+        await page.locator('#wpBook').screenshot({ path: '/tmp/wedding-post-turn-midway.png' });
+      }
+      await page.waitForFunction(nextPage => document.querySelector('.wp-page.is-active')?.dataset.page === String(nextPage), i + 1, { timeout: 2000 });
+    }
   }
+  await page.click('#wpPrev');
+  if (await page.locator('.wp-page.wp-turning-backward').count() !== 1) throw new Error('Backward navigation did not start a reverse 3D turn.');
+  await page.waitForFunction(() => document.querySelector('.wp-page.is-active')?.dataset.page === '3', undefined, { timeout: 2000 });
+  await page.locator('[data-page-go="4"]').click();
+  if (await page.locator('.wp-page.wp-turning-forward').count() !== 1) throw new Error('Page dots did not use the 3D turn.');
+  await page.waitForFunction(() => document.querySelector('.wp-page.is-active')?.dataset.page === '4', undefined, { timeout: 2000 });
+  const timelineLayout = await page.evaluate(() => {
+    const track = document.querySelector('.wp-timeline-track'), line = document.querySelector('.wp-timeline-line').getBoundingClientRect();
+    const lineY = line.top + line.height / 2;
+    return Array.from(track.querySelectorAll('.wp-event')).map(event => {
+      const copy = event.querySelector('.wp-event-copy').getBoundingClientRect();
+      const icon = event.querySelector('.wp-event-icon').getBoundingClientRect();
+      const heart = event.querySelector('.wp-event-heart').getBoundingClientRect();
+      const copyAbove = event.classList.contains('wp-event--copy-top');
+      const iconAbove = event.classList.contains('wp-event--icon-top');
+      return { name: event.querySelector('.wp-event-name').textContent.trim(), copyGap: copyAbove ? lineY - copy.bottom : copy.top - lineY, iconGap: iconAbove ? lineY - icon.bottom : icon.top - lineY, heartOffset: heart.top + heart.height / 2 - lineY, copyFits: copy.left >= event.getBoundingClientRect().left && copy.right <= event.getBoundingClientRect().right };
+    });
+  });
+  if (timelineLayout.length !== 5 || timelineLayout.some(event => event.copyGap < 2 || event.iconGap < 2 || Math.abs(event.heartOffset) > 2 || !event.copyFits)) throw new Error('Timeline items collide or overlap the heart line: ' + JSON.stringify(timelineLayout));
+  // A real horizontal swipe uses the same page curl as the arrow controls.
+  await page.locator('[data-page-go="1"]').evaluate(el => el.click());
+  await page.waitForFunction(() => document.querySelector('.wp-page.is-active')?.dataset.page === '1', undefined, { timeout: 2000 });
+  await page.evaluate(() => {
+    const book = document.getElementById('wpBook');
+    const start = new Event('touchstart', { bubbles: true }), end = new Event('touchend', { bubbles: true });
+    Object.defineProperty(start, 'changedTouches', { value: [{ clientX: 300, clientY: 200 }] });
+    Object.defineProperty(end, 'changedTouches', { value: [{ clientX: 120, clientY: 202 }] });
+    book.dispatchEvent(start); book.dispatchEvent(end);
+  });
+  if (await page.locator('.wp-page.wp-turning-forward').count() !== 1) throw new Error('Horizontal touch swipe did not start a page curl.');
+  await page.waitForFunction(() => document.querySelector('.wp-page.is-active')?.dataset.page === '2', undefined, { timeout: 2000 });
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.locator('#wpNext').click();
+  if (await page.locator('.wp-page.wp-turning-forward').count() !== 0 || await page.locator('.wp-page.is-active').getAttribute('data-page') !== '3') throw new Error('Reduced-motion navigation should change pages without an animation.');
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await page.locator('[data-page-go="4"]').evaluate(el => el.click());
+  await page.waitForFunction(() => document.querySelector('.wp-page.is-active')?.dataset.page === '4', undefined, { timeout: 2000 });
   const wordResult = await page.evaluate(() => {
     const grid = document.querySelector('#wpWordGrid');
     const n = Number(getComputedStyle(grid).getPropertyValue('--grid-size').trim()) || Math.round(Math.sqrt(grid.children.length));
@@ -58,6 +113,7 @@ const fs = require('node:fs');
     await page.setViewportSize(viewport);
     for (let i = 0; i < 5; i++) {
       await page.locator(`[data-page-go="${i}"]`).evaluate(el => el.click());
+      await page.waitForFunction(pageIndex => document.querySelector('.wp-page.is-active')?.dataset.page === String(pageIndex), i, { timeout: 2000 });
       const measure = await page.evaluate(() => {
         const book = document.querySelector('.wp-book').getBoundingClientRect();
         const node = document.querySelector('.wp-page.is-active'), rect = node.getBoundingClientRect();
@@ -68,11 +124,26 @@ const fs = require('node:fs');
     }
   }
   await page.goto('http://localhost:3000/create/wedding-post', { waitUntil: 'domcontentloaded' });
-  await page.locator('#f-groomName').fill('Raghav');
-  await page.locator('#f-brideName').fill('Ragini');
+  await page.locator('#f-groomName').fill('Aarav Sharma');
+  await page.locator('#f-brideName').fill('Ananya Joshi');
   await page.locator('#next').click();
   await page.locator('#f-weddingDate').fill('2027-02-21');
   for (let i = 0; i < 3; i++) await page.locator('#next').click();
+  await page.waitForFunction(() => {
+    const frame = document.querySelector('#liveFrame');
+    const words = frame && frame.contentDocument && frame.contentDocument.querySelector('#wpWordList');
+    return words && words.textContent.includes('Aarav') && words.textContent.includes('Ananya');
+  }, undefined, { timeout: 5000 });
+  const editorNamesUpdated = await page.evaluate(() => {
+    const payload = document.querySelector('#liveFrame').contentDocument.querySelector('#wpGameData').textContent;
+    return payload.includes('Aarav') && payload.includes('Ananya') && !payload.includes('Raghav') && !payload.includes('Ragini');
+  });
+  if (!editorNamesUpdated) throw new Error('Changing the couple fields did not rebuild the editable word-search names.');
+  await page.locator('[data-add="wordList"]').click();
+  await page.locator('[data-list="wordList"] .bf-row').last().locator('input').fill('Reception');
+  await page.waitForFunction(() => document.querySelector('#liveFrame')?.contentDocument?.querySelector('#wpGameData')?.textContent.includes('Reception'), undefined, { timeout: 5000 });
+  const customWordUpdated = await page.evaluate(() => document.querySelector('#liveFrame').contentDocument.querySelector('#wpWordList').textContent.includes('Reception'));
+  if (!customWordUpdated) throw new Error('Editing a custom word did not regenerate the preview grid/list.');
   const eventsBefore = await page.locator('[data-list="timeline"] .bf-row').count();
   await page.locator('[data-add="timeline"]').click();
   const eventsAfterAdd = await page.locator('[data-list="timeline"] .bf-row').count();
@@ -80,6 +151,6 @@ const fs = require('node:fs');
   const eventsAfterRemove = await page.locator('[data-list="timeline"] .bf-row').count();
   if (eventsAfterAdd !== eventsBefore + 1 || eventsAfterRemove !== eventsBefore) throw new Error('Timeline add/remove controls failed.');
   if (errors.length) throw new Error('Browser errors: ' + errors.join(' | '));
-  console.log(JSON.stringify({ sizes, responsive, wordResult: { length: wordResult.path.length, found: wordFound }, maze: { moves: mazePath.length, won: mazeWon }, timelineEditor: { before: eventsBefore, afterAdd: eventsAfterAdd, afterRemove: eventsAfterRemove }, errors }, null, 2));
+  console.log(JSON.stringify({ sizes, responsive, turnMetrics, timelineLayout, wordResult: { length: wordResult.path.length, found: wordFound }, maze: { moves: mazePath.length, won: mazeWon }, timelineEditor: { before: eventsBefore, afterAdd: eventsAfterAdd, afterRemove: eventsAfterRemove }, editorNamesUpdated, customWordUpdated, errors }, null, 2));
   await browser.close();
 })().catch(e => { console.error(e.stack || e); process.exit(1); });

@@ -5,7 +5,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const config = require('../templates/wedding-post/config');
 const schema = require('../templates/wedding-post/schema');
-const { render } = require('../templates/wedding-post/render');
+const { render, lineIcon } = require('../templates/wedding-post/render');
 const family = require('../lib/bfday/family');
 
 const html = render({ customer_data: config.demo }, { baseUrl: 'https://paigaam.cc', isPreview: true });
@@ -40,9 +40,23 @@ test('no-repeat content rules hold: one Save-the-Date marriage line, one thank-y
   assert.equal((html.split('data-page="2"')[1].split('data-page="3"')[0].match(/class="wp-moment"/g) || []).length, 3);
 });
 
-test('page 5 includes the requested editable game data and touch/keyboard controls', () => {
+test('page 5 composes editable words with the current couple names', () => {
+  function wordsFor(data) {
+    const rendered = render({ customer_data: data }, { baseUrl: 'https://paigaam.cc', isPreview: true });
+    const marker = '<script type="application/json" id="wpGameData">';
+    const start = rendered.indexOf(marker);
+    const end = rendered.indexOf('</script>', start);
+    assert.ok(start >= 0 && end > start, 'word-search payload exists');
+    return JSON.parse(rendered.slice(start + marker.length, end)).words;
+  }
+  const defaultWords = wordsFor(config.demo);
+  for (const word of config.demo.wordList) assert.ok(defaultWords.includes(word));
+  assert.ok(defaultWords.includes('Raghav'));
+  assert.ok(defaultWords.includes('Ragini'));
+  const changedWords = wordsFor({ ...config.demo, groomName: 'Aarav Sharma', brideName: 'Ananya Joshi', wordList: ['Cheers', 'Honeymoon', 'Save', 'Forever', 'Raghav', 'Ragini'] });
+  assert.deepEqual(changedWords, ['Cheers', 'Honeymoon', 'Save', 'Forever', 'Aarav', 'Ananya']);
+  assert.ok(!changedWords.includes('Raghav') && !changedWords.includes('Ragini'));
   const page5 = html.split('data-page="4"')[1];
-  for (const word of config.demo.wordList) assert.ok(page5.includes(word));
   assert.ok(page5.includes('id="wpMaze"'));
   assert.ok(page5.includes('data-move="left"'));
   assert.ok(page5.includes('id="wpWordGrid"'));
@@ -52,6 +66,16 @@ test('page 5 includes the requested editable game data and touch/keyboard contro
   assert.match(js, /pointermove/);
   assert.match(js, /ArrowLeft/);
   assert.match(js, /function makeMaze/);
+  const navigation = fs.readFileSync(path.join(__dirname, '../public/wedding-post/post.js'), 'utf8');
+  assert.match(navigation, /wp-turning-forward/);
+  assert.match(navigation, /wp-turning-backward/);
+  const css = fs.readFileSync(path.join(__dirname, '../public/wedding-post/post.css'), 'utf8');
+  assert.match(css, /@keyframes wp-page-turn-forward/);
+  assert.match(css, /@keyframes wp-page-turn-backward/);
+  assert.match(css, /\.wp-event-heart\{position:absolute/);
+  assert.match(html, /wp-event--copy-top/);
+  assert.match(html, /wp-event--copy-bottom/);
+  for (const kind of ['rings', 'camera', 'dinner', 'cake', 'sparkler']) assert.match(lineIcon(kind), /stroke-width="1\.55"/);
 });
 
 test('schema rejects non-HTTP map links and keeps event/word list limits', () => {

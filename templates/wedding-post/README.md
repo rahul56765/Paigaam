@@ -4,7 +4,7 @@ A five-page, mobile-first newspaper-style wedding invitation in the shared Paiga
 
 ## Editable fields
 
-The shared template wizard handles names, parents, ceremony date/time and place, invite and thank-you copy, five statistics, fun facts, captioned photos, the timeline, word-search list, remembrance note and reception map link. Timeline events can be added/removed (up to 10); the word-search grid is generated from the entered words; the QR code is an SVG made from the pasted URL using `lib/qrcode.js`.
+The shared template wizard handles names, parents, ceremony date/time and place, invite and thank-you copy, five statistics, fun facts, captioned photos, the timeline, word-search list, remembrance note and reception map link. Timeline events can be added/removed (up to 10). The word-search list remains editable; the current bride and groom names are added automatically, and changes update the generated puzzle. The QR code is an SVG made from the pasted URL using `lib/qrcode.js`.
 
 ## Routes and shared engine
 
@@ -20,4 +20,4 @@ The public styles and interactions live in `public/wedding-post/`. The sample ph
 
 ## Visual direction and interaction
 
-Portrait pages use a 5:7 ratio, shared cream newsprint with fine grain and darkened edges, monochrome photographs and free Google Fonts close to blackletter, newspaper serif and script forms. The final page keeps the supplied black line-art layout. Guests can navigate with previous/next buttons, dots, keyboard arrows and a horizontal touch swipe; the two games have dedicated drag and arrow controls. Reduced-motion preferences suppress transitions.
+Portrait pages use a 5:7 ratio, shared cream newsprint with fine grain and darkened edges, monochrome photographs and free Google Fonts close to blackletter, newspaper serif and script forms. Page navigation turns the sheet with a reversible 3D curl and soft edge shadow; previous/next buttons, page dots, keyboard arrows and horizontal touch swipes all use the same transition. On Wedding Day, hearts anchor the center rule while event copy and matching line icons alternate above/below it; extra events can be reached with a horizontal timeline swipe. The games have dedicated drag and arrow controls. Reduced-motion preferences switch page navigation to instant changes and suppress decorative motion.

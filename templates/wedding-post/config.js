@@ -47,8 +47,8 @@ module.exports = {
   displayField: 'groomName',
 
   fields: [
-    { id: 'groomName', type: 'text', label: 'Groom’s name', required: true, maxLength: 40, placeholder: 'Raghav' },
-    { id: 'brideName', type: 'text', label: 'Bride’s name', required: true, maxLength: 40, placeholder: 'Ragini' },
+    { id: 'groomName', type: 'text', label: 'Groom’s name', required: true, maxLength: 40, placeholder: 'Raghav', hint: 'The first name is included automatically in the Wedding Word Search; change it here to update the puzzle.' },
+    { id: 'brideName', type: 'text', label: 'Bride’s name', required: true, maxLength: 40, placeholder: 'Ragini', hint: 'The first name is included automatically in the Wedding Word Search; change it here to update the puzzle.' },
     { id: 'groomParents', type: 'textarea', label: 'Groom’s parents', maxLength: 120, rows: 2, default: 'Mr. Suresh & Mrs. Meenakshi Kulkarni' },
     { id: 'brideParents', type: 'textarea', label: 'Bride’s parents', maxLength: 120, rows: 2, default: 'Mr. Anil & Mrs. Sunita Joshi' },
 
@@ -99,8 +99,9 @@ module.exports = {
         { id: 'icon', type: 'select', label: 'Line icon', options: ['rings', 'camera', 'dinner', 'cake', 'sparkler'], default: 'rings' },
       ], default: EVENTS },
     { id: 'wordList', type: 'list', label: 'Wedding word-search words', itemLabel: 'Word', addLabel: 'Add a word', minItems: 4, maxItems: 12,
-      item: { type: 'text', label: 'Word (up to 14 letters)', maxLength: 14 },
-      default: ['Wedding', 'Love', 'Cheers', 'Cake', 'Raghav', 'Ragini', 'Honeymoon', 'Anniversary'] },
+      hint: 'These words stay editable. The bride’s and groom’s first names are added automatically from the couple fields.',
+      item: { type: 'text', label: 'Word (up to 20 letters)', maxLength: 20 },
+      default: ['Wedding', 'Love', 'Cheers', 'Cake', 'Honeymoon', 'Anniversary'] },
     { id: 'memoryMessage', type: 'textarea', label: 'In Loving Memory message', maxLength: 220, rows: 3, default: 'For those we love who cannot be here today: you are with us in every memory and in our hearts.' },
     { id: 'mapLink', type: 'url', label: 'Reception Location map link', maxLength: 500, default: 'https://maps.google.com/?q=Shubh+Mangal+Lawns+Baner+Pune', hint: 'Paste a full Google Maps or other https:// map link. The QR code is made from this address.' },
   ],
@@ -153,7 +154,7 @@ module.exports = {
     thankYouMessage: 'Thank you for being part of our Wedding Celebration. Your kindness, laughter and support have made this chapter brighter, and we are so grateful to share the day with you.',
     thankPhotos: THANK_PHOTOS,
     timeline: EVENTS,
-    wordList: ['Wedding', 'Love', 'Cheers', 'Cake', 'Raghav', 'Ragini', 'Honeymoon', 'Anniversary'],
+    wordList: ['Wedding', 'Love', 'Cheers', 'Cake', 'Honeymoon', 'Anniversary'],
     memoryMessage: 'For those we love who cannot be here today: you are with us in every memory and in our hearts.',
     mapLink: 'https://maps.google.com/?q=Shubh+Mangal+Lawns+Baner+Pune',
   },
