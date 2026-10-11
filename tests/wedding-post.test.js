@@ -54,7 +54,7 @@ test('page 5 composes editable words with the current couple names', () => {
   assert.ok(defaultWords.includes('Raghav'));
   assert.ok(defaultWords.includes('Ragini'));
   const changedWords = wordsFor({ ...config.demo, groomName: 'Aarav Sharma', brideName: 'Ananya Joshi', wordList: ['Cheers', 'Honeymoon', 'Save', 'Forever', 'Raghav', 'Ragini'] });
-  assert.deepEqual(changedWords, ['Cheers', 'Honeymoon', 'Save', 'Forever', 'Aarav', 'Ananya']);
+  assert.deepEqual(changedWords, ['Cheers', 'Honeymoon', 'Save', 'Forever', 'Aarav Sharma', 'Ananya Joshi']);
   assert.ok(!changedWords.includes('Raghav') && !changedWords.includes('Ragini'));
   const page5 = html.split('data-page="4"')[1];
   assert.ok(page5.includes('id="wpMaze"'));
