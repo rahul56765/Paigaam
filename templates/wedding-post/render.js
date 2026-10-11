@@ -15,19 +15,43 @@ function formatDate(value, includeWeekday = true) {
 function photo(src, alt, cls = '') {
   return `<img class="wp-photo${cls ? ' ' + cls : ''}" src="${escape(src || '/assets/bfday-demo/couple-1.jpg')}" alt="${escape(alt)}" loading="lazy" decoding="async">`;
 }
+function nameSearchWord(value) {
+  const first = String(value || '').trim().split(/\s+/)[0] || '';
+  const letters = first.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toUpperCase().replace(/[^A-Z]/g, '');
+  return letters.length <= 20 ? first : Array.from(first).slice(0, 20).join('');
+}
+function wordSearchWords(data) {
+  const coupleNames = [nameSearchWord(data.groomName), nameSearchWord(data.brideName)].filter(Boolean);
+  const currentNames = new Set(coupleNames);
+  // Older saved drafts inherited these two sample entries as ordinary words.
+  // Drop them when the couple fields change so stale sample names never remain.
+  const legacySampleNames = new Set(['RAGHAV', 'RAGINI']);
+  const customWords = (data.wordList || []).filter(value => {
+    const normalized = String(value || '').normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toUpperCase().replace(/[^A-Z]/g, '');
+    return !legacySampleNames.has(normalized) || currentNames.has(normalized);
+  });
+  const candidates = [...customWords, ...coupleNames];
+  const seen = new Set();
+  return candidates.map(value => String(value || '').trim()).filter(value => {
+    const normalized = value.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toUpperCase().replace(/[^A-Z]/g, '');
+    if (normalized.length < 2 || normalized.length > 20 || seen.has(normalized)) return false;
+    seen.add(normalized);
+    return true;
+  });
+}
 function lineIcon(kind, size = 26) {
   const art = {
-    rings: '<circle cx="10" cy="13" r="6.5"/><circle cx="18" cy="13" r="6.5"/><path d="M11 7.8 13 4.5l3.5 2.2M20 7l1.5-2.5"/>',
-    camera: '<path d="M4 8h4l2-3h5l2 3h3a2 2 0 0 1 2 2v8H2v-8a2 2 0 0 1 2-2Z"/><circle cx="12" cy="13" r="4"/><path d="M18 10h.01"/>',
-    dinner: '<path d="M4 12h16l-2 7H6l-2-7Z"/><path d="M7 12a5 5 0 0 1 10 0M8 7c-1-1 1-2 0-3M12 6c-1-1 1-2 0-3M16 7c-1-1 1-2 0-3M3 21h18"/>',
-    cake: '<path d="M4 21V12h16v9M3 21h18M7 12V8h10v4M12 8V4M12 4c-2-2 2-3 0-4"/><path d="M4 16c2-2 3 2 5 0s3 2 5 0 3 2 6 0"/>',
-    sparkler: '<path d="M5 20 18 7M18 7l1-5M18 7l5 1M18 7l-3-5M18 7l5-4M18 7l-1 6M18 7l-6-1"/><path d="m4 16-2-2m6-7-2-2"/>',
+    rings: '<circle cx="8.5" cy="13" r="5.5"/><circle cx="15.5" cy="13" r="5.5"/><path d="m11 7.8 1.5-2.4 3 1.8M19 7.5l1.2-2"/>',
+    camera: '<path d="M3 8.5h4l2-3h6l2 3h4a1.5 1.5 0 0 1 1.5 1.5v9H1.5v-9A1.5 1.5 0 0 1 3 8.5Z"/><circle cx="12" cy="13.5" r="4"/><path d="M18 11h.01"/>',
+    dinner: '<path d="M4 14a8 8 0 0 1 16 0M3 14h18M6 17h12M8 6.5c-1-1 1-1.7 0-2.8M12 6c-1-1 1-1.7 0-2.8M16 6.5c-1-1 1-1.7 0-2.8"/>',
+    cake: '<path d="M2 21h10V11H2v10ZM4 11V7h6v4M7 7V3M2 16h10M18 6a2 2 0 1 0 .01 0M22 8a2 2 0 1 0 .01 0M18 8l2 4 2-2M18 12l-2 5M20 12l3 5M17 6l-2 2"/>',
+    sparkler: '<path d="m5 20 12-12M17 8l1-5m-1 5 5 1m-5-1-3-4m3 4 4-4m-4 4-1 5M4 15l-2-2M9 7 7 5"/>',
     meet: '<circle cx="8" cy="7" r="3"/><circle cx="17" cy="7" r="3"/><path d="M2 20c0-4 2-7 6-7s6 3 6 7M13 15c1-2 2-3 4-3 3 0 5 3 5 7M12 9l1 2 2-1"/>',
     travel: '<path d="m3 13 7-2 4-7c.5-1 2-1 2 0l-2 7 6 2c1 .5 1 2-.2 2.2L13 14l-4 5-1-.3 1.5-5.3-5.5 1.3-2-1.1Z"/>',
-    coffee: '<path d="M5 9h12v6a5 5 0 0 1-5 5h-2a5 5 0 0 1-5-5V9ZM17 10h2a2 2 0 1 1 0 4h-2M4 22h15M8 5c-1-1 1-2 0-3M12 5c-1-1 1-2 0-3"/>',
+    coffee: '<path d="M5 9h12v6a5 5 0 0 1-5 5h-2a5 5 0 0 1-5-5V9ZM17 10h2a2 2 0 1 1 0 4h-2M4 22h15M8 5c-1-1 1-2 0-3M12 5c-1-1 1-2 0-3M16 5c-1-1 1-2 0-3"/>',
     pizza: '<path d="M3 5c6-4 12-4 18 0l-9 17L3 5Z"/><path d="M3 5c6 1 12 1 18 0"/><circle cx="9" cy="8" r="1"/><circle cx="14" cy="8" r="1"/><circle cx="11" cy="13" r="1"/>',
   }[kind] || '<path d="M4 12h16M12 4v16"/>';
-  return `<svg class="wp-icon" viewBox="0 0 24 24" width="${size}" height="${size}" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${art}</svg>`;
+  return `<svg class="wp-icon" viewBox="0 0 24 24" width="${size}" height="${size}" fill="none" stroke="currentColor" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${art}</svg>`;
 }
 function lineHeart() {
   return '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20.8 8.8c0 5.1-8.8 11-8.8 11s-8.8-5.9-8.8-11A4.7 4.7 0 0 1 12 6.4a4.7 4.7 0 0 1 8.8 2.4Z"/></svg>';
@@ -50,7 +74,7 @@ function render(paigaam, opts = {}) {
   const moments = d.storyPhotos || [];
   const thankPhotos = d.thankPhotos || [];
   const events = d.timeline || [];
-  const words = (d.wordList || []).map(w => String(w || '').trim()).filter(Boolean);
+  const words = wordSearchWords(d);
   const now = new Date();
   const printDate = `${MONTHS[now.getUTCMonth()].toUpperCase()} ${now.getUTCFullYear()}`;
   const qr = d.mapLink ? qrSVG(d.mapLink, { module: 2, margin: 3, dark: '#22211F', light: '#F1EDE5' }) : '<span class="wp-qr-empty">Paste a map link<br>to make your QR</span>';
@@ -113,7 +137,11 @@ function render(paigaam, opts = {}) {
 
     `<article class="wp-page wp-page--games" data-page="4" aria-label="Page 5: Wedding Day games">
       <header class="wp-games-header"><div><h2>Wedding Day Timeline</h2><p>Look forward to an amazing day</p></div><span class="wp-sparkle" aria-hidden="true">✦</span></header>
-      <div class="wp-timeline" style="--event-count:${Math.max(1, events.length)}" aria-label="Wedding day event timeline"><div class="wp-timeline-line"></div>${events.map((event, i) => `<div class="wp-event" data-event="${i}"><span class="wp-event-icon">${lineIcon(event.icon, 25)}</span><span class="wp-event-heart">♥</span><b>${escape(event.time)}</b><span class="wp-event-name">${escape(event.name)}</span></div>`).join('')}</div>
+      <div class="wp-timeline" style="--event-count:${Math.max(1, events.length)};--timeline-content-width:${Math.max(100, events.length * 20)}%" aria-label="Wedding day event timeline" tabindex="0"><div class="wp-timeline-track"><div class="wp-timeline-line" aria-hidden="true"></div>${events.map((event, i) => {
+        const copySide = i % 2 ? 'top' : 'bottom';
+        const iconSide = i % 2 ? 'bottom' : 'top';
+        return `<div class="wp-event wp-event--copy-${copySide} wp-event--icon-${iconSide}" data-event="${i}"><span class="wp-event-icon${event.icon === 'sparkler' ? ' wp-event-icon--sparkler' : ''}">${lineIcon(event.icon, 25)}</span><span class="wp-event-heart" aria-hidden="true">♥</span><span class="wp-event-copy"><b class="wp-event-time">${escape(event.time)}</b><span class="wp-event-name">${escape(event.name)}</span></span></div>`;
+      }).join('')}</div></div>
       <div class="wp-games-columns">
         <section class="wp-game-panel wp-word-panel"><h3>Wedding Word Search</h3><p class="wp-word-list" id="wpWordList"></p><div class="wp-word-grid" id="wpWordGrid" role="grid" aria-label="Word search letter grid"></div><p class="wp-game-hint" id="wpWordHint" aria-live="polite">Tap and drag across the letters to find each word.</p><div class="wp-celebrate" id="wpWordCelebrate" hidden>All found! Cheers to ${escape(couple)}!</div></section>
         <section class="wp-game-panel wp-maze-panel"><h3>Wedding Maze</h3><p class="wp-maze-subtitle">Help the groom get to the wedding</p><div class="wp-maze-stage"><div class="wp-maze-label wp-groom-label">${groomArt()}</div><div class="wp-maze-board" id="wpMaze" role="grid" aria-label="Wedding maze"></div><div class="wp-maze-label wp-bride-label">${brideArt()}</div><p class="wp-maze-win" id="wpMazeWin" hidden>You reached the wedding!</p></div><div class="wp-maze-controls" aria-label="Maze movement controls"><button type="button" data-move="up" aria-label="Move up">↑</button><div><button type="button" data-move="left" aria-label="Move left">←</button><button type="button" data-move="down" aria-label="Move down">↓</button><button type="button" data-move="right" aria-label="Move right">→</button></div></div></section>
@@ -137,11 +165,11 @@ function render(paigaam, opts = {}) {
     ${head({ paigaam, opts, title, description, themeColor: bg, image: d.frontPhoto || config.ogImage })}
     <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz,wght@6..96,400;6..96,500;6..96,600;6..96,700&family=DM+Sans:wght@400;500;600;700&family=Great+Vibes&family=IM+Fell+English:ital@0;1&family=UnifrakturCook:wght@700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/wedding-post/post.css?v=1">
+    <link rel="stylesheet" href="/wedding-post/post.css?v=2">
   </head><body class="wp-body" data-preview="${!!opts.isPreview}">
     ${previewBadge(opts)}
     <main class="wp-reader"><div class="wp-book" id="wpBook">${pages.join('')}</div>${controls}<p class="wp-footer-mark">A keepsake edition · made with Paigaam</p></main>
-    <script src="/wedding-post/games.js?v=1" defer></script><script src="/wedding-post/post.js?v=1" defer></script>
+    <script src="/wedding-post/games.js?v=2" defer></script><script src="/wedding-post/post.js?v=2" defer></script>
   </body></html>`;
 }
 

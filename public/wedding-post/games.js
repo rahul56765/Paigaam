@@ -12,14 +12,16 @@
     return list;
   }
   function wordBoard(source) {
-    var words = Array.from(new Set((source || []).map(cleanWord).filter(function (w) { return w.length >= 2 && w.length <= 14; })));
+    var words = Array.from(new Set((source || []).map(cleanWord).filter(function (w) { return w.length >= 2 && w.length <= 20; })));
     var display = Array.from(new Set((source || []).map(function (w) { return String(w || '').trim(); }).filter(Boolean)));
     if (!words.length) words = ['WEDDING', 'LOVE', 'CAKE', 'CHEERS'];
-    var size = Math.max(10, Math.min(14, Math.max.apply(null, words.map(function (w) { return w.length; }))));
+    var totalLetters = words.reduce(function (sum, word) { return sum + word.length; }, 0);
+    var longest = Math.max.apply(null, words.map(function (w) { return w.length; }));
+    var size = Math.min(20, Math.max(12, longest, Math.ceil(Math.sqrt(totalLetters * 1.35))));
     var dirs = [[1,0],[-1,0],[0,1],[0,-1],[1,1],[-1,-1],[1,-1],[-1,1]];
     var sorted = words.slice().sort(function (a, b) { return b.length - a.length; });
     var grid = null;
-    function attempt(n) {
+    function attempt() {
       grid = Array.from({ length: size }, function () { return Array(size).fill(''); });
       var placements = {};
       var ok = true;
@@ -42,8 +44,18 @@
       return ok ? placements : null;
     }
     var placements = null;
-    for (var tries = 0; tries < 9 && !placements; tries++) placements = attempt(tries);
-    if (!placements) { size = Math.min(14, size + 2); placements = attempt(10) || {}; }
+    for (var tries = 0; tries < 24 && !placements; tries++) placements = attempt();
+    if (!placements) {
+      size = Math.max(12, longest, sorted.length);
+      grid = Array.from({ length: size }, function () { return Array(size).fill(''); });
+      placements = {};
+      sorted.forEach(function (word, row) {
+        var reverse = row % 2 === 1, letters = reverse ? word.split('').reverse() : word.split('');
+        var start = reverse ? size - word.length : 0, cells = [];
+        letters.forEach(function (letter, index) { var col = start + index; grid[row][col] = letter; cells.push(row * size + col); });
+        placements[word] = cells;
+      });
+    }
     for (var r = 0; r < size; r++) for (var c = 0; c < size; c++) if (!grid[r][c]) grid[r][c] = String.fromCharCode(65 + Math.floor(Math.random() * 26));
     return { words: words, display: display, grid: grid, placements: placements, size: size };
   }
