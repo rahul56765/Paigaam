@@ -60,9 +60,18 @@ async function main() {
     assert.equal(handoffVideoHead.status, 200); assert.match(handoffVideoHead.headers.get('content-type'), /video\/mp4/);
     const overflow = await page.evaluate(() => ({ sw: document.documentElement.scrollWidth, cw: document.documentElement.clientWidth }));
     assert.ok(overflow.sw <= overflow.cw + 1, `horizontal overflow ${JSON.stringify(overflow)}`);
+    const canvas = await page.locator('#save-date .rv-canvas').boundingBox();
+    assert.ok(canvas && Math.abs(canvas.width / canvas.height - 9 / 16) < .01, 'full 9:16 art canvas should stay uncropped');
+    assert.ok(canvas.height <= 844, 'one invitation canvas must fit within the viewport');
     await page.screenshot({ path: '/tmp/royal-vivah-mobile-envelope.png', fullPage: false });
+    const closedState = await page.locator('.rv-envelope__open-video').evaluate(v => ({ paused: v.paused, currentTime: v.currentTime, instruction: document.querySelector('.rv-envelope__instruction')?.textContent.trim() }));
+    assert.equal(closedState.paused, true, 'envelope video must not play before a seal tap');
+    assert.equal(closedState.instruction, 'Tap to open');
     await page.locator('.rv-envelope__seal').click();
     await page.waitForFunction(() => document.querySelector('.rv-envelope__seal')?.getAttribute('aria-expanded') === 'true');
+    const openingState = await page.locator('.rv-envelope__open-video').evaluate(v => ({ duration: v.duration, currentTime: v.currentTime, muted: v.muted, ended: v.ended }));
+    assert.ok(openingState.duration > 9.9 && openingState.ended, 'the supplied 10-second envelope video should play through to its luminous ending');
+    assert.equal(openingState.muted, false, 'the supplied video audio should be preserved after the tap');
     await page.waitForFunction(() => document.querySelector('#save-date')?.classList.contains('is-handoff-done'));
     await page.waitForTimeout(500);
     assert.ok(await page.evaluate(() => scrollY > 300), 'seal should reveal and scroll into the first card');
@@ -91,7 +100,9 @@ async function main() {
     await reducedPage.waitForFunction(() => document.querySelector('.rv-envelope__seal')?.getAttribute('aria-expanded') === 'true');
     await reducedPage.waitForFunction(() => document.querySelector('#save-date')?.classList.contains('is-handoff-done'));
     const reducedState = await reducedPage.locator('.rv-save__handoff-video').evaluate(v => v.paused);
+    const reducedEnvelopeState = await reducedPage.locator('.rv-envelope__open-video').evaluate(v => v.paused);
     assert.equal(reducedState, true, 'reduced-motion users should not play decorative video');
+    assert.equal(reducedEnvelopeState, true, 'reduced-motion users should not play envelope video');
     assert.deepEqual(await reducedPage.locator('.rv-save__names').evaluate(e => getComputedStyle(e).opacity), '1');
     console.log('Reduced-motion QA passed: envelope skips video and text remains visible.');
 

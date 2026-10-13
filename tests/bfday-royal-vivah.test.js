@@ -24,7 +24,9 @@ test('server render contains all five scenes, event rows and an editable venue l
   for (const event of config.demo.events) assert.ok(html.includes(event.name.replace(/&/g, '&amp;')));
   assert.match(html, /href="https:\/\/www\.google\.com\/maps\/search/);
   assert.match(html, /target="_blank" rel="noopener noreferrer"/);
-  assert.match(html, /Tap the heart seal to open/);
+  assert.match(html, /Tap to open/);
+  assert.match(html, /src="\/royal-vivah\/envelope-open\.mp4"/);
+  assert.ok(!html.includes('class="rv-envelope__open-video" src="/royal-vivah/envelope-open.mp4" poster="/royal-vivah/envelope.webp" muted'), 'the supplied opener audio stays enabled after the tap');
 });
 
 test('customer copy is escaped and untrusted map schemes are not emitted', () => {

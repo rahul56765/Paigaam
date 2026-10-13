@@ -22,7 +22,7 @@ module.exports = {
   description: 'A vintage rose-and-gold wedding invitation: a sealed envelope opens into a four-scene illustrated keepsake with editable family, event and venue details.',
   thumbnail_url: '',
   ogImage: '/royal-vivah/invitation.webp',
-  version: 1,
+  version: 2,
   editable: true,
   backgroundMusic: false,
   displayField: 'brideName',

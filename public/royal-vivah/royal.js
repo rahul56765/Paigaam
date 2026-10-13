@@ -10,11 +10,22 @@
 
   var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   if (reduced) document.body.classList.add('rv-reduced');
-  var opened = false, advanced = false;
+  var opened = false, advanced = false, transitionStarted = false;
+  function beginSaveDateTransition() {
+    if (transitionStarted) return;
+    transitionStarted = true;
+    envelope.classList.add('is-fading');
+    if (!saveDate) return;
+    saveDate.classList.add('is-arriving');
+    window.setTimeout(function () { saveDate.classList.add('is-arrived'); }, reduced ? 0 : 180);
+    window.setTimeout(function () {
+      saveDate.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'start' });
+    }, reduced ? 0 : 320);
+  }
   function advanceToCard() {
     if (advanced) return;
     advanced = true;
-    if (saveDate) saveDate.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'start' });
+    beginSaveDateTransition();
     if (seal) seal.setAttribute('aria-expanded', 'true');
     window.setTimeout(function () {
       envelope.setAttribute('aria-hidden', 'true');
@@ -24,23 +35,30 @@
   function openInvitation() {
     if (opened) return;
     opened = true;
-    document.body.classList.add('rv-opened');
     envelope.classList.add('is-opening');
     if (reduced || !openVideo) {
+      envelope.classList.add('is-reduced-open');
       advanceToCard();
       return;
     }
-    var openingTimer = window.setTimeout(advanceToCard, 4300);
+    var openingTimer = window.setTimeout(function () {
+      document.body.classList.add('rv-video-fallback');
+      envelope.classList.add('is-reduced-open');
+      advanceToCard();
+    }, 11200);
     openVideo.addEventListener('ended', function () { window.clearTimeout(openingTimer); advanceToCard(); }, { once: true });
     openVideo.addEventListener('error', function () {
       window.clearTimeout(openingTimer);
       document.body.classList.add('rv-video-fallback');
+      envelope.classList.add('is-reduced-open');
       window.setTimeout(advanceToCard, 900);
     }, { once: true });
     openVideo.currentTime = 0;
     var playback = openVideo.play();
     if (playback && typeof playback.catch === 'function') playback.catch(function () {
+      window.clearTimeout(openingTimer);
       document.body.classList.add('rv-video-fallback');
+      envelope.classList.add('is-reduced-open');
       window.setTimeout(advanceToCard, 900);
     });
   }
