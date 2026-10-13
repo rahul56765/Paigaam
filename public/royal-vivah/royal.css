@@ -19,7 +19,7 @@ body.rv-body{margin:0;min-height:100%;overflow-x:hidden;background:#251a19;color
    remains fixed until tapped; then the cover lifts away and the card emerges. */
 .rv-envelope{background:#d6b5aa;z-index:4;transition:opacity .45s ease}
 .rv-envelope__photo{z-index:1;transition:opacity .45s ease}
-.rv-envelope__open-still,.rv-envelope__open-video{position:absolute;inset:0;z-index:2;width:100%;height:100%;object-fit:contain;opacity:0;pointer-events:none;transition:opacity .55s ease}
+.rv-envelope__open-still,.rv-envelope__open-video{position:absolute;inset:0;z-index:2;width:100%;height:100%;object-fit:contain;opacity:0;pointer-events:none;transition:opacity .42s ease}
 .rv-envelope__instruction{position:absolute;z-index:3;left:0;right:0;bottom:7%;text-align:center;color:#fff8ef;font:500 clamp(12px,3cqw,16px)/1.2 'Cormorant Garamond',serif;letter-spacing:.04em;text-shadow:0 1px 9px rgba(59,33,27,.55);pointer-events:none}
 .rv-envelope__seal{position:absolute;z-index:4;left:40%;top:31%;width:31%;height:22%;border:0;padding:0;border-radius:50%;display:block;background:transparent;touch-action:manipulation;cursor:pointer;-webkit-tap-highlight-color:transparent;outline:none}
 .rv-envelope__seal:focus-visible{outline:2px solid #fff3d8;outline-offset:2px;box-shadow:0 0 0 5px rgba(121,75,30,.5)}
@@ -35,25 +35,22 @@ body.rv-body{margin:0;min-height:100%;overflow-x:hidden;background:#251a19;color
 @keyframes rv-invite-breathe{0%,100%{opacity:.72}50%{opacity:1}}
 
 /* Save the Date: the heading is baked into the supplied art and never changes. */
-.rv-save__names{position:absolute;z-index:4;top:9.4%;left:32%;width:39%;height:16%;transform:rotate(24deg);display:flex;flex-direction:column;align-items:center;justify-content:center;color:#f8e6ca;font:700 clamp(25px,7cqw,42px)/.82 'Great Vibes',cursive;text-align:center;text-shadow:0 1px 2px rgba(80,25,27,.48);overflow:hidden;white-space:nowrap}
-.rv-save__names small{font:600 .42em/.95 'Cormorant Garamond',serif;letter-spacing:.09em;text-transform:lowercase;margin:.03em 0}
-.rv-save__date{left:20%;top:62.6%;width:60%;font:700 clamp(18px,4.8cqw,28px)/1.15 'Bodoni Moda',serif;letter-spacing:.09em;color:#851b36;text-transform:uppercase}
-.rv-save__handoff-video{position:absolute;inset:0;z-index:3;width:100%;height:100%;object-fit:cover;opacity:0;pointer-events:none}
-.rv-scene.is-handoff-playing .rv-save__handoff-video{opacity:1}
-.rv-js .rv-save:not(.is-handoff-done) .rv-save__names{opacity:0}
-.rv-scene.is-handoff-done .rv-save__names{animation:rv-handoff-reveal .48s ease-out both}
-@keyframes rv-handoff-reveal{from{opacity:0;transform:rotate(24deg) scale(.97)}to{opacity:1;transform:rotate(24deg) scale(1)}}
+.rv-save__names{position:absolute;z-index:4;top:9.4%;left:31%;width:41%;height:17%;transform:rotate(24deg);display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff0d2;font:700 clamp(28px,7.6cqw,46px)/.78 'Great Vibes',cursive;text-align:center;text-shadow:0 1px 2px rgba(80,25,27,.55);overflow:hidden;white-space:nowrap}
+.rv-save__names small{font:600 .40em/.95 'Cormorant Garamond',serif;letter-spacing:.09em;text-transform:lowercase;margin:.03em 0}
+.rv-save__date{left:18%;top:62.2%;width:64%;font:700 clamp(19px,5cqw,30px)/1.1 'Bodoni Moda',serif;letter-spacing:.09em;color:#851b36;text-transform:uppercase}
+.rv-save__sparkle{position:absolute;z-index:4;left:28%;top:80%;width:7px;height:7px;background:#fff3c4;clip-path:polygon(50% 0,62% 37%,100% 50%,62% 63%,50% 100%,38% 63%,0 50%,38% 37%);filter:drop-shadow(0 0 4px #d4a347);animation:rv-save-sparkle 2.4s ease-in-out infinite}
+@keyframes rv-save-sparkle{0%,100%{opacity:.15;transform:scale(.65) rotate(0)}50%{opacity:1;transform:scale(1.25) rotate(45deg)}}
 
 /* Blessings and names page. */
-.rv-family__heading{left:13%;top:15%;width:74%;font:700 clamp(14px,4cqw,22px)/1.1 'Bodoni Moda',serif;letter-spacing:.12em;text-transform:uppercase}
-.rv-family__bride-line{left:12%;top:24.6%;width:76%;font:600 clamp(16px,4.4cqw,24px)/1.12 'Cormorant Garamond',serif}
-.rv-family__request{left:12%;top:29.1%;width:76%;font:italic 600 clamp(15px,4.2cqw,23px)/1.22 'Cormorant Garamond',serif}
-.rv-family__bride{left:6%;top:37.5%;width:88%;font:700 clamp(34px,11cqw,62px)/.92 'Great Vibes',cursive;letter-spacing:0;text-transform:none;-webkit-text-stroke:.35px currentColor}
-.rv-family__with{position:absolute;left:0;right:0;top:46.9%;z-index:2;text-align:center;color:var(--rv-ink);font:italic clamp(18px,4.8cqw,30px)/1 'Great Vibes',cursive}
-.rv-family__groom{left:6%;top:49.7%;width:88%;font:700 clamp(34px,11cqw,62px)/.92 'Great Vibes',cursive;letter-spacing:0;text-transform:none;-webkit-text-stroke:.35px currentColor}
-.rv-family__groom-line{left:13%;top:61.7%;width:74%;font:500 clamp(13px,3.5cqw,20px)/1.12 'Cormorant Garamond',serif}
-.rv-family__date{left:16%;top:71.1%;width:68%;font:600 clamp(16px,4.2cqw,23px)/1.08 'Bodoni Moda',serif;letter-spacing:.08em}
-.rv-family__city{left:16%;top:74.3%;width:68%;font:600 clamp(13px,3.6cqw,20px)/1.1 'Bodoni Moda',serif;letter-spacing:.13em}
+.rv-family__heading{left:12%;top:15%;width:76%;font:700 clamp(16px,4.4cqw,25px)/1.08 'Bodoni Moda',serif;letter-spacing:.1em;text-transform:uppercase}
+.rv-family__bride-line{left:10%;top:24.6%;width:80%;font:600 clamp(18px,4.8cqw,28px)/1.08 'Cormorant Garamond',serif}
+.rv-family__request{left:10%;top:29.1%;width:80%;font:italic 600 clamp(16px,4.4cqw,26px)/1.15 'Cormorant Garamond',serif}
+.rv-family__bride{left:5%;top:37%;width:90%;font:700 clamp(38px,13cqw,78px)/.92 'Great Vibes',cursive;letter-spacing:0;text-transform:none;-webkit-text-stroke:.3px currentColor}
+.rv-family__with{position:absolute;left:0;right:0;top:47.5%;z-index:2;text-align:center;color:var(--rv-ink);font:italic 600 clamp(18px,4.3cqw,27px)/1 'Great Vibes',cursive}
+.rv-family__groom{left:4%;top:50.4%;width:92%;font:700 clamp(38px,13cqw,78px)/.92 'Great Vibes',cursive;letter-spacing:0;text-transform:none;-webkit-text-stroke:.3px currentColor}
+.rv-family__groom-line{left:10%;top:61.5%;width:80%;font:600 clamp(16px,4.2cqw,25px)/1.08 'Cormorant Garamond',serif}
+.rv-family__date{left:14%;top:69%;width:72%;font:700 clamp(18px,4.6cqw,27px)/1.08 'Bodoni Moda',serif;letter-spacing:.08em}
+.rv-family__city{left:14%;top:72.5%;width:72%;font:700 clamp(15px,3.9cqw,23px)/1.08 'Bodoni Moda',serif;letter-spacing:.12em}
 
 /* Four fixed illustrations; copy blocks alternate around the pictured props. */
 .rv-events__heading{left:12%;top:8.5%;width:76%;font:700 clamp(30px,8cqw,46px)/1.03 'Bodoni Moda',serif;letter-spacing:.02em}
@@ -72,20 +69,20 @@ body.rv-body{margin:0;min-height:100%;overflow-x:hidden;background:#251a19;color
 
 /* Final invitation: all copy is live HTML; the food, diya, border and florals
    remain the supplied artwork. The venue is a normal accessible maps anchor. */
-.rv-final__heading{left:17%;top:14.1%;width:66%;font:700 clamp(21px,5.8cqw,34px)/1.1 'Bodoni Moda',serif;letter-spacing:.11em}
-.rv-final__couple{left:9%;top:19.5%;width:82%;font:700 clamp(32px,9cqw,60px)/.9 'Great Vibes',cursive;letter-spacing:0;text-transform:none;-webkit-text-stroke:.35px currentColor}
-.rv-final__lead{left:13%;top:33.2%;width:74%;font:italic 600 clamp(16px,4.2cqw,25px)/1.08 'Cormorant Garamond',serif}
-.rv-final__message{left:13%;top:37.1%;width:74%;font:600 clamp(13px,3.4cqw,21px)/1.02 'Cormorant Garamond',serif}
-.rv-final__date{left:19%;top:53%;width:62%;font:700 clamp(16px,4.2cqw,25px)/1.08 'Bodoni Moda',serif;letter-spacing:.08em}
-.rv-final__event{left:15%;top:57.1%;width:70%;font:700 clamp(16px,4.3cqw,25px)/1.08 'Bodoni Moda',serif;letter-spacing:.06em}
-.rv-final__time{left:18%;top:60%;width:64%;font:600 clamp(15px,4cqw,24px)/1.08 'Cormorant Garamond',serif}
-.rv-final__venue-wrap{position:absolute;z-index:3;left:24%;top:64.6%;width:52%;text-align:center}
+.rv-final__heading{left:17%;top:14.1%;width:66%;font:700 clamp(22px,5.9cqw,35px)/1.08 'Bodoni Moda',serif;letter-spacing:.1em}
+.rv-final__couple{left:9%;top:19.4%;width:82%;font:700 clamp(34px,9.2cqw,62px)/.96 'Bodoni Moda',serif;letter-spacing:.02em;text-transform:uppercase;-webkit-text-stroke:.35px currentColor}
+.rv-final__lead{left:13%;top:31.6%;width:74%;font:italic 600 clamp(17px,4.4cqw,26px)/1.08 'Cormorant Garamond',serif}
+.rv-final__message{left:12%;top:35.4%;width:76%;font:600 clamp(15px,3.9cqw,23px)/1.08 'Cormorant Garamond',serif}
+.rv-final__date{left:17%;top:51.5%;width:66%;font:700 clamp(18px,4.6cqw,28px)/1.08 'Bodoni Moda',serif;letter-spacing:.08em}
+.rv-final__event{left:14%;top:55.8%;width:72%;font:700 clamp(18px,4.6cqw,28px)/1.08 'Bodoni Moda',serif;letter-spacing:.06em}
+.rv-final__time{left:18%;top:59%;width:64%;font:600 clamp(16px,4.2cqw,25px)/1.08 'Cormorant Garamond',serif}
+.rv-final__venue-wrap{position:absolute;z-index:3;left:20%;top:63%;width:60%;text-align:center}
 .rv-map{display:inline-block;color:var(--rv-ink);text-decoration:none;touch-action:manipulation;-webkit-tap-highlight-color:transparent;border-radius:2px}
-.rv-final__venue{font:600 clamp(17px,4.5cqw,25px)/1.1 'Bodoni Moda',serif;text-decoration:underline;text-decoration-color:rgba(147,104,58,.55);text-underline-offset:.16em}
+.rv-final__venue{font:700 clamp(18px,4.8cqw,29px)/1.08 'Bodoni Moda',serif;text-decoration:underline;text-decoration-color:rgba(147,104,58,.55);text-underline-offset:.16em}
 .rv-final__venue:focus-visible{outline:2px solid #9b7044;outline-offset:3px}
-.rv-final__address{position:static!important;margin:.28em auto 0!important;width:100%;font:500 clamp(14px,3.8cqw,21px)/1.1 'Cormorant Garamond',serif}
-.rv-final__signoff{left:28%;top:73.3%;width:44%;font:italic 500 clamp(16px,4.2cqw,24px)/1.1 'Great Vibes',cursive}
-.rv-final__families{left:16%;top:76.3%;width:68%;font:500 clamp(13px,3.5cqw,20px)/1.1 'Bodoni Moda',serif;letter-spacing:.06em}
+.rv-final__address{position:static!important;margin:.28em auto 0!important;width:100%;font:600 clamp(15px,4cqw,24px)/1.08 'Cormorant Garamond',serif}
+.rv-final__signoff{left:28%;top:72.8%;width:44%;font:italic 600 clamp(17px,4.4cqw,26px)/1.08 'Great Vibes',cursive}
+.rv-final__families{left:14%;top:75.5%;width:72%;font:600 clamp(14px,3.8cqw,23px)/1.08 'Bodoni Moda',serif;letter-spacing:.055em}
 
 /* Petals are a single fixed, low-contrast atmosphere layer across every scene. */
 .rv-petals{position:fixed;inset:0;z-index:10;pointer-events:none;overflow:hidden;contain:strict}
@@ -95,11 +92,13 @@ body.rv-body{margin:0;min-height:100%;overflow-x:hidden;background:#251a19;color
 
 @media (min-width:900px){.rv-body{padding:0}.rv-canvas{box-shadow:0 12px 54px rgba(0,0,0,.28)}}
 @media (max-width:370px){.rv-family__bride,.rv-family__groom{letter-spacing:-.06em}.rv-final__message{left:13%;width:74%}.rv-event__title{letter-spacing:.025em}}
-@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}.rv-next-hint,.rv-envelope__instruction{animation:none}.rv-petal{display:none}.rv-envelope{transition:none}.rv-envelope.is-opening{transform:none}.rv-envelope__open-video,.rv-reduced .rv-envelope__open-video,.rv-video-fallback .rv-envelope__open-video,.rv-handoff-fallback .rv-save__handoff-video{display:none}.rv-scene{scroll-snap-stop:normal}}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}.rv-next-hint,.rv-envelope__instruction,.rv-save__sparkle{animation:none}.rv-petal{display:none}.rv-envelope{transition:none}.rv-envelope.is-opening{transform:none}.rv-envelope__open-video,.rv-reduced .rv-envelope__open-video,.rv-video-fallback .rv-envelope__open-video{display:none}.rv-scene{scroll-snap-stop:normal}}
 @media (forced-colors:active){.rv-map{outline:1px solid LinkText}}
-.rv-video-fallback .rv-envelope__open-video,.rv-handoff-fallback .rv-save__handoff-video{display:none}
+.rv-video-fallback .rv-envelope__open-video{display:none}
 /* Progressively enhanced scroll reveals. With no JavaScript, all copy remains visible. */
 .rv-js .rv-scene:not(.is-seen) .rv-fit{opacity:0;transform:translateY(9px)}
 .rv-js .rv-scene.is-seen .rv-fit{animation:rv-copy-in .58s cubic-bezier(.18,.72,.24,1) both}
 @keyframes rv-copy-in{to{opacity:1;transform:translateY(0)}}
 @media (prefers-reduced-motion:reduce){.rv-js .rv-scene:not(.is-seen) .rv-fit,.rv-js .rv-scene.is-seen .rv-fit{opacity:1;transform:none;animation:none!important}}
+/* The Save the Date art/card is intentionally static; only petals and its gold sparkle move. */
+.rv-save .rv-fit,.rv-js .rv-scene.rv-save:not(.is-seen) .rv-fit,.rv-js .rv-scene.rv-save.is-seen .rv-fit{opacity:1!important;transform:none!important;animation:none!important}

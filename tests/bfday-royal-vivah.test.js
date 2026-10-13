@@ -26,7 +26,11 @@ test('server render contains all five scenes, event rows and an editable venue l
   assert.match(html, /target="_blank" rel="noopener noreferrer"/);
   assert.match(html, /Tap to open/);
   assert.match(html, /src="\/royal-vivah\/envelope-open\.mp4"/);
+  assert.match(html, /royal\.css\?v=3/);
+  assert.match(html, /preload="auto"/);
   assert.ok(!html.includes('class="rv-envelope__open-video" src="/royal-vivah/envelope-open.mp4" poster="/royal-vivah/envelope.webp" muted'), 'the supplied opener audio stays enabled after the tap');
+  assert.ok(!html.includes('rv-save__handoff-video'), 'the Save-the-Date card remains static');
+  assert.match(html, /rv-save__sparkle/, 'a small gold sparkle remains on the static card');
 });
 
 test('customer copy is escaped and untrusted map schemes are not emitted', () => {
