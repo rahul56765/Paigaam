@@ -10,7 +10,7 @@ const publicDir = path.join(root, 'public/royal-vivah');
 const outDir = path.join(root, 'assets/royal-vivah');
 fs.mkdirSync(outDir, { recursive: true });
 const manifest = {};
-for (const file of ['envelope.webp', 'envelope-open.webp', 'envelope-open.mp4', 'save-date-handoff.mp4', 'save-date.webp', 'families.webp', 'events.webp', 'invitation.webp']) {
+for (const file of ['envelope.webp', 'envelope-open.webp', 'envelope-open.mp4', 'save-date.webp', 'families.webp', 'events.webp', 'invitation.webp']) {
   const bytes = fs.readFileSync(path.join(publicDir, file));
   manifest['royal-vivah/' + file] = crypto.createHash('sha256').update(bytes).digest('hex');
   fs.writeFileSync(path.join(outDir, file + '.b64'), bytes.toString('base64') + '\n');
