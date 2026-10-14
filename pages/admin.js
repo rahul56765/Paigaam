@@ -4,6 +4,7 @@ const { doveSVG } = require('../lib/logo');
 const { logoFull } = require('../lib/brand');
 const { displayNames, displayDate } = require('../templates/registry');
 const { qrSVG } = require('../lib/qrcode');
+const studioFamily = require('../lib/bfday/family');
 
 const STATUS_LABEL = {
   draft: 'Draft', payment_pending: 'Payment pending', paid: 'Paid',
@@ -39,6 +40,7 @@ function adminShell(current, title, inner, opts = {}) {
       <ul class="admin__nav">
         <li>${link('/admin', 'Overview', 'home')}</li>
         <li>${link('/admin/templates', 'Templates', 'templates')}</li>
+        <li>${link('/admin/studio', 'Template studio', 'templates')}</li>
         <li>${link('/admin/paigaams', 'Paigaams', 'paigaams')}</li>
         <li>${link('/admin/orders', 'Orders', 'orders')}</li>
         <li class="admin__nav-label">Creative studio</li>
@@ -162,7 +164,7 @@ function templatesAdmin(templates) {
     <td data-label="Price">${money(t.price, t.currency)}</td>
     <td data-label="Status">${badge(t.status)}</td>
     <td data-label="Created" style="color:var(--taupe)">${fmtDT(t.created_at)}</td>
-    <td data-label="Actions"><div class="table-actions">
+    <td data-label="Actions"><div class="table-actions">${studioFamily.has(t.slug) ? `<a class="btn btn--ghost btn--small" href="/admin/studio/${esc(t.slug)}">Studio</a>` : ''}
       <a class="link-btn link-btn--muted" href="/templates/${esc(t.slug)}" target="_blank" rel="noopener">View</a>
       <a class="link-btn" href="/admin/templates/${esc(t.id)}">Edit</a>
       <form method="POST" action="/admin/templates/${esc(t.id)}/duplicate" style="display:inline"><button class="link-btn link-btn--muted" type="submit">Duplicate</button></form>
@@ -457,4 +459,4 @@ function settingsAdmin(s, saved) {
   return adminShell('/admin/settings', 'Settings', inner);
 }
 
-module.exports = { loginPage, dashboard, templatesAdmin, templateForm, paigaamsAdmin, paigaamDetail, ordersAdmin, settingsAdmin, qrCardHTML };
+module.exports = { loginPage, dashboard, templatesAdmin, templateForm, paigaamsAdmin, paigaamDetail, ordersAdmin, settingsAdmin, qrCardHTML, adminShell, adminIcon };
