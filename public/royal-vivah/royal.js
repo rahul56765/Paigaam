@@ -68,6 +68,9 @@
     });
   }
   if (seal) seal.addEventListener('click', openInvitation);
+  // Tap anywhere on the envelope screen to start the opening video — the seal
+  // button stays for keyboard/AT users; openInvitation() is idempotent.
+  envelope.addEventListener('click', openInvitation);
 
   // The envelope photo is the first screen; allow native scrolling to begin the
   // story even when the invitation is opened without JavaScript or the seal.

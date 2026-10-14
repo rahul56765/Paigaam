@@ -54,8 +54,8 @@ ${head({ paigaam, opts, title, description, themeColor: '#f7e8dc', image: config
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preload" as="video" href="/royal-vivah/envelope-open.mp4" type="video/mp4">
 <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz,wght@6..96,400;6..96,500;6..96,600;6..96,700&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Great+Vibes&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/royal-vivah/royal.css?v=3">
-<script src="/royal-vivah/royal.js?v=3" defer></script>
+<link rel="stylesheet" href="/royal-vivah/royal.css?v=4">
+<script src="/royal-vivah/royal.js?v=4" defer></script>
 </head>
 <body class="rv-body" data-preview="${!!opts.isPreview}">
 ${previewBadge(opts)}
