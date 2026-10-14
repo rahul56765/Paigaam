@@ -34,6 +34,15 @@ server re-syncs them on every boot.
 - Clone rows also get a `templates` row (status `draft`), which is what `/create/<slug>` and the
   gallery read.
 
+## Wording (fixed text of a layout)
+
+Some layouts print fixed text in their own code: the Wedding Post's masthead, headings and game
+labels. Those are listed in the layout's `phrases` (with `phraseLabels` for the form). Clones get a
+**Wording on the layout** section in the studio; the shipped layout keeps its defaults, so the live
+template renders exactly as before. Blank keeps the shipped phrase. Values are escaped and limited
+to 200 characters. Layouts reach their member's own config through the family wrapper
+(`opts.config`), so a renderer only needs to read `opts.config || require('./config')`.
+
 ## Rules for copy
 
 - Required fields (names) have no pre-filled default; their sample shows in the preview only.

@@ -66,7 +66,9 @@ function brideArt() {
 }
 
 function render(paigaam, opts = {}) {
-  const config = require('./config');
+  const config = opts.config || require('./config');
+  const P = config.phrases || {};
+  const T = key => escape(P[key] == null ? '' : P[key]);
   const d = resolve(config, paigaam && paigaam.customer_data);
   const couple = `${d.groomName} & ${d.brideName}`;
   const dateText = formatDate(d.weddingDate);
@@ -82,84 +84,84 @@ function render(paigaam, opts = {}) {
   const qr = d.mapLink ? qrSVG(d.mapLink, { module: 2, margin: 3, dark: '#22211F', light: '#F1EDE5' }) : '<span class="wp-qr-empty">Paste a map link<br>to make your QR</span>';
   const pages = [
     `<article class="wp-page wp-page--front" data-page="0" aria-label="Page 1: wedding invitation">
-      <header class="wp-masthead"><span class="wp-kicker">SPECIAL<br>EDITION</span><h1>The Wedding Post</h1><span class="wp-kicker">${escape(printDate)}<br>WEDDING ISSUE</span></header>
+      <header class="wp-masthead"><span class="wp-kicker">SPECIAL<br>EDITION</span><h1>${T('masthead')}</h1><span class="wp-kicker">${escape(printDate)}<br>${T('issueKicker')}</span></header>
       <div class="wp-front-meta"><span>VOL. 01, NO. 01</span><span>✦</span><span>SPECIAL EDITION</span><span>✦</span><span>${escape(shortDate.toUpperCase())}</span></div>
-      <h2 class="wp-front-headline">A Wedding Celebration</h2>
+      <h2 class="wp-front-headline">${T('frontHeadline')}</h2>
       <div class="wp-double-rule"></div>
       <div class="wp-front-feature">
         <section class="wp-about">
-          <h3>About the couple</h3>
+          <h3>${T('aboutTitle')}</h3>
           <div class="wp-rule"></div>
-          <p class="wp-about-intro">With joy, we invite you to celebrate the wedding of</p>
-          <p class="wp-name">${escape(d.groomName)}</p><p class="wp-parentline">son of ${escape(d.groomParents)}</p>
-          <p class="wp-with">and</p>
-          <p class="wp-name">${escape(d.brideName)}</p><p class="wp-parentline">daughter of ${escape(d.brideParents)}</p>
+          <p class="wp-about-intro">${T('aboutIntro')}</p>
+          <p class="wp-name">${escape(d.groomName)}</p><p class="wp-parentline">${T('aboutSon')} ${escape(d.groomParents)}</p>
+          <p class="wp-with">${T('aboutAnd')}</p>
+          <p class="wp-name">${escape(d.brideName)}</p><p class="wp-parentline">${T('aboutDaughter')} ${escape(d.brideParents)}</p>
         </section>
         <div class="wp-front-portrait">${photo(d.frontPhoto, `Black-and-white placeholder couple portrait for ${couple}`)}</div>
       </div>
       <div class="wp-front-lower">
-        <figure class="wp-front-small">${photo(d.frontDetailPhoto, 'Black-and-white placeholder photograph of the couple', 'wp-photo--detail')}<figcaption>A NEW CHAPTER, SHARED WITH YOU</figcaption></figure>
+        <figure class="wp-front-small">${photo(d.frontDetailPhoto, 'Black-and-white placeholder photograph of the couple', 'wp-photo--detail')}<figcaption>${T('frontCaption')}</figcaption></figure>
         <div class="wp-date-box"><span class="wp-date-day">${escape(shortDate.split(' ')[0])}</span><span class="wp-date-month">${escape(shortDate.split(' ').slice(1).join(' '))}</span><span class="wp-date-time">${escape(d.weddingTime)}</span><span class="wp-date-venue">${escape(d.venueName)}<br>${escape(d.venueAddress)}</span></div>
-        <section class="wp-join"><h3>Join Us</h3><div class="wp-rule"></div><p>${escape(d.joinMessage)}</p></section>
+        <section class="wp-join"><h3>${T('joinTitle')}</h3><div class="wp-rule"></div><p>${escape(d.joinMessage)}</p></section>
       </div>
-      <footer class="wp-page-foot"><span>THE WEDDING POST</span><span>01 · 05</span></footer>
+      <footer class="wp-page-foot"><span>${T('footer')}</span><span>01 · 05</span></footer>
     </article>`,
 
     `<article class="wp-page wp-page--save" data-page="1" aria-label="Page 2: Save the Date">
-      <header class="wp-save-masthead"><span>SPECIAL EDITION</span><b>The Wedding Post</b><span>SPECIAL EDITION</span></header>
+      <header class="wp-save-masthead"><span>SPECIAL EDITION</span><b>${T('masthead')}</b><span>SPECIAL EDITION</span></header>
       <div class="wp-save-submeta"><span>VOL. 01, NO. 01</span><span>✦</span><span>SAVE THE DATE</span><span>✦</span><span>${escape(shortDate.toUpperCase())}</span></div>
-      <h2 class="wp-save-title"><span>SAVE</span><em>the</em><span>DATE</span></h2>
+      <h2 class="wp-save-title"><span>${T('saveA')}</span><em>${T('saveB')}</em><span>${T('saveC')}</span></h2>
       <div class="wp-double-rule"></div>
       <div class="wp-save-photo">${photo(d.saveDatePhoto, `Black-and-white placeholder photo of ${couple}`)}</div>
       <div class="wp-double-rule"></div>
       <h3 class="wp-save-names">${escape(couple)}</h3>
-      <p class="wp-save-script">are getting married</p>
+      <p class="wp-save-script">${T('saveScript')}</p>
       <p class="wp-save-date">${escape(dateText)} · ${escape(d.weddingTime)}</p>
-      <footer class="wp-page-foot"><span>THE WEDDING POST</span><span>02 · 05</span></footer>
+      <footer class="wp-page-foot"><span>${T('footer')}</span><span>02 · 05</span></footer>
     </article>`,
 
     `<article class="wp-page wp-page--story" data-page="2" aria-label="Page 3: The Love Story">
       <div class="wp-story-toprule"></div>
       <div class="wp-stats">${stats.map(s => `<div class="wp-stat">${lineIcon(s.icon, 22)}<b>${escape(s.value)}</b><span>${escape(s.label)}</span></div>`).join('')}</div>
       <div class="wp-story-columns">
-        <section class="wp-story-card"><h2><span>The Love</span><em>Story</em></h2><p>${escape(d.storyText)}</p><blockquote>“${escape(d.storyQuote)}”</blockquote></section>
-        <section class="wp-facts-card"><h2><span>Fun Facts About</span><em>the Couple</em></h2><div class="wp-facts">${facts.map(f => `<p>${lineHeart()}<span>${escape(f)}</span></p>`).join('')}</div></section>
+        <section class="wp-story-card"><h2><span>${T('storyA')}</span><em>${T('storyB')}</em></h2><p>${escape(d.storyText)}</p><blockquote>“${escape(d.storyQuote)}”</blockquote></section>
+        <section class="wp-facts-card"><h2><span>${T('factsA')}</span><em>${T('factsB')}</em></h2><div class="wp-facts">${facts.map(f => `<p>${lineHeart()}<span>${escape(f)}</span></p>`).join('')}</div></section>
       </div>
       <div class="wp-moments">${moments.map(m => `<figure class="wp-moment">${photo(m.photo, `Black-and-white placeholder photo: ${m.caption}`)}<figcaption><b>${escape(m.caption)}</b><span>${escape(m.date)}</span></figcaption></figure>`).join('')}</div>
       <div class="wp-story-bottomrule"></div>
-      <footer class="wp-page-foot"><span>THE WEDDING POST</span><span>03 · 05</span></footer>
+      <footer class="wp-page-foot"><span>${T('footer')}</span><span>03 · 05</span></footer>
     </article>`,
 
     `<article class="wp-page wp-page--thanks" data-page="3" aria-label="Page 4: Our Wedding Post thank you">
-      <header class="wp-thanks-masthead"><h2>Our Wedding Post</h2><div class="wp-double-rule"></div></header>
-      <section class="wp-thanks-message"><h3>With Thanks</h3><div class="wp-rule"></div><p>${escape(d.thankYouMessage)}</p></section>
+      <header class="wp-thanks-masthead"><h2>${T('thanksMasthead')}</h2><div class="wp-double-rule"></div></header>
+      <section class="wp-thanks-message"><h3>${T('thanksTitle')}</h3><div class="wp-rule"></div><p>${escape(d.thankYouMessage)}</p></section>
       <div class="wp-thanks-photos">${thankPhotos.map(p => `<figure>${photo(p.photo, `Black-and-white placeholder couple photo: ${p.caption}`)}<figcaption>${escape(p.caption)}</figcaption></figure>`).join('')}</div>
-      <footer class="wp-page-foot"><span>THE WEDDING POST</span><span>04 · 05</span></footer>
+      <footer class="wp-page-foot"><span>${T('footer')}</span><span>04 · 05</span></footer>
     </article>`,
 
     `<article class="wp-page wp-page--games" data-page="4" aria-label="Page 5: Wedding Day games">
-      <header class="wp-games-header"><div><h2>Wedding Day Timeline</h2><p>Look forward to an amazing day</p></div><span class="wp-sparkle" aria-hidden="true">✦</span></header>
+      <header class="wp-games-header"><div><h2>${T('gamesTitle')}</h2><p>${T('gamesSub')}</p></div><span class="wp-sparkle" aria-hidden="true">✦</span></header>
       <div class="wp-timeline" style="--event-count:${Math.max(1, events.length)};--timeline-content-width:${Math.max(100, events.length * 20)}%" aria-label="Wedding day event timeline" tabindex="0"><div class="wp-timeline-track"><div class="wp-timeline-line" aria-hidden="true"></div>${events.map((event, i) => {
         const copySide = i % 2 ? 'top' : 'bottom';
         const iconSide = i % 2 ? 'bottom' : 'top';
         return `<div class="wp-event wp-event--copy-${copySide} wp-event--icon-${iconSide}" data-event="${i}"><span class="wp-event-icon${event.icon === 'sparkler' ? ' wp-event-icon--sparkler' : ''}">${lineIcon(event.icon, 25)}</span><span class="wp-event-heart" aria-hidden="true">♥</span><span class="wp-event-copy"><b class="wp-event-time">${escape(event.time)}</b><span class="wp-event-name">${escape(event.name)}</span></span></div>`;
       }).join('')}</div></div>
       <div class="wp-games-columns">
-        <section class="wp-game-panel wp-word-panel"><h3>Wedding Word Search</h3><p class="wp-word-list" id="wpWordList"></p><div class="wp-word-grid" id="wpWordGrid" role="grid" aria-label="Word search letter grid"></div><p class="wp-game-hint" id="wpWordHint" aria-live="polite">Tap and drag across the letters to find each word.</p><div class="wp-celebrate" id="wpWordCelebrate" hidden>All found! Cheers to ${escape(couple)}!</div></section>
-        <section class="wp-game-panel wp-maze-panel"><h3>Wedding Maze</h3><p class="wp-maze-subtitle">Help the groom get to the wedding</p><div class="wp-maze-stage"><div class="wp-maze-label wp-groom-label">${groomArt()}</div><div class="wp-maze-board" id="wpMaze" role="grid" aria-label="Wedding maze"></div><div class="wp-maze-label wp-bride-label">${brideArt()}</div><p class="wp-maze-win" id="wpMazeWin" hidden>You reached the wedding!</p></div><div class="wp-maze-controls" aria-label="Maze movement controls"><button type="button" data-move="up" aria-label="Move up">↑</button><div><button type="button" data-move="left" aria-label="Move left">←</button><button type="button" data-move="down" aria-label="Move down">↓</button><button type="button" data-move="right" aria-label="Move right">→</button></div></div></section>
+        <section class="wp-game-panel wp-word-panel"><h3>${T('wordTitle')}</h3><p class="wp-word-list" id="wpWordList"></p><div class="wp-word-grid" id="wpWordGrid" role="grid" aria-label="Word search letter grid"></div><p class="wp-game-hint" id="wpWordHint" aria-live="polite">${T('wordHint')}</p><div class="wp-celebrate" id="wpWordCelebrate" hidden>${T('wordCelebrate')} ${escape(couple)}!</div></section>
+        <section class="wp-game-panel wp-maze-panel"><h3>${T('mazeTitle')}</h3><p class="wp-maze-subtitle">${T('mazeSub')}</p><div class="wp-maze-stage"><div class="wp-maze-label wp-groom-label">${groomArt()}</div><div class="wp-maze-board" id="wpMaze" role="grid" aria-label="Wedding maze"></div><div class="wp-maze-label wp-bride-label">${brideArt()}</div><p class="wp-maze-win" id="wpMazeWin" hidden>${T('mazeWin')}</p></div><div class="wp-maze-controls" aria-label="Maze movement controls"><button type="button" data-move="up" aria-label="Move up">↑</button><div><button type="button" data-move="left" aria-label="Move left">←</button><button type="button" data-move="down" aria-label="Move down">↓</button><button type="button" data-move="right" aria-label="Move right">→</button></div></div></section>
       </div>
       <div class="wp-games-bottom">
-        <section class="wp-memory"><h3>In Loving Memory</h3><div class="wp-memory-heart" aria-hidden="true">♥</div><p>${escape(d.memoryMessage)}</p></section>
-        <section class="wp-qr-card"><div class="wp-qr">${qr}</div><h3>QR Code</h3><p>RECEPTION LOCATION</p>${d.mapLink ? `<a href="${escape(d.mapLink)}" target="_blank" rel="noopener noreferrer">Open map</a>` : ''}</section>
+        <section class="wp-memory"><h3>${T('memoryTitle')}</h3><div class="wp-memory-heart" aria-hidden="true">♥</div><p>${escape(d.memoryMessage)}</p></section>
+        <section class="wp-qr-card"><div class="wp-qr">${qr}</div><h3>${T('qrTitle')}</h3><p>${T('qrLabel')}</p>${d.mapLink ? `<a href="${escape(d.mapLink)}" target="_blank" rel="noopener noreferrer">Open map</a>` : ''}</section>
       </div>
-      <footer class="wp-page-foot"><span>THE WEDDING POST</span><span>05 · 05</span></footer>
+      <footer class="wp-page-foot"><span>${T('footer')}</span><span>05 · 05</span></footer>
       ${jsonPayload('wpGameData', { words })}
     </article>`,
   ];
 
-  const names = ["The Wedding Post", 'Save the Date', 'The Love Story', 'Our Wedding Post', 'Wedding Day'];
-  const title = opts.title || `${couple} · The Wedding Post`;
-  const description = `${dateText} · ${d.venueName}, ${d.venueAddress} · A five-page wedding newspaper from Paigaam.`;
+  const names = [P.masthead, P.navSave, P.navStory, P.navThanks, P.navGames].map(value => escape(value == null ? '' : value));
+  const title = opts.title || `${couple} · ${P.masthead || ''}`;
+  const description = `${dateText} · ${d.venueName}, ${d.venueAddress} · ${P.metaTail || ''}`;
   const controls = `<nav class="wp-controls" aria-label="Newspaper pages"><button type="button" id="wpPrev" aria-label="Previous page">← Previous</button><span id="wpPageStatus" aria-live="polite">Page 1 of 5 · ${names[0]}</span><button type="button" id="wpNext" aria-label="Next page">Next →</button></nav><div class="wp-dots" aria-label="Choose a page">${pages.map((_, i) => `<button type="button" data-page-go="${i}" aria-label="Go to page ${i + 1}"${i === 0 ? ' aria-current="page"' : ''}></button>`).join('')}</div>`;
   const bg = '#f1ede5';
   return `<!doctype html><html lang="en" style="--wp-bg:${bg};--wp-ink:#242321"><head>

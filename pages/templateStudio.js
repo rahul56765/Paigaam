@@ -134,6 +134,14 @@ function editPage(view, state = {}) {
     </div>
     ${field('w_scenes', 'Scenes (one per line)', `<textarea class="textarea" id="w_scenes" name="w_scenes" rows="6" maxlength="4000">${esc(scenesValue)}</textarea>`, 'The short descriptions of each scene on the create page. Blank keeps the shipped scenes.')}
 
+    ${isClone && view.shipped && view.shipped.phrases ? `
+    <h2 style="font-size:24px;margin:36px 0 8px">Wording on the layout</h2>
+    <p class="hint" style="margin-bottom:18px">The fixed text printed on the pages: the newspaper name, headings and game labels. Blank keeps the shipped wording.</p>
+    <div class="admin__form-grid" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 36px">
+      ${Object.keys(view.shipped.phrases).map(key => field(`ph_${key}`, (view.shipped.phraseLabels || {})[key] || key,
+        `<input class="input" id="ph_${esc(key)}" name="ph_${esc(key)}" value="${esc(textOf((values.phrases || {})[key]))}" maxlength="200">`)).join('')}
+    </div>` : ''}
+
     <h2 style="font-size:24px;margin:36px 0 8px">Words, samples and defaults</h2>
     <p class="hint" style="margin-bottom:18px">These fill the wizard by default and show in the preview. Fields the shipped layout leaves blank (names, the song link) show their sample in the preview only, so buyers still start empty.</p>
     ${specs.map(spec => renderSpec(spec, values.fields[spec.id])).join('')}
