@@ -31,6 +31,8 @@ const sawaal = require('./lib/sawaalRoutes');
 const magazines = require('./lib/magazineRoutes');   // Canva-powered personalised magazines (isolated feature)
 const weddingVideo = require('./lib/weddingVideoRoutes');   // animated wedding invitation films (isolated feature)
 const bfday = require('./lib/bfdayRoutes');   // the Boyfriend Day family (templates/bfday.js)
+const studio = require('./lib/bfday/studio');   // Boyfriend Day copy studio + clones
+const studioPages = require('./pages/templateStudio');
 const { ensureBrandAssets } = require('./lib/brand-assets');
 const { ensureGanapatiMedia } = require('./lib/ganapatiMedia');
 const { ensureCourtyardMedia } = require('./lib/courtyardMedia');
@@ -686,6 +688,30 @@ Sitemap: ${origin}/sitemap.xml
       }
       m = p.match(/^\/admin\/templates\/([A-Za-z0-9_-]+)\/delete$/);
       if (method === 'POST' && m) { q.templateDelete(m[1]); return redirect(res, '/admin/templates'); }
+
+      /* ---------- template studio: Boyfriend Day copy, clones, reset, delete ---------- */
+      if (p.startsWith('/admin/studio')) {
+        if (method === 'GET' && p === '/admin/studio') return send(res, 200, studioPages.listPage(studio.members(), u.searchParams.get('flash') || ''));
+        const sm = p.match(/^\/admin\/studio\/([a-z][a-z0-9-]*)(?:\/(clone|reset|delete))?$/);
+        const view = sm ? studio.memberView(sm[1]) : null;
+        if (!view) return send(res, 404, errorPage('404', 'Template not found.', ''));
+        const [, slug, action] = sm;
+        if (method === 'GET' && !action) return send(res, 200, studioPages.editPage(view, { saved: u.searchParams.get('saved') === '1' }));
+        if (method !== 'POST') return send(res, 404, errorPage('404', 'Not found.', ''));
+        const form = parseForm(await readBody(req));
+        if (!action) {
+          const r = studio.save(slug, form);
+          if (!r.ok) return send(res, 400, studioPages.editPage(view, { errors: r.errors, values: r.values }));
+          return redirect(res, `/admin/studio/${slug}?saved=1`);
+        }
+        const r = action === 'clone' ? studio.createClone(slug, form)
+          : action === 'reset' ? studio.resetBuiltIn(slug)
+          : studio.deleteClone(slug);
+        if (!r.ok) return send(res, 400, studioPages.editPage(view, { errors: r.errors }));
+        if (action === 'clone') return redirect(res, `/admin/studio/${r.slug}?saved=1`);
+        if (action === 'reset') return redirect(res, `/admin/studio/${slug}?saved=1`);
+        return redirect(res, '/admin/studio?flash=' + encodeURIComponent('Clone deleted.'));
+      }
 
       if (method === 'GET' && p === '/admin/paigaams') return send(res, 200, admin.paigaamsAdmin(q.paigaamsAll()));
       m = p.match(/^\/admin\/paigaams\/([A-Za-z0-9_-]+)$/);
