@@ -198,3 +198,51 @@ test('studio: after all of this, every family member still passes the contract c
   }
   assert.equal(JSON.stringify(family.shippedConfig(GIFT)), shippedBefore, 'shipped layout never mutated');
 });
+
+/* ------------------------------------------------- fixed wording (Wording) */
+
+/** The studio form for a member, rebuilt from its current values (a full round trip). */
+function formFrom(view) {
+  const form = {};
+  for (const spec of view.specs) {
+    const v = view.values.fields[spec.id];
+    if (spec.kind === 'text') form[`f_${spec.id}`] = v;
+    else if (spec.kind === 'lines') form[`l_${spec.id}`] = v.join('\n');
+    else v.forEach((item, i) => spec.subs.forEach(sub => { form[`s_${spec.id}_${i}_${sub.id}`] = item[sub.id] || ''; }));
+  }
+  for (const [k, v] of Object.entries(view.values.wizard)) form[`w_${k}`] = Array.isArray(v) ? v.join('\n') : v;
+  for (const [k, v] of Object.entries(view.values.phrases || {})) form[`ph_${k}`] = v;
+  return form;
+}
+
+test('studio: a clone of The Wedding Post can change its fixed wording; the shipped Wedding Post keeps its own', () => {
+  const made = studio.createClone('wedding-post', { new_name: 'Love Post Test', new_slug: 'love-post-test', new_category: 'Love', new_description: 'A love post.', new_price: '0' });
+  assert.equal(made.ok, true, made.errors.join(' | '));
+  const form = { ...formFrom(studio.memberView('love-post-test')), ph_masthead: 'The Love Post', ph_footer: 'THE LOVE POST', ph_thanksMasthead: 'Our Love Post', ph_gamesTitle: 'Our Love Day',
+    meta_name: 'Love Post Test', meta_category: 'Love', meta_description: 'A love post.', price: '0', status: 'draft' };
+  const r = studio.save('love-post-test', form);
+  assert.equal(r.ok, true, r.errors.join(' | '));
+  const html = renderDemo('love-post-test');
+  assert.ok(html.includes('>The Love Post</h1>'), 'masthead is the clone’s wording');
+  assert.ok(html.includes('Our Love Post'));
+  assert.ok(!html.includes('The Wedding Post'), 'no wedding masthead left');
+  assert.ok(html.includes('Our Love Day'));
+  assert.ok(!html.includes('Wedding Day Timeline'), 'no wedding heading left');
+  assert.ok(renderDemo('wedding-post').includes('The Wedding Post'), 'the shipped Wedding Post is unchanged');
+  assert.equal(family.bySlug('wedding-post').config.phrases.masthead, 'The Wedding Post');
+});
+
+test('studio: wording is escaped, length-limited, and blank keeps the shipped phrase', () => {
+  const view = studio.memberView('love-post-test');
+  const bad = studio.save('love-post-test', { ...formFrom(view), ph_masthead: '<img src=x onerror=alert(1)>', meta_name: 'Love Post Test', meta_category: 'Love', meta_description: 'd', price: '0', status: 'draft' });
+  assert.equal(bad.ok, true, bad.errors.join(' | '));
+  const html = renderDemo('love-post-test');
+  assert.ok(!html.includes('<img src=x'), 'no raw markup');
+  assert.ok(html.includes('&lt;img src=x'), 'escaped');
+  const long = studio.save('love-post-test', { ...formFrom(studio.memberView('love-post-test')), ph_masthead: 'x'.repeat(250), meta_name: 'Love Post Test', meta_category: 'Love', meta_description: 'd', price: '0', status: 'draft' });
+  assert.equal(long.ok, false);
+  assert.ok(long.errors.some(e => /Wording "masthead"/.test(e)));
+  const blank = studio.save('love-post-test', { ...formFrom(studio.memberView('love-post-test')), ph_masthead: '', meta_name: 'Love Post Test', meta_category: 'Love', meta_description: 'd', price: '0', status: 'draft' });
+  assert.equal(blank.ok, true, blank.errors.join(' | '));
+  assert.equal(family.bySlug('love-post-test').config.phrases.masthead, 'The Wedding Post', 'blank keeps the shipped phrase');
+});
