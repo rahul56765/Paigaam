@@ -60,8 +60,9 @@ async function main() {
     const overflow = await page.evaluate(() => ({ sw: document.documentElement.scrollWidth, cw: document.documentElement.clientWidth }));
     assert.ok(overflow.sw <= overflow.cw + 1, `horizontal overflow ${JSON.stringify(overflow)}`);
     const canvas = await page.locator('#save-date .rv-canvas').boundingBox();
-    assert.ok(canvas && Math.abs(canvas.width / canvas.height - 9 / 16) < .01, 'full 9:16 art canvas should stay uncropped');
-    assert.ok(canvas.height <= 844, 'one invitation canvas must fit within the viewport');
+    assert.ok(canvas && Math.abs(canvas.width - 390) < 2 && Math.abs(canvas.height - 844) < 2, 'on phones the art canvas should fill the viewport edge to edge (no letterbox bands)');
+    const mobileFit = await page.locator('#save-date .rv-art').evaluate(img => getComputedStyle(img).objectFit);
+    assert.equal(mobileFit, 'cover', 'phone artwork should cover the viewport without distortion');
     await page.screenshot({ path: '/tmp/royal-vivah-mobile-envelope.png', fullPage: false });
     const closedState = await page.locator('.rv-envelope__open-video').evaluate(v => ({ paused: v.paused, currentTime: v.currentTime, preload: v.preload, instruction: document.querySelector('.rv-envelope__instruction')?.textContent.trim() }));
     assert.equal(closedState.paused, true, 'envelope video must not play before a seal tap');
