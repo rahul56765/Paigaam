@@ -395,6 +395,95 @@ test('PNG is produced only for single-page designs (multi-page: PDF only)', asyn
   publish('birthday-collage');
 });
 
+/* ---------------- paywall (priced magazines) ---------------- */
+function seedOrderFor(mapping, fields = { headline: '' }) {
+  const order = store.createOrder(mapping.slug, store.hashOwner(crypto.randomBytes(32).toString('hex')), mapping);
+  store.patchOrder(order.id, { fields_json: JSON.stringify(fields) });
+  const dir = storage.uploadsDir(order.id);
+  for (const s of mapping.images) {
+    const filename = crypto.randomBytes(8).toString('hex') + '.png';
+    fs.writeFileSync(path.join(dir, filename), pngBuffer(420, 420));
+    store.putUpload(order.id, s.key, { filename, mime: 'image/png', bytes: 100, width: 420, height: 420 });
+  }
+  return order.id;
+}
+
+test('priced magazines generate only after payment settles; free ones need no payment', async () => {
+  const mapping = { ...M(), slug: 'priced-mag-test', name: 'Priced Mag', canvaTemplateId: 'PRICED1', adminManaged: true };
+  store.createTemplate(mapping);
+  mock.st.dataset = goodDataset(mapping); publish('priced-mag-test');
+  store.setTemplatePrice('priced-mag-test', 499, 999);
+  const row = store.getTemplate('priced-mag-test');
+  assert.equal(row.price, 499); assert.equal(row.list_price, 999);
+
+  const id = seedOrderFor(mapping);
+  let r = generate.start(id);
+  assert.equal(r.error, 'payment_required');
+  assert.equal(store.getOrder(id).status, 'draft'); // nothing queued
+
+  // Settlement rail: unknown Razorpay ids do nothing; known ones settle + generate.
+  const routes = require('../lib/magazineRoutes');
+  assert.equal(routes.settleRazorpayOrder('order_unknown', 'pay_x', 'sig'), '');
+  store.createMagazinePayment(id, { amount: 499, currency: 'INR', razorpay_order_id: 'order_mag1' });
+  const url = routes.settleRazorpayOrder('order_mag1', 'pay_mag1', 'sig');
+  assert.equal(url, `/magazines/m/${id}`);
+  await waitFor(() => store.getOrder(id).status === 'ready');
+  const o = store.getOrder(id);
+  assert.equal(o.payment_status, 'paid'); assert.ok(o.pdf_file);
+  const pay = store.magazinePaymentByRzpOrderId('order_mag1');
+  assert.equal(pay.status, 'paid'); assert.equal(pay.razorpay_payment_id, 'pay_mag1');
+  // Replay after settle is idempotent and still points at the magazine.
+  assert.equal(routes.settleRazorpayOrder('order_mag1', 'pay_mag1', 'sig'), url);
+  // Once paid, retries/ready no-ops stay harmless.
+  assert.equal(generate.start(id).started, false);
+
+  // A failed paid order can be retried without paying again.
+  const id2 = seedOrderFor(mapping);
+  store.createMagazinePayment(id2, { amount: 499, currency: 'INR', razorpay_order_id: 'order_mag2' });
+  routes.settleRazorpayOrder('order_mag2', 'pay_mag2', 'sig');
+  await waitFor(() => store.getOrder(id2).status === 'ready');
+
+  // Free designs (price 0) are untouched by the gate.
+  const freeId = seedOrder();
+  assert.equal(generate.start(freeId).started, true);
+  await waitFor(() => store.getOrder(freeId).status === 'ready');
+});
+
+test('paywall views: priced forms/result pages show the payment CTA; admin gets pricing surfaces', () => {
+  const views = require('../lib/magazines/views');
+  const m = M();
+  const pricedForm = views.formPage(m, { pricing: { price: 499, listPrice: 999, currency: 'INR' } });
+  assert.match(pricedForm, /Pay ₹499 & create my magazine/);
+  assert.match(pricedForm, /js\/paigaam-pay\.js/);
+  assert.match(pricedForm, /window\.__MAG/); assert.match(pricedForm, /"price":499/);
+  assert.match(views.formPage(m, { pricing: { price: 0, listPrice: 0, currency: 'INR' } }), /Create my magazine/);
+  assert.doesNotMatch(views.formPage(m, { pricing: { price: 0, listPrice: 0, currency: 'INR' } }), /paigaam-pay\.js/);
+
+  const order = { id: 'a'.repeat(32), status: 'draft', payment_status: 'pending', error_code: null };
+  const unpaid = views.resultPage(order, m, { owner: true, ready: {}, pricing: { price: 499, listPrice: 0, currency: 'INR' } });
+  assert.match(unpaid, /Pay ₹499 & create my magazine/);
+  assert.match(unpaid, /data-mag-id="a{32}"/); assert.match(unpaid, /paigaam-pay\.js/);
+  // Non-owners and free orders never see a pay wall.
+  assert.doesNotMatch(views.resultPage(order, m, { owner: false, ready: {}, pricing: { price: 499, listPrice: 0, currency: 'INR' } }), /id="magPay"/);
+  assert.doesNotMatch(views.resultPage(order, m, { owner: true, ready: {}, pricing: { price: 0, listPrice: 0, currency: 'INR' } }), /id="magPay"/);
+  // Paid orders show the normal result page.
+  assert.match(views.resultPage({ ...order, payment_status: 'paid' }, m, { owner: true, ready: {}, pricing: { price: 499, listPrice: 0, currency: 'INR' } }), /Creating your magazine/);
+
+  // Catalogue cards show Free or the price.
+  const cat = views.catalogue([{ ...m, price: 499, listPrice: 999, currency: 'INR', hasPreview: false, hasSample: false }]);
+  assert.match(cat, /₹499/); assert.match(cat, /₹999/);
+
+  const row = { slug: m.slug, status: 'published', canva_template_id: m.canvaTemplateId, price: 499, list_price: 999, currency: 'INR', validated_at: Date.now(), validation: { ok: true, problems: [] }, mapping: { ...m, adminManaged: true } };
+  const adminHtml = views.adminPage({ configured: true, connection: null, templates: [{ mapping: m, row }],
+    orders: [{ id: 'b'.repeat(32), template_slug: m.slug, status: 'draft', payment_status: 'pending', priced: true, price: 499, attempts: 0, created_at: Date.now(), error_code: null, error_stage: null }], flash: '' });
+  assert.match(adminHtml, new RegExp(`/admin/magazines/${m.slug}/price`));
+  assert.match(adminHtml, /name="price"[^>]*value="499"/); assert.match(adminHtml, /name="list_price"[^>]*value="999"/);
+  assert.match(adminHtml, /Unpaid · ₹499/); assert.match(adminHtml, /Mark paid/);
+
+  const editor = views.adminEditorPage({ mapping: { slug: 'x', name: 'X', tagline: 'T', canvaTemplateId: 'TEMPLATE1', pageCount: 1, fields: [], images: [], limits: require('../lib/magazines/registry').IMAGE_LIMITS }, editableSlug: true, pricing: { price: 250, listPrice: 0 } });
+  assert.match(editor, /data-meta="price"/); assert.match(editor, /data-meta="listPrice"/); assert.match(editor, /value="250"/);
+});
+
 test('cleanup removes abandoned drafts but never ready magazines', () => {
   const draft = seedOrder(); store.patchOrder(draft, { updated_at: 0 });
   const { db } = require('../db'); db.prepare('UPDATE magazine_orders SET updated_at=0 WHERE id=?').run(draft);

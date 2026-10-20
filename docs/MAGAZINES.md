@@ -3,7 +3,8 @@
 Readers pick a design, fill in the fields, upload photos, and Paigaam builds a personalised magazine through
 **Canva Connect REST (Autofill + Exports)**. They preview it on Paigaam and download a PDF (PNG too, for single-page designs).
 Readers never need a Canva account. One Paigaam-owned Canva Pro account owns the master Brand Templates and all generated designs.
-This feature is isolated from greeting templates, Razorpay and publishing, and is **free** (no pricing/payment is attached). Multi-page templates also get a fictional Canva Autofill sample so readers can flip through the actual layout before choosing it.
+The feature is isolated from greeting templates and publishing. **Pricing uses the same Razorpay rail as greeting templates**
+(see *Payments* below): each design can be free (₹0, the default) or priced, and priced magazines generate only after payment settles.
 
 ## How it works
 ```
@@ -17,6 +18,16 @@ reader form ─▶ private draft + photos (DATA_DIR/magazines/uploads/<id>)
 ```
 Every Canva id is saved the moment it is known, so **retry resumes** and never creates a second customer design.
 `update_design` is never called. Source photos are deleted when the magazine is ready.
+
+## Payments (Razorpay rail, shared with greeting templates)
+- Each design has a sale price and an optional struck-through listing price (₹, INR). **0 = free** — free designs generate exactly as before, with no payment step.
+- Admin sets prices in **Admin → Magazines** (inline per-design price form) and at import time in **Add magazine from Canva**. Changing a price does not touch the Canva mapping or validation and needs no unpublish.
+- Reader flow on a priced design: the form's CTA becomes “Pay ₹X & create my magazine”. Submitting saves the draft, then opens Razorpay's inline checkout (`POST /api/magazines/drafts/:id/checkout` → Razorpay order → inline modal → `POST /api/razorpay/verify`). The server marks the payment + order paid and starts generation. Generation itself refuses unpaid orders (`payment_required`), so there is no way to build a priced magazine without a settled payment.
+- Settlement is idempotent and dual-path: the browser verify call **and** a signed `payment.captured` / `order.paid` webhook (`/api/razorpay/webhook`) both settle through `magazines.settleRazorpayOrder`, so a closed tab still results in a built magazine. Payments are recorded in the `magazine_payments` table; the order's `payment_status` gates generation and retries.
+- Admin can settle manually: **Admin → Magazines → Recent magazines → Mark paid** (used for UPI-outside-gateway or goodwill). It marks the order paid and starts generation when the draft is complete.
+- Checkout is owner-only and validates that fields + photos are complete first, so a reader can never be charged for an order that would not generate. Amounts are set server-side from the template row at checkout time.
+- Env: reuses the greeting-template variables — `RAZORPAY_ENABLED=1`, `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, optional `RAZORPAY_WEBHOOK_SECRET`. Without them, priced magazines show “payments offline” instead of failing cryptically; free designs are unaffected.
+- Failed paid orders can be retried (admin Retry or reader Try again) without a second payment.
 
 ## Face-aware framing
 - Photo face detection uses MediaPipe BlazeFace Full Range Sparse (better suited to wider group photos) in a local browser Web Worker before any photo is sent to Paigaam. It detects face boxes only; it does not identify people or create face embeddings. See [MediaPipe model overview](https://github.com/google-ai-edge/mediapipe/blob/master/docs/solutions/models.md#face-detection).
@@ -41,6 +52,7 @@ Every Canva id is saved the moment it is known, so **retry resumes** and never c
 | `CANVA_TOKEN_ENCRYPTION_KEY` | ≥32 random chars; AES-256-GCM key for stored OAuth tokens. Losing it only means reconnecting Canva |
 | `CANVA_REDIRECT_URI` | Optional. Default `BASE_URL + /admin/canva/callback` |
 | `DATA_DIR` | Existing. Must be a persistent volume (Railway: `/var/data`) |
+| `RAZORPAY_ENABLED`, `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET` | Existing greeting-template Razorpay rail; shared by priced magazines (names only — set values in Railway) |
 
 Test-only (honoured only when `CANVA_TEST_MODE=1`): `CANVA_API_BASE`, `CANVA_AUTHORIZE_URL`, `CANVA_POLL_MS`, `CANVA_JOB_TIMEOUT_MS`, `CANVA_RETRY_AFTER_CAP_MS`. Never set these in production.
 
@@ -87,11 +99,11 @@ Drafts and their photos are readable only by the browser that created them (Http
 8. Admin → Disconnect; confirm creation is hidden and the earlier download still works.
 
 ## Tests
-`npm run test:magazines` → `tests/magazines.test.js`, `tests/magazine-preview.test.js`, `tests/magazine-sample-flow.test.js`, and `scripts/test-magazines.js`. This includes mocked sample Autofill/PDF export, one-sample idempotence, asset-cache reuse, field/photo mapping, page-flip result markup, and the existing HTTP magazine flow. No real Canva credentials are needed; the API mock lives in `tests/helpers/canvaMock.js`.
+`npm run test:magazines` → `tests/magazines.test.js`, `tests/magazine-preview.test.js`, `tests/magazine-sample-flow.test.js`, `tests/magazine-face-framing.test.js`, and `scripts/test-magazines.js`. This includes mocked sample Autofill/PDF export, one-sample idempotence, asset-cache reuse, field/photo mapping, page-flip result markup, the existing HTTP magazine flow, and the paywall (generation gating, honest checkout failure, admin mark-paid, verify-endpoint settlement). No real Canva credentials are needed; the API mock lives in `tests/helpers/canvaMock.js`.
 
 ## Rollback
-- Fast, no deploy: Admin → **Unpublish** the design (or Disconnect Canva). Public pages return 404 and nothing is generated.
-- Code: revert the merge commit; tables are additive and unused by other features, so no migration reversal is needed. (`DROP TABLE canva_connection, canva_oauth_state, magazine_templates, magazine_orders, magazine_uploads;` and delete `DATA_DIR/magazines` only if you want the data gone.)
+- Fast, no deploy: Admin → **Unpublish** the design (or Disconnect Canva). Public pages return 404 and nothing is generated. To make a priced design free, set its price to 0 in admin — readers then generate without paying.
+- Code: revert the merge commit; tables are additive and unused by other features, so no migration reversal is needed. (`DROP TABLE canva_connection, canva_oauth_state, magazine_templates, magazine_orders, magazine_uploads, magazine_payments;` and delete `DATA_DIR/magazines` only if you want the data gone.)
 - Security: rotate the Canva client secret in the Developer Portal, update Railway, and click Connect again.
 
 ## Limitations
