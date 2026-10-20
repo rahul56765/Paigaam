@@ -1,7 +1,7 @@
 'use strict';
 // End-to-end over HTTP against a real server process + mocked Canva. Run: node scripts/test-magazines.js
 const { spawn } = require('node:child_process'), { once } = require('node:events');
-const fs = require('node:fs'), path = require('node:path'), os = require('node:os'), net = require('node:net');
+const fs = require('node:fs'), path = require('node:path'), os = require('node:os'), net = require('node:net'), crypto = require('node:crypto');
 const assert = require('node:assert/strict');
 const { createCanvaMock, pngBuffer, goodDataset } = require('../tests/helpers/canvaMock');
 const registry = require('../lib/magazines/registry');
@@ -22,6 +22,7 @@ const root = path.join(__dirname, '..');
   const m = registry.bySlug('birthday-collage');
   let server;
   const env = { ...process.env, PORT: String(port), HOST: '127.0.0.1', BASE_URL: base, DATA_DIR: dir, ADMIN_EMAIL: 'admin@test.local', ADMIN_PASSWORD: 'e2e-admin-pass',
+    RAZORPAY_ENABLED: '1', RAZORPAY_KEY_ID: 'rzp_test_placeholder', RAZORPAY_KEY_SECRET: 'test_secret_key_placeholder', RAZORPAY_WEBHOOK_SECRET: 'whsec_placeholder',
     CANVA_TEST_MODE: '1', CANVA_API_BASE: mock.apiBase, CANVA_AUTHORIZE_URL: mock.base + '/authorize', CANVA_POLL_MS: '10', CANVA_JOB_TIMEOUT_MS: '5000', CANVA_RETRY_AFTER_CAP_MS: '20',
     CANVA_CLIENT_ID: 'test-client', CANVA_CLIENT_SECRET: 'test-secret', CANVA_TOKEN_ENCRYPTION_KEY: 'e2e-key-' + 'k'.repeat(40) };
   async function start() {
@@ -255,6 +256,51 @@ const root = path.join(__dirname, '..');
     const admin2 = jar(); await req(admin2, 'POST', '/admin/login', { body: 'email=admin%40test.local&password=e2e-admin-pass', headers: { 'Content-Type': 'application/x-www-form-urlencoded' } });
     assert.match(await (await req(admin2, 'GET', '/admin/magazines')).text(), /Connected/);
     ok('state survives a restart (files, connection, orders)');
+
+    /* --- magazine paywall: priced designs generate only after payment --- */
+    // Admin prices the published design (no unpublish needed — pricing is not part of the Canva mapping).
+    const priced = await req(admin2, 'POST', '/admin/magazines/birthday-collage/price', { body: 'price=499&list_price=999', headers: { 'Content-Type': 'application/x-www-form-urlencoded' } });
+    assert.match(decodeURIComponent(priced.headers.get('location')), /price set to ₹499/);
+    const paidAdminPage = await (await req(admin2, 'GET', '/admin/magazines')).text();
+    assert.match(paidAdminPage, /birthday-collage\/price/); assert.match(paidAdminPage, /value="499"/);
+    assert.match(await (await req(null, 'GET', '/magazines')).text(), /₹499/); // catalogue shows the price
+    const pricedForm = await (await req(null, 'GET', '/magazines/birthday-collage')).text();
+    assert.match(pricedForm, /Pay ₹499 & create my magazine/); assert.match(pricedForm, /js\/paigaam-pay\.js/);
+    const dana = jar();
+    const did = (await jsonReq(dana, 'POST', '/api/magazines/drafts', { slug: 'birthday-collage' })).body.id;
+    for (let i = 1; i <= 9; i++) await put(dana, did, 'photo_' + i, pngBuffer(450, 450), 'image/png');
+    await jsonReq(dana, 'PUT', `/api/magazines/drafts/${did}`, { fields: { headline: 'Paywalled' } });
+    let gated = await jsonReq(dana, 'POST', `/api/magazines/drafts/${did}/generate`, {});
+    assert.equal(gated.status, 402); assert.equal(gated.body.error, 'payment_required'); assert.equal(gated.body.price, 499);
+    assert.equal((await jsonReq(bob, 'POST', `/api/magazines/drafts/${did}/checkout`, {})).status, 403); // checkout is owner-only
+    // Placeholder keys → honest gateway failure (same shape as the template rail).
+    gated = await jsonReq(dana, 'POST', `/api/magazines/drafts/${did}/checkout`, {});
+    assert.equal(gated.status, 502); assert.equal(gated.body.error, 'gateway_unreachable');
+    // Unpaid result page offers the pay CTA; admin can settle manually and generation runs.
+    const unpaidPage = await (await req(dana, 'GET', `/magazines/m/${did}`)).text();
+    assert.match(unpaidPage, /Pay ₹499 & create my magazine/); assert.match(unpaidPage, /paigaam-pay\.js/);
+    const marked = await req(admin2, 'POST', `/admin/magazines/orders/${did}/mark-paid`, {});
+    assert.match(decodeURIComponent(marked.headers.get('location')), /generation started/);
+    await waitFor(async () => (await jsonReq(dana, 'GET', `/api/magazines/${did}/status`)).body.status === 'ready');
+    ok('paywall: generation gated on payment, checkout degrades honestly, admin mark-paid settles + generates');
+
+    /* --- Razorpay verify endpoint settles magazine payments (webhook shares the path) --- */
+    const erin = jar(); const eid = (await jsonReq(erin, 'POST', '/api/magazines/drafts', { slug: 'birthday-collage' })).body.id;
+    for (let i = 1; i <= 9; i++) await put(erin, eid, 'photo_' + i, pngBuffer(450, 450), 'image/png');
+    await jsonReq(erin, 'PUT', `/api/magazines/drafts/${eid}`, { fields: { headline: 'Verified' } });
+    const sq = new (require('node:sqlite').DatabaseSync)(path.join(dir, 'paigaam.db'));
+    sq.prepare(`INSERT INTO magazine_payments (id, order_id, amount, currency, status, razorpay_order_id, created_at, updated_at) VALUES ('${'e'.repeat(32)}', ?, 499, 'INR', 'pending', 'order_mag_verify', ?, ?)`).run(eid, Date.now(), Date.now());
+    sq.close();
+    const magSig = crypto.createHmac('sha256', 'test_secret_key_placeholder').update('order_mag_verify|pay_mag_verify').digest('hex');
+    let vr = await fetch(base + '/api/razorpay/verify', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ razorpay_order_id: 'order_mag_verify', razorpay_payment_id: 'pay_mag_verify', razorpay_signature: magSig }) });
+    assert.equal(vr.status, 200); const vj = await vr.json(); assert.ok(vj.url && vj.url.includes('/magazines/m/'), 'magazine verify returns magazine url');
+    await waitFor(async () => (await jsonReq(erin, 'GET', `/api/magazines/${eid}/status`)).body.status === 'ready');
+    // Replay is idempotent; unknown orders still 404.
+    vr = await fetch(base + '/api/razorpay/verify', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ razorpay_order_id: 'order_mag_verify', razorpay_payment_id: 'pay_mag_verify', razorpay_signature: magSig }) });
+    assert.equal(vr.status, 200);
+    const missingSig = crypto.createHmac('sha256', 'test_secret_key_placeholder').update('order_missing|pay_missing').digest('hex');
+    assert.equal((await fetch(base + '/api/razorpay/verify', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ razorpay_order_id: 'order_missing', razorpay_payment_id: 'pay_missing', razorpay_signature: missingSig }) })).status, 404);
+    ok('Razorpay verify settles magazine payments: marks paid, starts generation, idempotent, unknown 404');
 
     /* --- disconnect blocks new generation --- */
     const dis = await req(admin2, 'POST', '/admin/canva/disconnect', {}); assert.match(decodeURIComponent(dis.headers.get('location')), /disconnected/i); assert.ok(mock.st.revoked);

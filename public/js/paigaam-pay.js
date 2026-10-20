@@ -2,8 +2,9 @@
 /**
  * PaigaamPay — inline Razorpay checkout, shared by every seller surface.
  *
- * window.PaigaamPay.open({ prefillName }) → Promise<{ url }>
- *   1. POST /api/razorpay/order { id: <paigaamId from the button/URL> }
+ * window.PaigaamPay.open({ prefillName, orderEndpoint }) → Promise<{ url }>
+ *   1. POST <orderEndpoint || /api/razorpay/order> { id: <paigaamId from the button/URL> }
+ *      (orderEndpoint lets other rails — e.g. magazines — reuse the same modal)
  *   2. lazy-loads checkout.js once, opens the Razorpay modal
  *   3. verifies the signature server-side (which settles + publishes)
  *   4. resolves with the live paigaam URL — the CALLER paints the share UI.
@@ -70,7 +71,7 @@
     if (opts.order) return start(opts.order);
     var id = opts.id || paigaamId();
     if (!id) return Promise.reject({ code: 'not_found' });
-    return fetch('/api/razorpay/order', {
+    return fetch(opts.orderEndpoint || '/api/razorpay/order', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       credentials: 'same-origin',
       body: JSON.stringify({ id: id, prefillName: opts.prefillName || '' })

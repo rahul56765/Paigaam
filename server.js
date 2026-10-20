@@ -423,9 +423,14 @@ const server = http.createServer(async (req, res) => {
         return json(res, 400, { error: 'bad_signature' });
       }
       const order = q.orderByRazorpayOrderId(razorpay_order_id);
-      if (!order) return json(res, 404, { error: 'order_not_found' });
-      const url = settlePaidOrder(order, razorpay_payment_id, razorpay_signature);
-      return json(res, 200, { ok: true, url });
+      if (order) {
+        const url = settlePaidOrder(order, razorpay_payment_id, razorpay_signature);
+        return json(res, 200, { ok: true, url });
+      }
+      // Magazines share the Razorpay rail: their payments settle into generation + a magazine URL.
+      const magUrl = magazines.settleRazorpayOrder(razorpay_order_id, razorpay_payment_id, razorpay_signature);
+      if (magUrl) return json(res, 200, { ok: true, url: `${BASE_URL}${magUrl}` });
+      return json(res, 404, { error: 'order_not_found' });
     }
     if (method === 'POST' && p === '/api/razorpay/webhook') {
       const raw = await readBody(req);
@@ -438,6 +443,10 @@ const server = http.createServer(async (req, res) => {
         if (order && order.status !== 'paid') {
           const entity = event.payload && event.payload.payment && event.payload.payment.entity;
           settlePaidOrder(order, (entity && entity.id) || '', 'webhook');
+        } else if (!order) {
+          // Not a greeting-template order — settle magazines the same way.
+          const entity = event.payload && event.payload.payment && event.payload.payment.entity;
+          magazines.settleRazorpayOrder(rzpOrderId, (entity && entity.id) || '', 'webhook');
         }
       }
       return json(res, 200, { ok: true });
