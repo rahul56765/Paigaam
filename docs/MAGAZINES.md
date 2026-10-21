@@ -9,3 +9,4 @@ Multi-page templates also get a fictional Canva Autofill sample so readers can f
 
 Changelog:
 - 20 Oct 2026 — paywall shipped (PR #45): per-design pricing in admin, Razorpay checkout before generation, mark-paid settlement.
+- 21 Oct 2026 — deployed after the Railway deploy pause lifted.
