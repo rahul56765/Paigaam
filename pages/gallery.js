@@ -219,7 +219,7 @@ function gallery(templates, state = {}, opts = {}) {
   var qpmDetail = document.getElementById('qpmDetail');
   function closeQpm() {
     qpm.hidden = true;
-    qpmFrame.innerHTML = ''; // unloads the iframe → media stops, memory freed
+    qpmFrame.replaceChildren(); // keep the collection preview static and release its image
     document.body.style.overflow = '';
   }
   document.addEventListener('click', function (e) {
@@ -235,8 +235,23 @@ function gallery(templates, state = {}, opts = {}) {
       qpmCreate.href = d.create || '#';
       qpmCreate.setAttribute('data-template', d.slug || '');
       qpmDetail.href = d.detail || '#';
-      // muted, playsinline miniature — never any sound
-      qpmFrame.innerHTML = '<iframe title="Preview of the ' + (d.name || '').replace(/[&<>\"]/g, '') + ' Paigaam" src="' + d.frame + '" scrolling="no" tabindex="-1" style="width:100%;height:100%;border:0" sandbox="allow-same-origin allow-scripts" allow="autoplay &#39;none&#39;"></iframe>';
+      // A static poster keeps even the quick-look modal silent; the full
+      // interactive experience is only opened from its explicit detail link.
+      qpmFrame.replaceChildren();
+      if (d.thumbnail) {
+        var poster = document.createElement('img');
+        poster.className = 'qpm__poster'; poster.src = d.thumbnail; poster.alt = '';
+        qpmFrame.appendChild(poster);
+      } else {
+        var placeholder = document.createElement('div');
+        placeholder.className = 'qpm__poster qpm__poster--placeholder';
+        placeholder.style.backgroundColor = d.bg || '#F4EADD';
+        var title = document.createElement('span');
+        title.className = 'qpm__poster-title'; title.textContent = d.name || '';
+        var label = document.createElement('span');
+        label.className = 'qpm__poster-label'; label.textContent = 'Paigaam design preview';
+        placeholder.appendChild(title); placeholder.appendChild(label); qpmFrame.appendChild(placeholder);
+      }
       qpm.hidden = false;
       document.body.style.overflow = 'hidden';
       window.paTrack && window.paTrack('template_previewed', { template: d.slug });

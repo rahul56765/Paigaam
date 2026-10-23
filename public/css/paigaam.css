@@ -232,7 +232,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
 .tcard__live.is-ready { opacity: 1; }
 .tcard__frame.no-live .tcard__live { display: none; }
 .tcard__fallback {
-  position: absolute; inset: 0;
+  position: absolute; inset: 0; z-index: 0;
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
   padding: 26px; text-align: center;
 }
@@ -784,8 +784,11 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
   width: 34px; height: 34px; border-radius: 50%; border: 0; cursor: pointer;
   background: rgba(251, 244, 237, 0.92); color: var(--ink); font-size: 20px; line-height: 1;
 }
-.qpm__frame { position: relative; flex: 1; min-height: 0; background: var(--bg-deep); }
-.qpm__frame iframe { opacity: 0; transition: opacity 0.5s ease 0.1s; }
+.qpm__frame { position: relative; flex: 1; min-height: 220px; aspect-ratio: 9 / 16; overflow: hidden; background: var(--bg-deep); }
+.qpm__poster { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.qpm__poster--placeholder { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 24px; text-align: center; }
+.qpm__poster-title { font-family: var(--serif); font-size: 30px; letter-spacing: 0.14em; text-transform: uppercase; }
+.qpm__poster-label { font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--taupe); }
 .qpm__meta { display: flex; justify-content: space-between; align-items: flex-start; gap: 18px; padding: 18px 20px 20px; }
 .qpm__meta h3 { font-family: var(--serif); font-size: 24px; letter-spacing: 0.1em; margin-bottom: 4px; }
 .qpm__meta p { font-size: 13px; color: var(--ink-soft); font-family: var(--serif); font-style: italic; line-height: 1.5; }
