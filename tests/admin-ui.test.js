@@ -18,7 +18,7 @@ const pages = [
 ];
 
 test('shared page shell cache-busts the updated stylesheet', () => {
-  assert.match(head('Admin test'), /href="\/css\/paigaam\.css\?v=20261011-marble-studio"/);
+  assert.match(head('Admin test'), /href="\/css\/paigaam\.css\?v=20261024-silent-gallery"/);
 });
 
 test('sign-in uses the studio surface and a focused, responsive credential form', () => {

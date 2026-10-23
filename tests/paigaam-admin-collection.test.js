@@ -32,15 +32,17 @@ test('template editor supports frame capture and image uploads for collection ar
   assert.match(html, /Captured or uploaded image/);
 });
 
-test('collection cards use saved thumbnails, while live preview iframes cannot autoplay audio', () => {
+test('collection cards and quick looks stay static and silent until a visitor opens a full preview', () => {
   const common = { slug: 'noor', name: 'Noor', category: 'Wedding', price: 499, config: { theme: { bg: '#fff', accent: '#900' } } };
   const withThumb = templateCard({ ...common, thumbnail_url: 'data:image/jpeg;base64,abc' });
   assert.match(withThumb, /class="tcard__poster"/);
   assert.match(withThumb, /data:image\/jpeg;base64,abc/);
-  assert.doesNotMatch(withThumb, /class="tcard__live"/);
+  assert.doesNotMatch(withThumb, /<iframe/i);
   const withoutThumb = templateCard({ ...common, thumbnail_url: '' });
-  assert.match(withoutThumb, /class="tcard__live"/);
-  assert.match(withoutThumb, /allow="autoplay 'none'"/);
+  assert.doesNotMatch(withoutThumb, /<iframe|template-view\//i);
+  assert.match(withoutThumb, /class="tcard__fallback"/);
   const collection = gallery([{ ...common, thumbnail_url: '' }]);
-  assert.match(collection, /allow="autoplay &#39;none&#39;"/);
+  assert.doesNotMatch(collection, /<iframe/i);
+  assert.match(collection, /Paigaam design preview/);
+  assert.match(collection, /qpmFrame\.replaceChildren\(\)/);
 });
