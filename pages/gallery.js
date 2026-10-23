@@ -236,7 +236,7 @@ function gallery(templates, state = {}, opts = {}) {
       qpmCreate.setAttribute('data-template', d.slug || '');
       qpmDetail.href = d.detail || '#';
       // muted, playsinline miniature — never any sound
-      qpmFrame.innerHTML = '<iframe title="Preview of the ' + (d.name || '').replace(/[&<>\"]/g, '') + ' Paigaam" src="' + d.frame + '" scrolling="no" tabindex="-1" style="width:100%;height:100%;border:0" sandbox="allow-same-origin allow-scripts"></iframe>';
+      qpmFrame.innerHTML = '<iframe title="Preview of the ' + (d.name || '').replace(/[&<>\"]/g, '') + ' Paigaam" src="' + d.frame + '" scrolling="no" tabindex="-1" style="width:100%;height:100%;border:0" sandbox="allow-same-origin allow-scripts" allow="autoplay &#39;none&#39;"></iframe>';
       qpm.hidden = false;
       document.body.style.overflow = 'hidden';
       window.paTrack && window.paTrack('template_previewed', { template: d.slug });
