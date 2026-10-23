@@ -597,6 +597,7 @@
     const ph = cleanPhone(rv.whatsapp);
     d.rsvp.whatsapp = ph.value;
     if (!ph.ok) err('rsvp.whatsapp', 'That number does not look right. Use a 10-digit Indian mobile number or +country code and number.');
+    if (d.sections.rsvp && opts.requireWhatsAppRsvp && !d.rsvp.whatsapp) err('rsvp.whatsapp', 'Add the organiser’s WhatsApp number so guests can RSVP.');
     if (d.sections.rsvp && d.rsvp.deadline && d.wedding.date) {
       if (d.rsvp.deadline > d.wedding.date) err('rsvp.deadline', 'The RSVP deadline should be on or before the wedding day.');
       if (!opts.allowPast && Date.parse(d.rsvp.deadline + 'T23:59:59Z') < now) err('rsvp.deadline', 'The RSVP deadline has already passed.');
@@ -617,6 +618,17 @@
       'dress.women', 'dress.men', 'dress.common', 'transport', 'accommodation.text', 'gifts', 'closing'];
     for (const ev of d.events || []) for (const f of ['name', 'venue', 'address', 'note', 'dress']) keys.push(`events.${ev.id}.${f}`);
     return keys;
+  }
+
+  /** Build the organiser WhatsApp handoff for a minimal yes/no RSVP. */
+  function whatsappRsvpLink(data, attending, lang) {
+    const phone = cleanPhone(data && data.rsvp && data.rsvp.whatsapp);
+    const number = phone.value.replace(/\D/g, '');
+    if (!phone.ok || !number) return '';
+    const order = data.couple.order === 'bride' ? ['bride', 'groom'] : ['groom', 'bride'];
+    const couple = order.map(side => txt(data, lang, `couple.${side}.first`)).filter(Boolean).join(' & ');
+    const text = `${I18N.t(lang, 'rsvpTitle')}: ${I18N.t(lang, attending ? 'accept' : 'decline')} — ${couple}`;
+    return `https://wa.me/${number}?text=${encodeURIComponent(text)}`;
   }
 
   /* ======================================================== time & dates */
@@ -741,7 +753,7 @@
   /** Publish checklist: what is still missing, in friendly language. */
   function checklist(result) {
     const items = [];
-    const steps = { couple: 1, welcome: 1, wedding: 2, events: 2, venue: 3, reception: 3, dress: 3, transport: 3, accommodation: 3, gifts: 3, photos: 4, music: 4, palette: 5, font: 5, lang: 6, i18n: 6, rsvp: 7, access: 7 };
+    const steps = { couple: 1, welcome: 1, wedding: 2, events: 2, rsvp: 2, venue: 3, reception: 3, dress: 3, transport: 3, accommodation: 3, gifts: 3, photos: 4, music: 4, palette: 5, font: 5, lang: 6, i18n: 6, access: 7 };
     for (const e of result.errors) items.push({ kind: 'error', path: e.path, msg: e.msg, step: steps[e.path.split('.')[0]] || 1 });
     const byLang = {};
     for (const t of result.translations) (byLang[t.lang] = byLang[t.lang] || []).push(t);
@@ -754,6 +766,6 @@
     FONTS, FONT_BY_ID, scriptFontFor, googleFontsHref, MUSIC, TOGGLES, TOGGLE_LABELS, LIMITS,
     SAMPLE, BLANK_VENUE, validate, cleanText, cleanName, cleanPhone, properCase, EMAIL_RE, SLUG_RE, slugify, slugSuggestions,
     zonedToUtc, fmtDate, fmtTime, fmtNum, txt, eventName, fillNames, parentLine, schedule, mapsLinks, icsFor, getPath,
-    translatableFields, checklist, validDate, validTime, validTz, isImage, isAudio, I18N,
+    translatableFields, checklist, validDate, validTime, validTz, isImage, isAudio, whatsappRsvpLink, I18N,
   };
 });

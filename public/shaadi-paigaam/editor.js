@@ -9,6 +9,8 @@
   const boot = JSON.parse(document.getElementById('spe-boot').textContent);
   const ROOT = '/' + (boot.slug || 'shaadi-paigaam'), API = '/api' + ROOT, CREATE = '/create' + ROOT;
   const STORE = boot.slug === 'suvarna-vivah' ? 'sv-ed' : 'sp-ed';
+  const simpleWhatsAppRsvp = boot.slug !== 'suvarna-vivah';
+  const lazyMusic = boot.slug !== 'suvarna-vivah';
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -55,7 +57,7 @@
     dirty: false, synced: true, saving: null, manageUrl: '', v: null, previewLang: null, device: 'phone', tab: 'edit', slugTimer: 0, slugState: null, autoTr: {}, published: null };
   const LS = id => STORE + ':' + (id || 'new');
 
-  function validateNow() { S.v = C.validate(S.data); return S.v; }
+  function validateNow() { S.v = C.validate(S.data, { requireWhatsAppRsvp: simpleWhatsAppRsvp }); return S.v; }
   function getP(path) {
     const parts = path.split('.'); let o = S.data;
     for (const p of parts) { if (o == null) return undefined; o = o[p]; }
@@ -209,6 +211,19 @@
     const evs = d.events.map((e, i) => eventCard(e, i)).join('');
     const quick = EVENT_ORDER.map(t => `<button type="button" class="chip" data-add="${t}">${ART.icon[(I.EVENT_TYPES[t] || {}).icon] || ART.icon.sparkle}${esc(I.eventTypeName(t, 'en'))}</button>`).join('');
     const r = d.rsvp;
+    const rsvpCard = simpleWhatsAppRsvp
+      ? card('RSVP', `${fld({ p: 'rsvp.deadline', label: 'Reply by', type: 'date', optional: true, attrs: `min="${today()}" ${d.wedding.date ? `max="${d.wedding.date}"` : ''}` })}
+        ${fld({ p: 'rsvp.whatsapp', label: "Organiser's WhatsApp number", type: 'tel', req: d.sections.rsvp, optional: !d.sections.rsvp, max: 18, ph: '+91 98765 43210', attrs: 'inputmode="tel" autocomplete="tel"', hint: 'Choose the country code. Guests only choose attending or not attending; WhatsApp opens a prepared message and they tap Send.' })}
+        <p class="hint">New replies arrive in this WhatsApp chat; Paigaam does not store them. Older website replies, if any, remain in the reply history.</p>`, { toggle: tgl('sections.rsvp', 'Show RSVP'), off: d.sections.rsvp === false, focus: 'rsvp' })
+      : card('RSVP', `<div class="grid2">
+          ${fld({ p: 'rsvp.deadline', label: 'Reply by', type: 'date', optional: true, attrs: `min="${today()}" ${d.wedding.date ? `max="${d.wedding.date}"` : ''}` })}
+          ${fld({ p: 'rsvp.maxGuests', label: 'Max guests per reply', type: 'select', options: Array.from({ length: 20 }, (_, i) => [i + 1, String(i + 1)]) })}
+          ${fld({ p: 'rsvp.email', label: 'Your email for new replies', type: 'email', optional: true, max: 120, ph: 'you@example.com', attrs: 'inputmode="email" autocomplete="email"' })}
+          ${fld({ p: 'rsvp.whatsapp', label: 'Your WhatsApp number', type: 'tel', optional: true, max: 18, ph: '98765 43210', attrs: 'inputmode="tel" autocomplete="tel"' })}
+        </div>
+        <label class="check" style="margin-top:12px"><input type="checkbox" data-path="rsvp.meal" ${r.meal ? 'checked' : ''}><span>Ask guests for a meal preference</span></label>
+        <div id="mealOpts" ${r.meal ? '' : 'hidden'} style="margin-top:8px">${fld({ p: 'rsvp.mealText', bind: false, value: r.mealOptions.join(', '), label: 'Meal choices (comma separated)', max: 160, ph: 'Vegetarian, Jain, Non-vegetarian' })}</div>
+        <p class="hint">Replies appear in your private dashboard after publishing, with a CSV download. Only you can see them.</p>`, { toggle: tgl('sections.rsvp', 'Show RSVP'), off: d.sections.rsvp === false, focus: 'rsvp' });
     return `<h2 class="step-h" tabindex="-1">Date &amp; events</h2><p class="step-p">The countdown, the Save the Date button and the timeline all follow these details.</p>
       ${card('Wedding date & time', `<div class="grid2">
           ${fld({ p: 'wedding.date', label: 'Date', req: true, type: 'date', attrs: `min="${addDays(today(), 1)}" max="${addDays(today(), 1500)}"` })}
@@ -218,15 +233,7 @@
       ${card('Events', `<p class="sub" style="margin-top:-6px">Events before the wedding day appear as Pre-Wedding Events cards; the rest form the Program Timeline, grouped by day and sorted by time. Drag to set the order of events that share a time.</p>
         <div id="evList">${evs}</div>
         <div class="lab" style="margin-top:12px">Add an event</div><div class="chips">${quick}</div>`, { focus: 'timeline' })}
-      ${card('RSVP', `<div class="grid2">
-          ${fld({ p: 'rsvp.deadline', label: 'Reply by', type: 'date', optional: true, attrs: `min="${today()}" ${d.wedding.date ? `max="${d.wedding.date}"` : ''}` })}
-          ${fld({ p: 'rsvp.maxGuests', label: 'Max guests per reply', type: 'select', options: Array.from({ length: 20 }, (_, i) => [i + 1, String(i + 1)]) })}
-          ${fld({ p: 'rsvp.email', label: 'Your email for new replies', type: 'email', optional: true, max: 120, ph: 'you@example.com', attrs: 'inputmode="email" autocomplete="email"' })}
-          ${fld({ p: 'rsvp.whatsapp', label: 'Your WhatsApp number', type: 'tel', optional: true, max: 18, ph: '98765 43210', attrs: 'inputmode="tel" autocomplete="tel"' })}
-        </div>
-        <label class="check" style="margin-top:12px"><input type="checkbox" data-path="rsvp.meal" ${r.meal ? 'checked' : ''}><span>Ask guests for a meal preference</span></label>
-        <div id="mealOpts" ${r.meal ? '' : 'hidden'} style="margin-top:8px">${fld({ p: 'rsvp.mealText', bind: false, value: r.mealOptions.join(', '), label: 'Meal choices (comma separated)', max: 160, ph: 'Vegetarian, Jain, Non-vegetarian' })}</div>
-        <p class="hint">Replies appear in your private dashboard after publishing, with a CSV download. Only you can see them.</p>`, { toggle: tgl('sections.rsvp', 'Show RSVP'), off: d.sections.rsvp === false, focus: 'rsvp' })}`;
+      ${rsvpCard}`;
   }
   function eventSummary(e) {
     return [e.date ? C.fmtDate(e.date, 'en', 'short') : 'No date yet', e.start ? C.fmtTime(e.start, 'en') + (e.end ? ' – ' + C.fmtTime(e.end, 'en') : '') : ''].filter(Boolean).join(' · ') + (e.venue ? ' · ' + e.venue : '');
@@ -318,7 +325,7 @@
         <label class="track ${d.music.track === 'upload' ? 'on' : ''}"><input type="radio" name="track" value="upload" ${d.music.track === 'upload' ? 'checked' : ''} ${d.music.url ? '' : 'disabled'}><span class="t"><b>${d.music.url ? esc(d.music.title || 'Your song') : 'Your own song'}</b><small>${d.music.url ? 'Uploaded' : 'MP3, M4A or AAC, up to 10 MB'}</small></span>
           ${d.music.url ? `<button type="button" class="play" data-play="${esc(d.music.url)}" aria-label="Preview your song">${IC.play}</button>` : ''}<label class="btn ghost small" tabindex="0">${IC.upload} ${d.music.url ? 'Replace' : 'Upload'}<input type="file" accept="audio/mpeg,audio/mp3,audio/mp4,audio/x-m4a,audio/aac,audio/ogg" hidden id="muInput"></label></label>
         ${d.music.track === 'upload' ? `<div class="f" data-p="music.rightsOk"><label class="check"><input type="checkbox" data-path="music.rightsOk" ${d.music.rightsOk ? 'checked' : ''}><span>I own this song or have permission to use it. Film songs and commercial music are usually copyrighted.</span></label><div class="msg e" role="alert">${IC.alert}<span></span></div></div>` : ''}
-        <label class="check" style="margin-top:10px"><input type="checkbox" data-path="music.startMuted" ${d.music.startMuted ? 'checked' : ''}><span>Start muted (guests tap the speaker to play)</span></label>
+        ${lazyMusic ? '<p class="hint">Music never starts or downloads automatically on the invitation. Guests must tap the music button to play it.</p>' : `<label class="check" style="margin-top:10px"><input type="checkbox" data-path="music.startMuted" ${d.music.startMuted ? 'checked' : ''}><span>Start muted (guests tap the speaker to play)</span></label>`}
         <p class="hint">All ten library tracks are original compositions made for Paigaam, free to use.</p>`, { toggle: tgl('sections.music', 'Play music'), off: d.sections.music === false })}`;
   }
 
@@ -414,7 +421,7 @@
   function dashboard() {
     const url = location.origin + '/' + S.slug;
     const names = C.txt(S.data, S.data.lang.base, 'couple.groom.first') + ' & ' + C.txt(S.data, S.data.lang.base, 'couple.bride.first');
-    const tabs = [['edit', 'Edit invitation'], ['guests', 'Guests (RSVP)'], ['share', 'Share'], ['versions', 'Versions']];
+    const tabs = [['edit', 'Edit invitation'], ['guests', simpleWhatsAppRsvp ? 'Website replies' : 'Guests (RSVP)'], ['share', 'Share'], ['versions', 'Versions']];
     return `<div class="tabs" role="tablist">${tabs.map(([k, l]) => `<button type="button" role="tab" data-tab="${k}" aria-selected="${S.tab === k}">${l}</button>`).join('')}</div>
       <div id="dash"></div>`;
   }
@@ -439,10 +446,10 @@
       const r = await fetch(API + '/rsvps?id=' + encodeURIComponent(S.id), { credentials: 'same-origin' });
       const j = await r.json();
       const t = j.totals;
-      box.innerHTML = `<div class="stats"><div class="stat"><b>${t.responses}</b><small>Replies</small></div><div class="stat"><b>${t.attending}</b><small>Coming</small></div><div class="stat"><b>${t.guests}</b><small>Total guests</small></div><div class="stat"><b>${t.declined}</b><small>Can't come</small></div></div>
+      box.innerHTML = `${simpleWhatsAppRsvp ? '<p class="hint">This history contains replies sent through the older website form. New replies are sent directly to your WhatsApp chat.</p>' : ''}<div class="stats"><div class="stat"><b>${t.responses}</b><small>Replies</small></div><div class="stat"><b>${t.attending}</b><small>Coming</small></div><div class="stat"><b>${t.guests}</b><small>Total guests</small></div><div class="stat"><b>${t.declined}</b><small>Can't come</small></div></div>
         ${Object.keys(t.meals).length ? `<p class="hint">Meals: ${Object.entries(t.meals).map(([k, n]) => esc(k) + ' ' + n).join(' · ')}</p>` : ''}
         <div class="row" style="margin:10px 0"><a class="btn ghost small" href="${ROOT}/rsvps/${encodeURIComponent(S.id)}.csv">Download CSV</a><button type="button" class="btn ghost small" id="rsvpRefresh">${IC.replay} Refresh</button></div>
-        ${j.rows.length ? `<div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Name</th><th>Reply</th><th>Guests</th><th>Meal</th><th>Contact</th><th>Message</th></tr></thead><tbody>${j.rows.map(x => `<tr><td>${esc(x.name)}</td><td><span class="${x.attending === 'yes' ? 'yes' : 'no'}">${x.attending === 'yes' ? 'Coming' : 'Not coming'}</span></td><td>${x.guests || '–'}</td><td>${esc(x.meal || '–')}</td><td>${esc(x.email || '')}${x.email && x.phone ? '<br>' : ''}${esc(x.phone || '')}</td><td>${esc(x.message || '')}</td></tr>`).join('')}</tbody></table></div>` : '<div class="empty">No replies yet. Share your link and they will appear here.</div>'}`;
+        ${j.rows.length ? `<div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Name</th><th>Reply</th><th>Guests</th><th>Meal</th><th>Contact</th><th>Message</th></tr></thead><tbody>${j.rows.map(x => `<tr><td>${esc(x.name)}</td><td><span class="${x.attending === 'yes' ? 'yes' : 'no'}">${x.attending === 'yes' ? 'Coming' : 'Not coming'}</span></td><td>${x.guests || '–'}</td><td>${esc(x.meal || '–')}</td><td>${esc(x.email || '')}${x.email && x.phone ? '<br>' : ''}${esc(x.phone || '')}</td><td>${esc(x.message || '')}</td></tr>`).join('')}</tbody></table></div>` : (simpleWhatsAppRsvp ? '<div class="empty">No older website replies yet. New RSVPs arrive in your WhatsApp chat.</div>' : '<div class="empty">No replies yet. Share your link and they will appear here.</div>')}`;
       const rf = $('#rsvpRefresh', box); if (rf) rf.onclick = () => guestsHtml(box);
     } catch { box.innerHTML = '<div class="empty">Could not load replies. Check your connection and try again.</div>'; }
   }

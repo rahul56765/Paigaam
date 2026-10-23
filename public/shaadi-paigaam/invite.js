@@ -168,7 +168,7 @@ ${cfg.mode === 'preview' ? `<div class="badge">${esc(T('previewBadge'))}</div>` 
 
   function openDoors() {
     const intro = $('#intro'); if (!intro || intro.classList.contains('open')) return;
-    startMusic(true);
+    if (!cfg.lazyMusic) startMusic(true);
     intro.classList.add('open');
     if (navigator.vibrate) try { navigator.vibrate(18); } catch {}
     setTimeout(() => {
@@ -267,6 +267,24 @@ ${cfg.mode === 'preview' ? `<div class="badge">${esc(T('previewBadge'))}</div>` 
   }
 
   function rsvpForm() {
+    return cfg.simpleWhatsAppRsvp ? whatsappRsvpForm() : websiteRsvpForm();
+  }
+  function whatsappRsvpForm() {
+    const r = data.rsvp;
+    const closed = r.deadline && Date.now() > Date.parse(r.deadline + 'T23:59:59');
+    if (closed && !live) return `<p class="lead">${esc(T('rsvpClosed'))}</p>`;
+    const yes = C.whatsappRsvpLink(data, true, lang), no = C.whatsappRsvpLink(data, false, lang);
+    if (!yes || !no) return `<p class="lead">${esc(T('contactFamily'))}</p>`;
+    return `<div class="rsvp">
+      ${r.deadline ? `<p class="by">${esc(T('rsvpBy').replace('{date}', C.fmtDate(r.deadline, lang, 'long')))}</p>` : ''}
+      <p class="rsvp-hint">${esc(T('rsvpWhatsappHint'))}</p>
+      <div class="rsvp-actions">
+        <a class="btn wide" href="${esc(yes)}" target="_blank" rel="noopener noreferrer">${esc(T('accept'))}</a>
+        <a class="btn wide ghost" href="${esc(no)}" target="_blank" rel="noopener noreferrer">${esc(T('decline'))}</a>
+      </div>
+    </div>`;
+  }
+  function websiteRsvpForm() {
     const r = data.rsvp;
     const closed = r.deadline && Date.now() > Date.parse(r.deadline + 'T23:59:59') ;
     if (closed && !live) return `<p class="lead">${esc(T('rsvpClosed'))}</p>`;
@@ -477,6 +495,7 @@ ${cfg.mode === 'preview' ? `<div class="badge">${esc(T('previewBadge'))}</div>` 
     }));
   }
 
+
   function bindRsvp() {
     const f = $('#rsvpForm'); if (!f) return;
     const opened = Date.now();
@@ -518,6 +537,7 @@ ${cfg.mode === 'preview' ? `<div class="badge">${esc(T('previewBadge'))}</div>` 
     }
   }
 
+
   function bindReveal() {
     if (observer) observer.disconnect();
     const els = $$('.reveal');
@@ -527,23 +547,49 @@ ${cfg.mode === 'preview' ? `<div class="badge">${esc(T('previewBadge'))}</div>` 
   }
 
   /* =========================================================== music */
-  let audio = null, musicWanted = false;
+  let audio = null, musicWanted = false, audioSource = '';
   function musicSrc() {
     if (!data.sections.music) return '';
     if (data.music.track === 'upload' && data.music.url) return data.music.url;
     return '/shaadi-paigaam/music/' + data.music.track + '.mp3';
   }
+  function createAudio() {
+    if (audio) return;
+    audio = new Audio(); audio.loop = true; audio.preload = 'none';
+    audio.addEventListener('error', () => { if (audio.src) $('#musicBtn').hidden = true; });
+  }
   function setupMusic() {
-    const btn = $('#musicBtn'); const src = musicSrc();
-    if (!src || thumb) { btn.hidden = true; if (audio) { audio.pause(); } return; }
+    const btn = $('#musicBtn'), src = musicSrc();
+    if (!src || thumb) {
+      btn.hidden = true;
+      if (audio) { musicWanted = false; audio.pause(); audio.removeAttribute('src'); audio.load(); audioSource = ''; }
+      return;
+    }
     btn.hidden = false;
-    if (!audio) { audio = new Audio(); audio.loop = true; audio.preload = 'none'; audio.addEventListener('error', () => { if (audio.src) btn.hidden = true; }); }
-    if (!audio.src.endsWith(src)) { const was = !audio.paused; audio.src = src; if (was) audio.play().catch(() => {}); }
-    btn.onclick = () => { if (audio.paused) startMusic(false); else { musicWanted = false; fade(0, () => audio.pause()); paintBtn(); } };
+    if (!cfg.lazyMusic) {
+      createAudio();
+      if (!audio.src.endsWith(src)) { const was = !audio.paused; audio.src = src; audioSource = src; if (was) audio.play().catch(() => {}); }
+      btn.onclick = () => { if (audio.paused) startMusic(false); else { musicWanted = false; fade(0, () => audio.pause()); paintBtn(); } };
+      paintBtn();
+      return;
+    }
+    // For Shaadi Paigaam, do not create audio or request the file until a guest taps Play.
+    if (audio && audioSource && audioSource !== src) {
+      musicWanted = false; audio.pause(); audio.removeAttribute('src'); audio.load(); audioSource = '';
+    }
+    btn.onclick = () => {
+      if (audio && !audio.paused) { musicWanted = false; fade(0, () => audio.pause()); paintBtn(); }
+      else startMusic(false);
+    };
     paintBtn();
   }
   function startMusic(fromDoor) {
-    if (!audio || !musicSrc()) return;
+    const src = musicSrc();
+    if (!src) return;
+    if (cfg.lazyMusic) {
+      createAudio();
+      if (audioSource !== src) { audio.src = src; audioSource = src; }
+    } else if (!audio) return;
     if (fromDoor && data.music.startMuted) return;
     musicWanted = true;
     audio.volume = 0;
