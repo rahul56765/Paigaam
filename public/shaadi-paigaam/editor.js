@@ -632,7 +632,7 @@
     $$('#stepNav button').forEach(b => b.onclick = () => go(Number(b.dataset.step), true));
     $('#resetStep').onclick = resetStep;
     $$('[data-dev]').forEach(b => b.onclick = () => { S.device = b.dataset.dev; $$('[data-dev]').forEach(x => x.setAttribute('aria-pressed', x === b)); sizeDevice(); });
-    $('#replayBtn').onclick = () => { const f = $('#pv'); if (f) f.contentWindow.postMessage({ type: 'sp:replay' }, location.origin); };
+    $('#replayBtn').onclick = () => { const f = $('#pv'); if (!f) return; if (boot.slug === 'suvarna-vivah') { pvReady = false; f.src = ROOT + '/frame?guest=1&r=' + Date.now(); return; } f.contentWindow.postMessage({ type: 'sp:replay' }, location.origin); };
     $('#pvLang').onchange = e => { S.previewLang = e.target.value; postPreview(); };
     document.onkeydown = e => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !e.target.matches('input,textarea')) { e.preventDefault(); e.shiftKey ? redo() : undo(); }
