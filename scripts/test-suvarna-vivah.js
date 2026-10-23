@@ -68,6 +68,8 @@ function sample() {
     ok(siteAssets.every(r => r.status === 200), 'shared data engine and Suvarna-specific design assets are served');
     const siteScript = await (await J('/suvarna-vivah/site.js')).text();
     ok(siteScript.includes('sv-hero__art') && !siteScript.includes('intro-inner') && !html.includes('/shaadi-paigaam/invite.js'), 'invitation uses its bespoke ceremonial layout, not Shaadi doors/courtyard');
+    ok(siteScript.includes('website:form.elements.website.value') && siteScript.includes('Date.now()-pageOpened') && !siteScript.includes('Math.max(3000'), 'RSVP preserves the server honeypot and minimum-time anti-bot checks');
+    ok(['en','hi','mr','gu','ta','te','ur','ar'].every(l => ['suvarnaLetterTitle','suvarnaGalleryTitle','suvarnaDetailsTitle','suvarnaArtAlt','suvarnaPreviewRsvp','suvarnaBackToTop','skipIntro'].every(k => C.I18N.t(l,k) !== k)), 'Suvarna editorial and opener copy is localized in all eight supported languages');
     ok((await J('/shaadi-paigaam/music/shehnai-dawn.mp3')).status === 200, 'music library is served');
 
     // --- draft

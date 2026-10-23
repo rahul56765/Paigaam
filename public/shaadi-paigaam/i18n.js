@@ -20,7 +20,7 @@
 
   const S = {};
   S.en = {
-    tapToOpen: 'Tap to open', gettingMarried: "We're getting married", sonOf: 'Son of', daughterOf: 'Daughter of', amp: '&', and: '&',
+    tapToOpen: 'Tap to open', gettingMarried: "We're getting married", skipIntro:'Skip opening', suvarnaLetterTitle:'A day made more beautiful by your presence.', suvarnaGalleryTitle:'The story so far', suvarnaDetailsTitle:'A few thoughtful details', suvarnaArtAlt:'Antique brass kalash with coconut, banana leaves and marigolds', suvarnaPreviewRsvp:'Preview only — replies are not saved.', suvarnaBackToTop:'Back to the beginning', sonOf: 'Son of', daughterOf: 'Daughter of', amp: '&', and: '&',
     mr_: 'Mr.', mrs_: 'Mrs.', dr_: 'Dr.', late_: 'Late',
     scratchTitle: 'Scratch to Reveal', scratchHint: 'Scratch the heart with your finger', foreverBegins: 'Our forever begins', saveOurDate: 'Save our date', saveTheDate: 'Save the Date',
     countdownTitle: 'Counting Down to Forever', days: 'Days', hours: 'Hours', minutes: 'Minutes', seconds: 'Seconds', todayIsTheDay: 'Today is the day!', married: 'Just married, thank you for your blessings',
@@ -37,7 +37,7 @@
     ended: 'This celebration has ended. Thank you for being part of it.', previewBadge: 'Preview, not yet published',
   };
   S.hi = {
-    tapToOpen: 'खोलने के लिए छुएँ', gettingMarried: 'हम विवाह के बंधन में बँधने जा रहे हैं', sonOf: 'सुपुत्र', daughterOf: 'सुपुत्री', amp: 'व', and: 'एवं',
+    tapToOpen: 'खोलने के लिए छुएँ', gettingMarried: 'हम विवाह के बंधन में बँधने जा रहे हैं', skipIntro:'परिचय छोड़ें', suvarnaLetterTitle:'आपकी उपस्थिति इस दिन को और भी सुंदर बनाएगी।', suvarnaGalleryTitle:'अब तक की हमारी कहानी', suvarnaDetailsTitle:'कुछ ज़रूरी बातें', suvarnaArtAlt:'नारियल, केले के पत्तों और गेंदे से सजा पीतल का कलश', suvarnaPreviewRsvp:'पूर्वावलोकन: उत्तर सहेजे नहीं जाएंगे।', suvarnaBackToTop:'शुरुआत पर लौटें', sonOf: 'सुपुत्र', daughterOf: 'सुपुत्री', amp: 'व', and: 'एवं',
     mr_: 'श्री', mrs_: 'श्रीमती', dr_: 'डॉ.', late_: 'स्व.',
     scratchTitle: 'खुरचकर देखें', scratchHint: 'उँगली से दिल को खुरचें', foreverBegins: 'हमारा हमेशा यहीं से शुरू', saveOurDate: 'हमारी तारीख़', saveTheDate: 'तारीख़ सहेजें',
     countdownTitle: 'शुभ घड़ी की उलटी गिनती', days: 'दिन', hours: 'घंटे', minutes: 'मिनट', seconds: 'सेकंड', todayIsTheDay: 'आज ही वह शुभ दिन है!', married: 'विवाह संपन्न हुआ, आपके आशीर्वाद के लिए धन्यवाद',
@@ -54,7 +54,7 @@
     ended: 'यह उत्सव संपन्न हो चुका है। इसका हिस्सा बनने के लिए धन्यवाद।', previewBadge: 'पूर्वावलोकन, अभी प्रकाशित नहीं',
   };
   S.mr = {
-    tapToOpen: 'उघडण्यासाठी स्पर्श करा', gettingMarried: 'आम्ही विवाहबंधनात अडकत आहोत', sonOf: 'सुपुत्र', daughterOf: 'सुकन्या', sonOfSuffix: 'यांचे सुपुत्र', daughterOfSuffix: 'यांची सुकन्या', amp: 'व', and: 'व',
+    tapToOpen: 'उघडण्यासाठी स्पर्श करा', gettingMarried: 'आम्ही विवाहबंधनात अडकत आहोत', skipIntro:'प्रस्तावना वगळा', suvarnaLetterTitle:'तुमच्या उपस्थितीने हा दिवस अधिक सुंदर होईल.', suvarnaGalleryTitle:'आतापर्यंतचा आमचा प्रवास', suvarnaDetailsTitle:'काही महत्त्वाच्या गोष्टी', suvarnaArtAlt:'नारळ, केळीची पाने आणि झेंडूने सजलेला पितळी कलश', suvarnaPreviewRsvp:'पूर्वावलोकन: उत्तरे जतन होत नाहीत.', suvarnaBackToTop:'सुरुवातीला परत जा', sonOf: 'सुपुत्र', daughterOf: 'सुकन्या', sonOfSuffix: 'यांचे सुपुत्र', daughterOfSuffix: 'यांची सुकन्या', amp: 'व', and: 'व',
     mr_: 'श्री.', mrs_: 'सौ.', dr_: 'डॉ.', late_: 'कै.',
     scratchTitle: 'खरवडून पाहा', scratchHint: 'बोटाने हृदय खरवडा', foreverBegins: 'आमचे सहजीवन इथून सुरू', saveOurDate: 'आमची तारीख', saveTheDate: 'तारीख जतन करा',
     countdownTitle: 'शुभमुहूर्ताची उलटी गिनती', days: 'दिवस', hours: 'तास', minutes: 'मिनिटे', seconds: 'सेकंद', todayIsTheDay: 'आजच तो शुभ दिवस!', married: 'विवाह संपन्न झाला, आपल्या आशीर्वादाबद्दल धन्यवाद',
@@ -71,7 +71,7 @@
     ended: 'हा सोहळा संपन्न झाला. त्यात सहभागी झाल्याबद्दल धन्यवाद.', previewBadge: 'पूर्वावलोकन, अद्याप प्रकाशित नाही',
   };
   S.gu = {
-    tapToOpen: 'ખોલવા માટે સ્પર્શ કરો', gettingMarried: 'અમે લગ્નબંધનમાં બંધાઈ રહ્યાં છીએ', sonOf: 'સુપુત્ર', daughterOf: 'સુપુત્રી', sonOfSuffix: 'ના સુપુત્ર', daughterOfSuffix: 'ની સુપુત્રી', amp: 'અને', and: 'અને',
+    tapToOpen: 'ખોલવા માટે સ્પર્શ કરો', gettingMarried: 'અમે લગ્નબંધનમાં બંધાઈ રહ્યાં છીએ', skipIntro:'પ્રારંભ છોડો', suvarnaLetterTitle:'તમારી હાજરીથી આ દિવસ વધુ સુંદર બનશે.', suvarnaGalleryTitle:'અત્યાર સુધીની અમારી સફર', suvarnaDetailsTitle:'થોડી મહત્વની વિગતો', suvarnaArtAlt:'નાળિયેર, કેળાનાં પાન અને ગલગોટાથી શણગારેલો પિત્તળનો કળશ', suvarnaPreviewRsvp:'પૂર્વાવલોકન: જવાબો સાચવાતા નથી.', suvarnaBackToTop:'શરૂઆત પર પાછા જાઓ', sonOf: 'સુપુત્ર', daughterOf: 'સુપુત્રી', sonOfSuffix: 'ના સુપુત્ર', daughterOfSuffix: 'ની સુપુત્રી', amp: 'અને', and: 'અને',
     mr_: 'શ્રી', mrs_: 'શ્રીમતી', dr_: 'ડૉ.', late_: 'સ્વ.',
     scratchTitle: 'ખોતરીને જુઓ', scratchHint: 'આંગળીથી હૃદય ખોતરો', foreverBegins: 'અમારો સાથ અહીંથી શરૂ', saveOurDate: 'અમારી તારીખ', saveTheDate: 'તારીખ સાચવો',
     countdownTitle: 'શુભ ઘડીની ગણતરી', days: 'દિવસ', hours: 'કલાક', minutes: 'મિનિટ', seconds: 'સેકન્ડ', todayIsTheDay: 'આજે જ એ શુભ દિવસ છે!', married: 'લગ્ન સંપન્ન થયાં, આપના આશીર્વાદ બદલ આભાર',
@@ -88,7 +88,7 @@
     ended: 'આ પ્રસંગ સંપન્ન થયો. તેમાં સહભાગી થવા બદલ આભાર.', previewBadge: 'પૂર્વાવલોકન, હજી પ્રકાશિત નથી',
   };
   S.ta = {
-    tapToOpen: 'திறக்கத் தொடவும்', gettingMarried: 'நாங்கள் திருமணம் செய்துகொள்கிறோம்', sonOf: 'புதல்வன்', daughterOf: 'புதல்வி', sonOfSuffix: 'அவர்களின் புதல்வன்', daughterOfSuffix: 'அவர்களின் புதல்வி', amp: '&', and: 'மற்றும்',
+    tapToOpen: 'திறக்கத் தொடவும்', gettingMarried: 'நாங்கள் திருமணம் செய்துகொள்கிறோம்', skipIntro:'தொடக்கத்தைத் தவிர்க்கவும்', suvarnaLetterTitle:'உங்கள் வருகையால் இந்த நாள் இன்னும் அழகாகும்.', suvarnaGalleryTitle:'இதுவரையிலான எங்கள் கதை', suvarnaDetailsTitle:'சில முக்கியமான விவரங்கள்', suvarnaArtAlt:'தேங்காய், வாழை இலைகள், சாமந்தி மலர்களால் அலங்கரிக்கப்பட்ட பித்தளை கலசம்', suvarnaPreviewRsvp:'முன்னோட்டம்: பதில்கள் சேமிக்கப்படாது.', suvarnaBackToTop:'தொடக்கத்திற்குத் திரும்பு', sonOf: 'புதல்வன்', daughterOf: 'புதல்வி', sonOfSuffix: 'அவர்களின் புதல்வன்', daughterOfSuffix: 'அவர்களின் புதல்வி', amp: '&', and: 'மற்றும்',
     mr_: 'திரு.', mrs_: 'திருமதி', dr_: 'டாக்டர்', late_: 'அமரர்',
     scratchTitle: 'சுரண்டிப் பாருங்கள்', scratchHint: 'விரலால் இதயத்தைச் சுரண்டவும்', foreverBegins: 'எங்கள் என்றென்றும் இங்கே தொடங்குகிறது', saveOurDate: 'எங்கள் நாள்', saveTheDate: 'நாளைச் சேமிக்கவும்',
     countdownTitle: 'சுப நாளுக்கான கவுண்ட்டவுன்', days: 'நாட்கள்', hours: 'மணி', minutes: 'நிமிடம்', seconds: 'விநாடி', todayIsTheDay: 'இன்றுதான் அந்த நன்னாள்!', married: 'திருமணம் இனிதே நிறைவுற்றது, உங்கள் ஆசிகளுக்கு நன்றி',
@@ -105,7 +105,7 @@
     ended: 'இந்தக் கொண்டாட்டம் நிறைவுற்றது. பங்கேற்றதற்கு நன்றி.', previewBadge: 'முன்னோட்டம், இன்னும் வெளியிடப்படவில்லை',
   };
   S.te = {
-    tapToOpen: 'తెరవడానికి తాకండి', gettingMarried: 'మేము వివాహం చేసుకుంటున్నాము', sonOf: 'కుమారుడు', daughterOf: 'కుమార్తె', sonOfSuffix: 'గారి కుమారుడు', daughterOfSuffix: 'గారి కుమార్తె', amp: '&', and: 'మరియు',
+    tapToOpen: 'తెరవడానికి తాకండి', gettingMarried: 'మేము వివాహం చేసుకుంటున్నాము', skipIntro:'ప్రారంభాన్ని దాటవేయండి', suvarnaLetterTitle:'మీ రాకతో ఈ రోజు మరింత అందంగా మారుతుంది.', suvarnaGalleryTitle:'ఇప్పటివరకు మా కథ', suvarnaDetailsTitle:'కొన్ని ముఖ్యమైన వివరాలు', suvarnaArtAlt:'కొబ్బరి, అరటి ఆకులు, బంతిపూలతో అలంకరించిన ఇత్తడి కలశం', suvarnaPreviewRsvp:'ప్రివ్యూ: సమాధానాలు సేవ్ కావు.', suvarnaBackToTop:'ప్రారంభానికి తిరిగి వెళ్లండి', sonOf: 'కుమారుడు', daughterOf: 'కుమార్తె', sonOfSuffix: 'గారి కుమారుడు', daughterOfSuffix: 'గారి కుమార్తె', amp: '&', and: 'మరియు',
     mr_: 'శ్రీ', mrs_: 'శ్రీమతి', dr_: 'డా.', late_: 'కీ.శే.',
     scratchTitle: 'గీకి చూడండి', scratchHint: 'వేలితో హృదయాన్ని గీకండి', foreverBegins: 'మా జీవితకాల ప్రయాణం ఇక్కడే మొదలు', saveOurDate: 'మా తేదీ', saveTheDate: 'తేదీని సేవ్ చేయండి',
     countdownTitle: 'శుభ ముహూర్తానికి కౌంట్‌డౌన్', days: 'రోజులు', hours: 'గంటలు', minutes: 'నిమిషాలు', seconds: 'సెకన్లు', todayIsTheDay: 'ఈ రోజే ఆ శుభదినం!', married: 'వివాహం జరిగింది, మీ ఆశీస్సులకు ధన్యవాదాలు',
@@ -122,7 +122,7 @@
     ended: 'ఈ వేడుక ముగిసింది. పాల్గొన్నందుకు ధన్యవాదాలు.', previewBadge: 'ప్రివ్యూ, ఇంకా ప్రచురించలేదు',
   };
   S.ur = {
-    tapToOpen: 'کھولنے کے لیے چھوئیں', gettingMarried: 'ہم رشتۂ ازدواج میں بندھنے جا رہے ہیں', sonOf: 'فرزند', daughterOf: 'دختر', amp: 'و', and: 'اور',
+    tapToOpen: 'کھولنے کے لیے چھوئیں', gettingMarried: 'ہم رشتۂ ازدواج میں بندھنے جا رہے ہیں', skipIntro:'آغاز چھوڑیں', suvarnaLetterTitle:'آپ کی موجودگی اس دن کو مزید خوبصورت بنائے گی۔', suvarnaGalleryTitle:'اب تک کی ہماری کہانی', suvarnaDetailsTitle:'چند اہم تفصیلات', suvarnaArtAlt:'ناریل، کیلے کے پتوں اور گیندے سے سجا پیتل کا کلش', suvarnaPreviewRsvp:'پیش نظارہ: جوابات محفوظ نہیں ہوں گے۔', suvarnaBackToTop:'ابتدا پر واپس جائیں', sonOf: 'فرزند', daughterOf: 'دختر', amp: 'و', and: 'اور',
     mr_: 'جناب', mrs_: 'محترمہ', dr_: 'ڈاکٹر', late_: 'مرحوم',
     scratchTitle: 'کھرچ کر دیکھیں', scratchHint: 'انگلی سے دل کو کھرچیں', foreverBegins: 'ہمارا ہمیشہ یہیں سے شروع', saveOurDate: 'ہماری تاریخ', saveTheDate: 'تاریخ محفوظ کریں',
     countdownTitle: 'مبارک گھڑی کی الٹی گنتی', days: 'دن', hours: 'گھنٹے', minutes: 'منٹ', seconds: 'سیکنڈ', todayIsTheDay: 'آج ہی وہ مبارک دن ہے!', married: 'شادی بخیر و خوبی انجام پائی، آپ کی دعاؤں کا شکریہ',
@@ -139,7 +139,7 @@
     ended: 'یہ تقریب اختتام کو پہنچی۔ شرکت کا شکریہ۔', previewBadge: 'پیش نظارہ، ابھی شائع نہیں ہوا',
   };
   S.ar = {
-    tapToOpen: 'اضغط للفتح', gettingMarried: 'سنتزوّج', sonOf: 'نجل', daughterOf: 'كريمة', amp: 'و', and: 'و',
+    tapToOpen: 'اضغط للفتح', gettingMarried: 'سنتزوّج', skipIntro:'تخطَّ الافتتاحية', suvarnaLetterTitle:'بحضوركم يزداد هذا اليوم جمالاً.', suvarnaGalleryTitle:'حكايتنا حتى الآن', suvarnaDetailsTitle:'بعض التفاصيل المهمة', suvarnaArtAlt:'إناء نحاسي مزين بجوز الهند وأوراق الموز والقطيفة', suvarnaPreviewRsvp:'معاينة فقط: لن تُحفظ الردود.', suvarnaBackToTop:'العودة إلى البداية', sonOf: 'نجل', daughterOf: 'كريمة', amp: 'و', and: 'و',
     mr_: 'السيد', mrs_: 'السيدة', dr_: 'د.', late_: 'المرحوم',
     scratchTitle: 'اكشط لتكتشف', scratchHint: 'اكشط القلب بإصبعك', foreverBegins: 'هنا يبدأ عمرنا معاً', saveOurDate: 'موعدنا', saveTheDate: 'احفظ الموعد',
     countdownTitle: 'العدّ التنازلي لأجمل يوم', days: 'أيام', hours: 'ساعات', minutes: 'دقائق', seconds: 'ثوانٍ', todayIsTheDay: 'اليوم هو اليوم الموعود!', married: 'تمّ الزفاف، شكراً لدعواتكم',

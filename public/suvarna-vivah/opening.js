@@ -32,15 +32,16 @@
       <button type="button" class="sv-opener__play" id="svPlay" aria-label="Play the wedding opening film"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15l12-7.5z"/></svg><span id="svPlayLabel"></span></button>
     </div>
     <p class="sv-opener__status" id="svOpenerStatus" role="status" aria-live="polite"></p>
-    <button type="button" class="sv-opener__skip" id="svSkip">Skip opening</button>`;
+    <button type="button" class="sv-opener__skip" id="svSkip"></button>`;
   document.body.appendChild(root);
   document.documentElement.classList.add('sv-opening-lock');
   document.body.classList.add('sv-opening-lock');
   const nameEl = document.getElementById('svOpenerNames');
-  nameEl.textContent = names || 'A day made for forever';
+  nameEl.textContent = names || (I ? I.t(lang, 'suvarnaLetterTitle') : 'A day made for forever');
   document.getElementById('svOpenerKicker').textContent = 'SUVARNA VIVAH · ' + (I ? I.t(lang, 'gettingMarried') : 'A WEDDING PAIGAAM');
   document.getElementById('svOpenerTitle').textContent = I ? I.t(lang, 'gettingMarried') : 'With blessings, the celebration begins.';
   document.getElementById('svPlayLabel').textContent = I ? I.t(lang, 'tapToOpen') : 'Open the invitation';
+  document.getElementById('svSkip').textContent = I ? I.t(lang, 'skipIntro') : 'Skip opening';
   const video = document.getElementById('svOpeningVideo');
   const play = document.getElementById('svPlay');
   const skip = document.getElementById('svSkip');
@@ -60,12 +61,12 @@
     if (started || leaving) return;
     started = true;
     root.classList.add('is-playing');
-    status.textContent = 'The celebration is unfolding';
+    status.textContent = I ? I.t(lang, 'gettingMarried') : 'The celebration is unfolding';
     video.currentTime = 0;
     try { await video.play(); }
     catch {
       started = false; root.classList.remove('is-playing');
-      status.textContent = 'The film could not start. You can skip straight to the invitation.';
+      status.textContent = I ? I.t(lang, 'errGeneric') : 'The film could not start. You can skip straight to the invitation.';
       play.querySelector('span').textContent = 'Try opening film again';
     }
   }
@@ -73,7 +74,7 @@
   video.addEventListener('click', start);
   root.addEventListener('click', e => { if (!e.target.closest('#svSkip') && !e.target.closest('#svPlay') && !started && !leaving) start(); });
   video.addEventListener('ended', reveal, { once: true });
-  video.addEventListener('error', () => { status.textContent = 'The film could not load. Skip to the invitation whenever you’re ready.'; });
+  video.addEventListener('error', () => { status.textContent = I ? I.t(lang, 'errGeneric') : 'The film could not load.'; });
   skip.addEventListener('click', reveal);
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && !leaving) reveal(); }, { once: false });
   play.focus({ preventScroll: true });
