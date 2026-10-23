@@ -12,7 +12,7 @@ const STATUS_LABEL = {
 };
 const badge = (s) => `<span class="badge badge--${esc(String(s || '').toLowerCase())}">${esc(STATUS_LABEL[s] || s || '—')}</span>`;
 const money = (n, cur) => (cur === 'INR' ? '₹' : '') + Number(n || 0).toLocaleString('en-IN');
-const fmtDT = (s) => s ? new Date(s.replace(' ', 'T') + 'Z').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
+const fmtDT = (s) => s ? new Date(s.replace(' ', 'T') + 'Z').toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true }) : '—';
 const ADMIN_ICONS = {
   home: '<path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/><path d="M3 10h18"/>',
   templates: '<rect x="4" y="4" width="12" height="15" rx="1.5"/><path d="M8 8h7M8 11h7M8 14h4M16 7h4v13a1 1 0 0 1-1 1H8"/>',
@@ -207,8 +207,23 @@ function templateForm(tpl, isNew) {
     </div>
     <div class="field"><label for="description">Description</label>
       <textarea class="textarea" style="font-size:18px" id="description" name="description">${esc(tpl.description || '')}</textarea></div>
-    <div class="field"><label for="thumbnail_url">Thumbnail URL</label>
-      <input class="input" style="font-size:17px" id="thumbnail_url" name="thumbnail_url" value="${esc(tpl.thumbnail_url || '')}" placeholder="https://… (optional)"></div>
+    <div class="field" style="grid-column:1/-1">
+      <label for="thumbnail_url_text">Collection thumbnail</label>
+      <p class="hint" style="margin:0 0 12px">This image appears on paigaam.cc/templates and other template collections. Capture the current frame below, upload an image, or paste an image URL.</p>
+      <input type="hidden" id="thumbnail_url" name="thumbnail_url" value="${esc(tpl.thumbnail_url || '')}">
+      <input class="input" style="font-size:15px" id="thumbnail_url_text" value="${esc(tpl.thumbnail_url && !tpl.thumbnail_url.startsWith('data:image/') ? tpl.thumbnail_url : '')}" placeholder="https://… or /path/to/image.webp" autocomplete="url">
+      <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:14px">
+        <label class="btn btn--ghost btn--small" for="thumbnail_file" style="cursor:pointer">Upload image</label>
+        <input id="thumbnail_file" type="file" accept="image/jpeg,image/png,image/webp" hidden>
+        ${isNew ? '' : `<button class="btn btn--ghost btn--small" type="button" id="thumbnail_capture">Use current preview frame</button>`}
+        <button class="link-btn link-btn--muted" type="button" id="thumbnail_clear">Clear thumbnail</button>
+      </div>
+      <div id="thumbnail_status" class="hint" role="status" aria-live="polite" style="min-height:1.5em;margin-top:8px"></div>
+      <div style="display:grid;grid-template-columns:minmax(0,360px) minmax(0,1fr);gap:20px;align-items:start;margin-top:8px">
+        ${isNew ? '' : `<div><span class="hint" style="display:block;margin-bottom:6px">Live preview — scroll or interact to choose a moment, then capture it.</span><iframe id="thumbnail_frame" title="Live template thumbnail preview" src="/template-view/${esc(tpl.slug)}" sandbox="allow-same-origin allow-scripts" allow="autoplay 'none'" style="width:100%;height:520px;border:1px solid var(--line);border-radius:8px;background:${esc((tpl.config && tpl.config.theme && tpl.config.theme.bg) || '#f4eadd')}"></iframe></div>`}
+        <div><span class="hint" style="display:block;margin-bottom:6px">Selected thumbnail</span><img id="thumbnail_preview" src="${esc(tpl.thumbnail_url || '')}" alt="Collection thumbnail preview" style="display:${tpl.thumbnail_url ? 'block' : 'none'};width:100%;max-width:360px;aspect-ratio:9/16;object-fit:cover;border:1px solid var(--line);border-radius:8px;background:#f4eadd"><div id="thumbnail_empty" class="hint" style="${tpl.thumbnail_url ? 'display:none;' : ''}padding:24px;border:1px dashed var(--line);border-radius:8px">No custom thumbnail selected</div></div>
+      </div>
+    </div>
     <div class="field"><label for="status">Status</label>
       <select class="input" style="font-size:17px" id="status" name="status">
         <option value="draft" ${tpl.status !== 'published' ? 'selected' : ''}>Draft</option>
@@ -246,7 +261,61 @@ function templateForm(tpl, isNew) {
       <button class="btn btn--primary" type="submit">${isNew ? 'Create template' : 'Save changes'}</button>
       <a class="btn btn--ghost" href="/admin/templates">Cancel</a>
     </div>
-  </form>`;
+  </form>
+  <script src="/vendor/html2canvas-1.4.1.min.js" defer></script>
+  <script>
+  (function () {
+    var form = document.querySelector('form[action="${action}"]');
+    var hidden = document.getElementById('thumbnail_url');
+    var text = document.getElementById('thumbnail_url_text');
+    var file = document.getElementById('thumbnail_file');
+    var preview = document.getElementById('thumbnail_preview');
+    var empty = document.getElementById('thumbnail_empty');
+    var status = document.getElementById('thumbnail_status');
+    var capture = document.getElementById('thumbnail_capture');
+    function setImage(src, message) {
+      hidden.value = src || '';
+      if (src) { preview.src = src; preview.style.display = 'block'; empty.style.display = 'none'; }
+      else { preview.removeAttribute('src'); preview.style.display = 'none'; empty.style.display = 'block'; }
+      text.value = src && src.indexOf('data:image/') === 0 ? 'Captured or uploaded image' : (src || '');
+      status.textContent = message || '';
+    }
+    text.addEventListener('input', function () { setImage(text.value.trim(), ''); });
+    file.addEventListener('change', function () {
+      var chosen = file.files && file.files[0];
+      if (!chosen) return;
+      if (!/^image\/(jpeg|png|webp)$/i.test(chosen.type)) { status.textContent = 'Choose a JPG, PNG or WebP image.'; file.value = ''; return; }
+      var reader = new FileReader();
+      reader.onload = function () {
+        var img = new Image();
+        img.onload = function () {
+          var max = 1000, scale = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight));
+          var canvas = document.createElement('canvas'); canvas.width = Math.max(1, Math.round(img.naturalWidth * scale)); canvas.height = Math.max(1, Math.round(img.naturalHeight * scale));
+          var ctx = canvas.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, canvas.width, canvas.height); ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          setImage(canvas.toDataURL('image/jpeg', 0.84), 'Image ready. Save changes to publish it to the collection.');
+        };
+        img.onerror = function () { status.textContent = 'That image could not be opened.'; };
+        img.src = reader.result;
+      };
+      reader.onerror = function () { status.textContent = 'Could not read that image.'; };
+      reader.readAsDataURL(chosen);
+    });
+    document.getElementById('thumbnail_clear').addEventListener('click', function () { file.value = ''; setImage('', 'Thumbnail cleared. Save changes to use the default preview.'); });
+    if (capture) capture.addEventListener('click', async function () {
+      var frame = document.getElementById('thumbnail_frame');
+      try {
+        status.textContent = 'Capturing the current preview frame…';
+        var doc = frame.contentDocument;
+        if (!doc || !doc.body || !window.html2canvas) throw new Error('Preview is not ready. Reload the preview and try again.');
+        var canvas = await window.html2canvas(doc.documentElement, { width: frame.clientWidth, height: frame.clientHeight, windowWidth: frame.clientWidth, windowHeight: frame.clientHeight, scrollX: 0, scrollY: 0, backgroundColor: '#ffffff', useCORS: true, scale: 1 });
+        var out = document.createElement('canvas');
+        var scale = Math.min(1, 1000 / Math.max(canvas.width, canvas.height)); out.width = Math.max(1, Math.round(canvas.width * scale)); out.height = Math.max(1, Math.round(canvas.height * scale));
+        var ctx = out.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, out.width, out.height); ctx.drawImage(canvas, 0, 0, out.width, out.height);
+        setImage(out.toDataURL('image/jpeg', 0.84), 'Frame captured. Save changes to publish it to the collection.');
+      } catch (err) { status.textContent = err && err.message ? err.message : 'Frame capture failed. Upload an image instead.'; }
+    });
+  })();
+  </script>`;
   return adminShell('/admin/templates', isNew ? 'New template' : 'Edit template', inner);
 }
 
@@ -318,6 +387,7 @@ function paigaamDetail(p, baseUrl) {
         <div class="stat"><div class="stat__label" style="margin-bottom:8px">Amount</div><div class="serif" style="font-size:24px">${money(p.template_price, p.template_currency)}</div></div>
         <div class="stat"><div class="stat__label" style="margin-bottom:8px">Payment</div>${badge(p.payment_status)}</div>
         <div class="stat"><div class="stat__label" style="margin-bottom:8px">Status</div>${badge(p.status)}</div>
+        <div class="stat"><div class="stat__label" style="margin-bottom:8px">Created</div><div class="serif" style="font-size:18px">${fmtDT(p.created_at)}</div></div>
       </div>
 
       <h2 style="font-size:24px;margin-bottom:22px">Their details</h2>
