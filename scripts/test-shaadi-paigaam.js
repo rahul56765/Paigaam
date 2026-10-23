@@ -19,6 +19,7 @@ function sample() {
   const d = JSON.parse(JSON.stringify(C.SAMPLE));
   const w = future(90);
   d.wedding.date = w; d.rsvp.deadline = future(80);
+  d.rsvp.whatsapp = '+919999999999';
   const shift = { 'ev-mehendi': -2, 'ev-haldi': -1, 'ev-arrival': 0, 'ev-wedding': 0, 'ev-reception': 1 };
   for (const e of d.events) e.date = future(90 + shift[e.id]);
   return d;
@@ -48,7 +49,16 @@ function sample() {
     { const { DatabaseSync } = require('node:sqlite'); const db = new DatabaseSync(path.join(dir, 'paigaam.db')); db.prepare("UPDATE templates SET price=1 WHERE slug='shaadi-paigaam'").run(); db.close(); }
     let r = await J('/shaadi-paigaam/demo'); let html = await r.text();
     ok(r.status === 200 && html.includes('Aarav') && html.includes('sp-boot'), 'demo renders the sample couple');
-    ok((await J('/create/shaadi-paigaam')).status === 200, 'editor page loads');
+    const editorResponse = await J('/create/shaadi-paigaam'), editorHtml = await editorResponse.text();
+    const editorRuntime = fs.readFileSync(path.join(root, 'public/shaadi-paigaam/editor.js'), 'utf8');
+    ok(editorResponse.status === 200 && editorHtml.includes('editor.js?v=3') && editorRuntime.includes("Organiser's WhatsApp number"), 'editor asks the organiser for the WhatsApp destination');
+    const demoLinks = C.whatsappRsvpLink(sample(), true, 'en');
+    ok(demoLinks.startsWith('https://wa.me/919999999999?text=') && decodeURIComponent(demoLinks).includes('Aarav & Ananya'), 'RSVP link targets organiser WhatsApp with couple context');
+    const missingWa = sample(); missingWa.rsvp.whatsapp = '';
+    const missingWaResult = C.validate(missingWa, { publish: true, requireWhatsAppRsvp: true });
+    ok(missingWaResult.errors.some(e => e.path === 'rsvp.whatsapp'), 'publishing with RSVP requires the organiser WhatsApp number');
+    ok(C.checklist(missingWaResult).find(e => e.path === 'rsvp.whatsapp').step === 2, 'the missing WhatsApp number links to the RSVP editor step');
+    ok(!C.whatsappRsvpLink(missingWa, false, 'en'), 'no WhatsApp RSVP link is generated without a valid organiser number');
     ok((await J('/shaadi-paigaam/invite.css')).status === 200 && (await J('/shaadi-paigaam/art/scene-base.webp')).status === 200, 'static art is served');
     ok((await J('/shaadi-paigaam/music/shehnai-dawn.mp3')).status === 200, 'music library is served');
 
@@ -94,6 +104,15 @@ function sample() {
     d.photos.unshift({ url: photoUrl, alt: 'Us', fx: 50, fy: 50 });
     await J('/api/shaadi-paigaam/draft', { id, data: d }, cookie);
 
+    // --- publish: the organiser's WhatsApp destination is required when RSVP is on
+    const organiserWa = d.rsvp.whatsapp;
+    d.rsvp.whatsapp = '';
+    await J('/api/shaadi-paigaam/draft', { id, data: d }, cookie);
+    r = await J('/api/shaadi-paigaam/publish', { id, slug: 'aarav-ananya', confirmed: true }, cookie); j = await r.json();
+    ok(r.status === 422 && j.errors.some(e => e.path === 'rsvp.whatsapp'), 'server blocks publishing without the organiser WhatsApp number');
+    d.rsvp.whatsapp = organiserWa;
+    await J('/api/shaadi-paigaam/draft', { id, data: d }, cookie);
+
     // --- publish: confirmation, payment, then free
     r = await J('/api/shaadi-paigaam/publish', { id, slug: 'aarav-ananya' }, cookie);
     ok(r.status === 422, 'publishing needs the "I have checked" confirmation');
@@ -106,7 +125,13 @@ function sample() {
     r = await J('/api/shaadi-paigaam/publish', { id, slug: 'aarav-ananya', confirmed: true }, cookie); j = await r.json();
     ok(r.status === 200 && j.url === base + '/aarav-ananya', 'free publish returns the short link');
     r = await J('/aarav-ananya'); html = await r.text();
-    ok(r.status === 200 && html.includes('"mode":"guest"') && html.includes('og:image'), 'paigaam.cc/aarav-ananya serves the invitation with a share card');
+    ok(r.status === 200 && html.includes('"mode":"guest"') && html.includes('"simpleWhatsAppRsvp":true') && html.includes('"lazyMusic":true') && html.includes('og:image'), 'paigaam.cc/aarav-ananya serves the invitation with scoped WhatsApp RSVP and silent music flags');
+    const inviteRuntime = fs.readFileSync(path.join(root, 'public/shaadi-paigaam/invite.js'), 'utf8');
+    const doorOpen = inviteRuntime.slice(inviteRuntime.indexOf('  function openDoors() {'), inviteRuntime.indexOf('  function replayIntro()'));
+    const lazySetup = inviteRuntime.slice(inviteRuntime.indexOf('    // For Shaadi Paigaam'), inviteRuntime.indexOf('  function startMusic('));
+    ok(!doorOpen.includes('\n    startMusic(true);') && doorOpen.includes('if (!cfg.lazyMusic) startMusic(true);') && inviteRuntime.includes("audio.preload = 'none'"), 'Shaadi invitation music never auto-starts and remains preload-disabled');
+    ok(!lazySetup.includes('audio.src') && lazySetup.includes('until a guest taps Play'), 'Shaadi music files are not requested during page setup');
+    ok(inviteRuntime.includes('return cfg.simpleWhatsAppRsvp ? whatsappRsvpForm() : websiteRsvpForm()') && inviteRuntime.includes('C.whatsappRsvpLink(data, true, lang)'), 'Shaadi guest RSVP uses WhatsApp links rather than a data-collecting form');
     ok((await J(photoUrl)).status === 200, 'photos become public once published');
     r = await J('/p/aarav-ananya'); ok(r.status === 301 && r.headers.get('location') === '/aarav-ananya', '/p/<link> redirects to the short link');
     ok((await J('/no-such-couple')).status === 404, 'unknown short links fall through to the normal 404');
