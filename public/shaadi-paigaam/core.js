@@ -374,7 +374,7 @@
   function validDate(s) { const m = DATE_RE.exec(s || ''); if (!m) return false; const d = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3])); return d.getUTCDate() === +m[3] && +m[1] >= 2020 && +m[1] <= 2100; }
   const validTime = s => TIME_RE.test(s || '');
   function validTz(tz) { try { new Intl.DateTimeFormat('en-US', { timeZone: tz }); return /^[A-Za-z_]+(\/[A-Za-z0-9_+\-]+){0,2}$/.test(tz); } catch { return false; } }
-  const MEDIA_RE = /^\/shaadi-paigaam\/(media\/[a-f0-9]{48}\.(jpg|png|webp|mp3|m4a|ogg|aac|wav)|art\/demo-[1-5]\.webp)$/;
+  const MEDIA_RE = /^\/(?:shaadi-paigaam|suvarna-vivah)\/(media\/[a-f0-9]{48}\.(jpg|png|webp|mp3|m4a|ogg|aac|wav)|art\/demo-[1-5]\.webp)$/;
   const isImage = u => MEDIA_RE.test(u || '') && /\.(jpg|png|webp)$/.test(u);
   const isAudio = u => MEDIA_RE.test(u || '') && /\.(mp3|m4a|ogg|aac|wav)$/.test(u);
   const num = (v, a, b, d) => { const n = Number(v); return Number.isFinite(n) ? Math.min(b, Math.max(a, n)) : d; };

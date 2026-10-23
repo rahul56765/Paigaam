@@ -46,6 +46,7 @@ const sauwajah = require('./lib/sauwajahRoutes');
 const loveAwaits = require('./lib/loveAwaitsRoutes');
 const birthdayPaigaam = require('./lib/birthdayPaigaamRoutes');
 const shaadiPaigaam = require('./lib/shaadiPaigaamRoutes');   // wedding invitation website + customizer (also serves root short links)
+const suvarnaVivah = require('./lib/suvarnaVivahRoutes');   // ceremonial video-opener wedding invitation, sharing Shaadi's editor flow
 const { streamFile } = require('./lib/streamFile');
 const razorpay = require('./lib/razorpay');
 const { ensureSawaalMedia } = require('./lib/sawaalMedia');
@@ -140,6 +141,7 @@ function publishPaigaam(pg) {
   q.ordersAll().filter(o => o.paigaam_id === pg.id && o.status === 'pending').forEach(o => q.orderUpdate(o.id, 'paid'));
   const out = q.paigaamById(pg.id);
   if (out && out.template_slug === 'shaadi-paigaam') require('./lib/shaadiPaigaamRoutes').afterPaidPublish(out);
+  if (out && out.template_slug === suvarnaVivah.SLUG) suvarnaVivah.afterPaidPublish(out);
   return out;
 }
 
@@ -207,6 +209,7 @@ const server = http.createServer(async (req, res) => {
     let m;
 
     if (await shaadiPaigaam.handle(req, res, u, { baseUrl: BASE_URL, isAdmin: !!getAdmin(req) })) return;
+    if (await suvarnaVivah.handle(req, res, u, { baseUrl: BASE_URL, isAdmin: !!getAdmin(req) })) return;
     if (await ganapati.handle(req, res, u, { baseUrl: BASE_URL, isAdmin: !!getAdmin(req) })) return;
     if (await saalgirah.handle(req, res, u, { baseUrl: BASE_URL, isAdmin: !!getAdmin(req) })) return;
     if (await lavender.handle(req, res, u, { baseUrl: BASE_URL, isAdmin: !!getAdmin(req) })) return;
@@ -350,6 +353,10 @@ const server = http.createServer(async (req, res) => {
       if (pg.template_slug === shaadiPaigaam.SLUG) {
         if (!getAdmin(req) && !shaadiPaigaam.owned(req, pg.id)) return json(res, 403, { error: 'forbidden' });
         return redirect(res, '/shaadi-paigaam/preview/' + pg.id);
+      }
+      if (pg.template_slug === suvarnaVivah.SLUG) {
+        if (!getAdmin(req) && !suvarnaVivah.owned(req, pg.id)) return json(res, 403, { error: 'forbidden' });
+        return redirect(res, '/suvarna-vivah/preview/' + pg.id);
       }
       if (pg.template_slug === birthdayPaigaam.SLUG) {
         if (!getAdmin(req) && !birthdayPaigaam.owned(req, pg.id)) return json(res, 403, { error: 'forbidden' });
@@ -553,7 +560,7 @@ Sitemap: ${origin}/sitemap.xml
       if (!pg) return send(res, 404, errorPage('404', 'This Paigaam seems to have wandered away.', "Let's take you back home."));
       if ([ganapati.SLUG, saalgirah.SLUG, courtyard.SLUG].includes(pg.template_slug)) return json(res, 403, { error: 'use_template_endpoint' });
       if (pg.template_slug === valentine.SLUG || pg.template_slug === love.SLUG || pg.template_slug === maafi.SLUG || pg.template_slug === sauwajah.SLUG || pg.template_slug === loveAwaits.SLUG || pg.template_slug === sawaal.SLUG) return json(res, 403, { error: 'use_template_endpoint' });
-      if (bfday.has(pg.template_slug) || pg.template_slug === birthdayPaigaam.SLUG) return json(res, 403, { error: 'use_template_endpoint' });
+      if (bfday.has(pg.template_slug) || pg.template_slug === birthdayPaigaam.SLUG || pg.template_slug === suvarnaVivah.SLUG) return json(res, 403, { error: 'use_template_endpoint' });
       const settings = q.settings();
       const num = (settings.whatsapp_number || '').replace(/\D/g, '');
       const d = pg.customer_data || {};
@@ -593,7 +600,7 @@ Sitemap: ${origin}/sitemap.xml
       if (!pg) return json(res, 404, { error: 'not_found' });
       if ([ganapati.SLUG, saalgirah.SLUG, courtyard.SLUG, lavender.SLUG].includes(pg.template_slug)) return json(res, 403, { error: 'use_template_endpoint' });
       if (pg.template_slug === valentine.SLUG || pg.template_slug === love.SLUG || pg.template_slug === maafi.SLUG || pg.template_slug === sauwajah.SLUG || pg.template_slug === loveAwaits.SLUG || pg.template_slug === sawaal.SLUG) return json(res, 403, { error: 'use_template_endpoint' });
-      if (bfday.has(pg.template_slug) || pg.template_slug === birthdayPaigaam.SLUG) return json(res, 403, { error: 'use_template_endpoint' });
+      if (bfday.has(pg.template_slug) || pg.template_slug === birthdayPaigaam.SLUG || pg.template_slug === suvarnaVivah.SLUG) return json(res, 403, { error: 'use_template_endpoint' });
       if (Number(pg.template_price) > 0) return json(res, 403, { error: 'not_free' });
       const pub = publishPaigaam(pg);
       return json(res, 200, { slug: pub.slug, url: `${BASE_URL}/p/${pub.slug}` });
@@ -608,7 +615,7 @@ Sitemap: ${origin}/sitemap.xml
       if (tpl.slug === loveAwaits.SLUG || existingForBody?.template_slug === loveAwaits.SLUG) return json(res, 403, { error: 'use_template_endpoint' });
       if (tpl.slug === sauwajah.SLUG || existingForBody?.template_slug === sauwajah.SLUG) return json(res, 403, { error: 'use_template_endpoint' });
       if (tpl.slug === sawaal.SLUG || existingForBody?.template_slug === sawaal.SLUG) return json(res, 403, { error: 'use_template_endpoint' });
-      if (bfday.has(tpl.slug) || bfday.has(existingForBody?.template_slug) || tpl.slug === birthdayPaigaam.SLUG || existingForBody?.template_slug === birthdayPaigaam.SLUG) return json(res, 403, { error: 'use_template_endpoint' });
+      if (bfday.has(tpl.slug) || bfday.has(existingForBody?.template_slug) || tpl.slug === birthdayPaigaam.SLUG || existingForBody?.template_slug === birthdayPaigaam.SLUG || tpl.slug === suvarnaVivah.SLUG || existingForBody?.template_slug === suvarnaVivah.SLUG) return json(res, 403, { error: 'use_template_endpoint' });
       const data = body.customer_data && typeof body.customer_data === 'object' ? body.customer_data : {};
       const isCustom = !!(tpl.config && tpl.config.custom);
       // For fixed templates, the sender's name is the display name; for native
@@ -632,7 +639,7 @@ Sitemap: ${origin}/sitemap.xml
       if (!tpl) return json(res, 404, { error: 'template_not_found' });
       if ([ganapati.SLUG, saalgirah.SLUG, courtyard.SLUG, lavender.SLUG].includes(tpl.slug)) return json(res, 403, { error: 'use_template_endpoint' });
       if (tpl.slug === valentine.SLUG || tpl.slug === love.SLUG || tpl.slug === maafi.SLUG || tpl.slug === sauwajah.SLUG || tpl.slug === loveAwaits.SLUG || tpl.slug === sawaal.SLUG) return json(res, 403, { error: 'use_template_endpoint' });
-      if (bfday.has(tpl.slug) || tpl.slug === birthdayPaigaam.SLUG) return json(res, 403, { error: 'use_template_endpoint' });
+      if (bfday.has(tpl.slug) || tpl.slug === birthdayPaigaam.SLUG || tpl.slug === suvarnaVivah.SLUG) return json(res, 403, { error: 'use_template_endpoint' });
       const html = renderPaigaamPage(
         { slug: tpl.slug, category: tpl.category, config: tpl.config },
         { customer_data: body.customer_data || {}, slug: null },
@@ -868,6 +875,9 @@ if (courtyardHealed.length) console.log('[ganpati-courtyard] restored missing me
 const { ensureValentineMedia } = require('./lib/valentineMedia');
 const valentineHealed = ensureValentineMedia();
 if (valentineHealed.length) console.log('[valentine-say-yes] restored missing media files:', valentineHealed.join(', '));
+const { ensureSuvarnaVivahMedia } = require('./lib/suvarnaVivahMedia');
+const svHealed = ensureSuvarnaVivahMedia();
+if (svHealed.length) console.log('[suvarna-vivah] restored media:', svHealed.join(', '));
 const { ensureShaadiPaigaamMedia } = require('./lib/shaadiPaigaamMedia');
 const spHealed = ensureShaadiPaigaamMedia();
 if (spHealed.length) console.log('[shaadi-paigaam] restored media:', spHealed.length, 'files');

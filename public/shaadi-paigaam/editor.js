@@ -7,6 +7,8 @@
   'use strict';
   const C = window.SPCore, I = window.SPI18N, ART = window.SPArt;
   const boot = JSON.parse(document.getElementById('spe-boot').textContent);
+  const ROOT = '/' + (boot.slug || 'shaadi-paigaam'), API = '/api' + ROOT, CREATE = '/create' + ROOT;
+  const STORE = boot.slug === 'suvarna-vivah' ? 'sv-ed' : 'sp-ed';
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -51,7 +53,7 @@
   /* ---------------------------------------------------------- state */
   const S = { id: null, data: null, status: 'draft', live: false, slug: '', step: 0, touched: new Set(), tried: new Set(), undo: [], redo: [], lastPush: 0,
     dirty: false, synced: true, saving: null, manageUrl: '', v: null, previewLang: null, device: 'phone', tab: 'edit', slugTimer: 0, slugState: null, autoTr: {}, published: null };
-  const LS = id => 'sp-ed:' + (id || 'new');
+  const LS = id => STORE + ':' + (id || 'new');
 
   function validateNow() { S.v = C.validate(S.data); return S.v; }
   function getP(path) {
@@ -93,7 +95,7 @@
   function willChange() { pushUndo(); }
 
   function saveLocal() {
-    try { localStorage.setItem(LS(S.id), JSON.stringify({ id: S.id, data: S.data, at: Date.now(), synced: S.synced })); if (S.id) localStorage.setItem('sp-ed:last', S.id); } catch {}
+    try { localStorage.setItem(LS(S.id), JSON.stringify({ id: S.id, data: S.data, at: Date.now(), synced: S.synced })); if (S.id) localStorage.setItem(STORE + ':last', S.id); } catch {}
   }
   const scheduleSave = debounce(() => saveServer(), 2500);
   async function saveServer() {
@@ -103,7 +105,7 @@
     const body = JSON.stringify({ id: S.id || undefined, data: S.data });
     S.saving = (async () => {
       try {
-        const r = await fetch('/api/shaadi-paigaam/draft', { method: 'POST', headers: { 'content-type': 'application/json' }, credentials: 'same-origin', body });
+        const r = await fetch(API + '/draft', { method: 'POST', headers: { 'content-type': 'application/json' }, credentials: 'same-origin', body });
         const j = await r.json().catch(() => ({}));
         if (!r.ok) {
           if (r.status === 429) { paintSave('off', 'Saved on this device'); toast('You have made a lot of drafts today. Your work is safe on this device.'); }
@@ -114,8 +116,8 @@
         if (!S.id && j.id) {
           S.id = j.id;
           try { localStorage.removeItem(LS(null)); } catch {}
-          if (j.manageUrl) { S.manageUrl = j.manageUrl; try { localStorage.setItem('sp-ed:manage:' + j.id, j.manageUrl); } catch {} }
-          history.replaceState(null, '', '/create/shaadi-paigaam?id=' + encodeURIComponent(j.id));
+          if (j.manageUrl) { S.manageUrl = j.manageUrl; try { localStorage.setItem(STORE + ':manage:' + j.id, j.manageUrl); } catch {} }
+          history.replaceState(null, '', CREATE + '?id=' + encodeURIComponent(j.id));
         }
         S.live = !!j.live; S.status = j.status;
         if (!S.dirty) { S.synced = true; saveLocal(); }
@@ -129,7 +131,7 @@
   async function ensureDraft() { if (!S.id) { S.dirty = true; await saveServer(); } if (S.saving) await S.saving; return S.id; }
   setInterval(() => { if (S.dirty) saveServer(); }, 4000);
   window.addEventListener('beforeunload', e => { if (!S.synced) { saveLocal(); e.preventDefault(); e.returnValue = ''; } });
-  document.addEventListener('visibilitychange', () => { if (document.hidden && S.dirty) { saveLocal(); try { navigator.sendBeacon('/api/shaadi-paigaam/draft', new Blob([JSON.stringify({ id: S.id || undefined, data: S.data })], { type: 'application/json' })); } catch {} } });
+  document.addEventListener('visibilitychange', () => { if (document.hidden && S.dirty) { saveLocal(); try { navigator.sendBeacon(API + '/draft', new Blob([JSON.stringify({ id: S.id || undefined, data: S.data })], { type: 'application/json' })); } catch {} } });
 
   function paintSave(kind, text) { const el = $('#saveState'); if (!el) return; el.className = 'save ' + kind; $('span', el).textContent = text; }
 
@@ -422,24 +424,24 @@
     const names = [C.txt(d, d.lang.base, 'couple.groom.first'), C.txt(d, d.lang.base, 'couple.bride.first')];
     if (d.couple.order === 'bride') names.reverse();
     const msg = `${names.join(' & ')} are getting married! 💍\n${C.fmtDate(d.wedding.date, 'en', 'full')}\n${[d.venue.name, d.venue.city].filter(Boolean).join(', ')}\n\nOpen our invitation: ${url}`;
-    const manage = S.manageUrl || (() => { try { return localStorage.getItem('sp-ed:manage:' + S.id) || ''; } catch { return ''; } })();
+    const manage = S.manageUrl || (() => { try { return localStorage.getItem(STORE + ':manage:' + S.id) || ''; } catch { return ''; } })();
     return `<div class="card done-card"><div style="color:#B8924A;width:36px;height:36px;margin:0 auto">${ART.icon.heartFill}</div><h2>Your invitation is live</h2><p class="step-p" style="margin:0">Edit any time. Changes go live on the same link.</p>
       <div class="url"><input class="in" readonly value="${esc(url)}" id="liveUrl" aria-label="Invitation link"><button type="button" class="btn small" data-copy="${esc(url)}">${IC.link} Copy</button></div>
       <div class="share"><a class="btn wa" href="https://wa.me/?text=${encodeURIComponent(msg)}" target="_blank" rel="noopener">${IC.wa} WhatsApp</a><a class="btn ghost" href="${esc(url)}" target="_blank" rel="noopener">${IC.eye} Open</a>
-        <a class="btn ghost" href="/shaadi-paigaam/qr/${encodeURIComponent(S.id)}.png" download>${IC.qr} QR code</a><a class="btn ghost" href="/shaadi-paigaam/card/${encodeURIComponent(S.id)}.jpg?kind=story&download=1" download>${IC.image} Story image</a></div>
-      <div class="og"><img src="/shaadi-paigaam/card/${encodeURIComponent(S.id)}.jpg?t=${Date.now()}" alt="The preview card guests see on WhatsApp" loading="lazy" onerror="this.parentNode.hidden=true"></div>
+        <a class="btn ghost" href="${ROOT}/qr/${encodeURIComponent(S.id)}.png" download>${IC.qr} QR code</a><a class="btn ghost" href="${ROOT}/card/${encodeURIComponent(S.id)}.jpg?kind=story&download=1" download>${IC.image} Story image</a></div>
+      <div class="og"><img src="${ROOT}/card/${encodeURIComponent(S.id)}.jpg?t=${Date.now()}" alt="The preview card guests see on WhatsApp" loading="lazy" onerror="this.parentNode.hidden=true"></div>
       <p class="hint">This is the preview card WhatsApp shows with your link.</p></div>
       ${manage ? card('Your private manage link', `<p class="sub">Bookmark this. It opens your editor and guest list on any phone or computer. Don't share it.</p><div class="url row"><input class="in" readonly value="${esc(manage)}" style="flex:1" aria-label="Private manage link"><button type="button" class="btn ghost small" data-copy="${esc(manage)}">Copy</button></div>`) : ''}`;
   }
   async function guestsHtml(box) {
     box.innerHTML = '<div class="empty">Loading replies…</div>';
     try {
-      const r = await fetch('/api/shaadi-paigaam/rsvps?id=' + encodeURIComponent(S.id), { credentials: 'same-origin' });
+      const r = await fetch(API + '/rsvps?id=' + encodeURIComponent(S.id), { credentials: 'same-origin' });
       const j = await r.json();
       const t = j.totals;
       box.innerHTML = `<div class="stats"><div class="stat"><b>${t.responses}</b><small>Replies</small></div><div class="stat"><b>${t.attending}</b><small>Coming</small></div><div class="stat"><b>${t.guests}</b><small>Total guests</small></div><div class="stat"><b>${t.declined}</b><small>Can't come</small></div></div>
         ${Object.keys(t.meals).length ? `<p class="hint">Meals: ${Object.entries(t.meals).map(([k, n]) => esc(k) + ' ' + n).join(' · ')}</p>` : ''}
-        <div class="row" style="margin:10px 0"><a class="btn ghost small" href="/shaadi-paigaam/rsvps/${encodeURIComponent(S.id)}.csv">Download CSV</a><button type="button" class="btn ghost small" id="rsvpRefresh">${IC.replay} Refresh</button></div>
+        <div class="row" style="margin:10px 0"><a class="btn ghost small" href="${ROOT}/rsvps/${encodeURIComponent(S.id)}.csv">Download CSV</a><button type="button" class="btn ghost small" id="rsvpRefresh">${IC.replay} Refresh</button></div>
         ${j.rows.length ? `<div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Name</th><th>Reply</th><th>Guests</th><th>Meal</th><th>Contact</th><th>Message</th></tr></thead><tbody>${j.rows.map(x => `<tr><td>${esc(x.name)}</td><td><span class="${x.attending === 'yes' ? 'yes' : 'no'}">${x.attending === 'yes' ? 'Coming' : 'Not coming'}</span></td><td>${x.guests || '–'}</td><td>${esc(x.meal || '–')}</td><td>${esc(x.email || '')}${x.email && x.phone ? '<br>' : ''}${esc(x.phone || '')}</td><td>${esc(x.message || '')}</td></tr>`).join('')}</tbody></table></div>` : '<div class="empty">No replies yet. Share your link and they will appear here.</div>'}`;
       const rf = $('#rsvpRefresh', box); if (rf) rf.onclick = () => guestsHtml(box);
     } catch { box.innerHTML = '<div class="empty">Could not load replies. Check your connection and try again.</div>'; }
@@ -447,11 +449,11 @@
   async function versionsHtml(box) {
     box.innerHTML = '<div class="empty">Loading…</div>';
     try {
-      const j = await (await fetch('/api/shaadi-paigaam/versions?id=' + encodeURIComponent(S.id), { credentials: 'same-origin' })).json();
+      const j = await (await fetch(API + '/versions?id=' + encodeURIComponent(S.id), { credentials: 'same-origin' })).json();
       box.innerHTML = j.versions.length ? `<p class="sub">Every time you publish or update, we keep a copy. Restoring loads it into the editor; nothing changes for guests until you press “Update live invitation”.</p><ul class="cl">${j.versions.map(x => `<li class="ok">${IC.check}<span>${esc(x.note || 'Saved')} · ${esc(new Date(x.created_at).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }))}</span><button type="button" class="link" data-restore="${x.id}">Restore</button></li>`).join('')}</ul>` : '<div class="empty">No versions yet.</div>';
       $$('[data-restore]', box).forEach(b => b.onclick = async () => {
         if (!(await confirmBox('Restore this version?', 'Your current draft will be replaced. You can undo this.', 'Restore'))) return;
-        const r = await fetch('/api/shaadi-paigaam/restore', { method: 'POST', headers: { 'content-type': 'application/json' }, credentials: 'same-origin', body: JSON.stringify({ id: S.id, version: Number(b.dataset.restore) }) });
+        const r = await fetch(API + '/restore', { method: 'POST', headers: { 'content-type': 'application/json' }, credentials: 'same-origin', body: JSON.stringify({ id: S.id, version: Number(b.dataset.restore) }) });
         if (!r.ok) return toast('Could not restore. Please try again.');
         willChange(); S.data = (await r.json()).data; S.tab = 'edit'; S.step = 0; changed({ noUndo: true }); render(); toast('Version restored. Press “Update live invitation” when ready.');
       });
@@ -483,7 +485,7 @@
         <div class="stage-bar"><div class="devices" role="group" aria-label="Preview size">${[['phone', 'Phone'], ['tablet', 'Tablet'], ['laptop', 'Laptop']].map(([k, l]) => `<button type="button" data-dev="${k}" aria-pressed="${S.device === k}">${IC[k]}<span>${l}</span></button>`).join('')}</div>
           <button type="button" class="iconbtn" id="replayBtn">${IC.replay}<span>Replay opening</span></button>
           <select class="iconbtn" id="pvLang" aria-label="Preview language">${S.data.lang.enabled.map(l => `<option value="${l}" ${(S.previewLang || S.data.lang.default) === l ? 'selected' : ''}>${esc(I.LANGS[l].native)}</option>`).join('')}</select></div>
-        <div class="frame-wrap" id="frameWrap"><div class="device phone" id="device"><span class="notch"></span><iframe id="pv" title="Live preview of your invitation" src="/shaadi-paigaam/frame" width="390" height="844"></iframe></div></div>
+        <div class="frame-wrap" id="frameWrap"><div class="device phone" id="device"><span class="notch"></span><iframe id="pv" title="Live preview of your invitation" src="${ROOT}/frame" width="390" height="844"></iframe></div></div>
       </div>`;
     bindChrome();
     renderStep();
@@ -595,7 +597,7 @@
     const m = modal(`<div class="gp-bar"><b style="font-family:'Cormorant Garamond',serif;font-size:20px">Preview as guest</b><span class="sp"></span>
       ${mobile ? '' : `<div class="devices" role="group" aria-label="Device">${[['phone', 'Phone'], ['tablet', 'Tablet'], ['laptop', 'Laptop']].map(([k, l]) => `<button type="button" data-gdev="${k}" aria-pressed="${dev === k}">${IC[k]}<span>${l}</span></button>`).join('')}</div>`}
       <button type="button" class="iconbtn" id="gpReplay">${IC.replay}<span>Replay</span></button><button type="button" class="iconbtn" id="gpClose" aria-label="Close preview">${IC.x}</button></div>
-      <div class="gp-stage" id="gpStage"><div class="device ${dev}" id="gpDev"><iframe id="gpFrame" title="Guest preview" src="/shaadi-paigaam/frame?guest=1"></iframe></div></div>`, { full: true });
+      <div class="gp-stage" id="gpStage"><div class="device ${dev}" id="gpDev"><iframe id="gpFrame" title="Guest preview" src="${ROOT}/frame?guest=1"></iframe></div></div>`, { full: true });
     const size = () => {
       if (dev === 'native') return;
       const st = $('#gpStage'), d = $('#gpDev'), f = $('#gpFrame'); if (!st) return;
@@ -605,7 +607,7 @@
     };
     size(); window.addEventListener('resize', size);
     $$('[data-gdev]').forEach(b => b.onclick = () => { dev = b.dataset.gdev; $$('[data-gdev]').forEach(x => x.setAttribute('aria-pressed', x === b)); size(); });
-    $('#gpReplay').onclick = () => { const f = $('#gpFrame'); f.dataset.ready = ''; f.src = '/shaadi-paigaam/frame?guest=1&r=' + Date.now(); };
+    $('#gpReplay').onclick = () => { const f = $('#gpFrame'); f.dataset.ready = ''; f.src = ROOT + '/frame?guest=1&r=' + Date.now(); };
     $('#gpClose').onclick = () => { window.removeEventListener('resize', size); m.close(); };
   }
 
@@ -615,7 +617,7 @@
     S.visited = S.visited || new Set(); S.visited.add(S.step);
     S.step = step; S.userNav = !!user; S.tab = 'edit';
     renderStep(); postPreview(STEPS[step].focus);
-    try { localStorage.setItem('sp-ed:step:' + (S.id || 'new'), String(step)); } catch {}
+    try { localStorage.setItem(STORE + ':step:' + (S.id || 'new'), String(step)); } catch {}
   }
   function bindChrome() {
     $('#undoBtn').onclick = undo; $('#redoBtn').onclick = redo; paintUndo();
@@ -814,7 +816,7 @@
         const v = q.value.trim(); if (v.length < 3) return close();
         paint('Searching…');
         try { if (ctrl) ctrl.abort(); ctrl = new AbortController();
-          const r = await fetch('/api/shaadi-paigaam/places?q=' + encodeURIComponent(v), { signal: ctrl.signal }); const j = await r.json();
+          const r = await fetch(API + '/places?q=' + encodeURIComponent(v), { signal: ctrl.signal }); const j = await r.json();
           if (!r.ok) return paint('Search is busy right now. You can enter the address yourself below.');
           results = j.results || []; sel = -1; results.length ? paint() : paint('No matches. Try adding the city, or enter the address yourself.');
         } catch (e) { if (e.name !== 'AbortError') paint('Could not search. Check your connection, or enter the address yourself.'); }
@@ -850,14 +852,14 @@
     const icon = L.divIcon({ className: '', html: `<div style="width:30px;height:30px;color:#8F1018;transform:translate(-50%,-100%);filter:drop-shadow(0 2px 2px rgba(0,0,0,.35))">${IC.pin.replace('fill="none"', 'fill="#fff"')}</div>`, iconSize: [0, 0] });
     const mk = L.marker(center, { draggable: true, icon, keyboard: true, title: 'Drag to the exact entrance' }).addTo(map);
     if (!has && (v.city || v.address)) {
-      fetch('/api/shaadi-paigaam/places?q=' + encodeURIComponent([v.address, v.city, v.state].filter(Boolean).join(', '))).then(r => r.json()).then(j => { const r = (j.results || [])[0]; if (r && r.lat != null) { map.setView([r.lat, r.lng], 14); mk.setLatLng([r.lat, r.lng]); } }).catch(() => {});
+      fetch(API + '/places?q=' + encodeURIComponent([v.address, v.city, v.state].filter(Boolean).join(', '))).then(r => r.json()).then(j => { const r = (j.results || [])[0]; if (r && r.lat != null) { map.setView([r.lat, r.lng], 14); mk.setLatLng([r.lat, r.lng]); } }).catch(() => {});
     }
     const place = async ll => {
       willChange(); const t = S.data[prefix]; t.lat = +ll.lat.toFixed(6); t.lng = +ll.lng.toFixed(6);
       changed({ noUndo: true, focus: 'venue' });
       const tl = $('#test-' + prefix); if (tl) tl.href = C.mapsLinks(t).google;
       try {
-        const j = await (await fetch(`/api/shaadi-paigaam/reverse?lat=${t.lat}&lng=${t.lng}`)).json();
+        const j = await (await fetch(`${API}/reverse?lat=${t.lat}&lng=${t.lng}`)).json();
         const r = j.result; if (!r) return;
         let filled = false;
         for (const k of ['address', 'city', 'state', 'pin']) if (!t[k] && r[k]) { t[k] = k === 'pin' ? String(r[k]).replace(/\D/g, '').slice(0, 6) : r[k]; filled = true; }
@@ -921,7 +923,7 @@
   function upload(kind, blob, type, onProgress) {
     return new Promise((res, rej) => {
       const x = new XMLHttpRequest();
-      x.open('POST', `/api/shaadi-paigaam/upload?id=${encodeURIComponent(S.id)}&kind=${kind}`);
+      x.open('POST', `${API}/upload?id=${encodeURIComponent(S.id)}&kind=${kind}`);
       x.setRequestHeader('Content-Type', type);
       x.upload.onprogress = e => e.lengthComputable && onProgress && onProgress(e.loaded / e.total);
       x.onload = () => { let j = {}; try { j = JSON.parse(x.responseText); } catch {} x.status === 200 ? res(j) : rej(j.error || 'upload'); };
@@ -1046,7 +1048,7 @@
       if (!Object.keys(texts).length) return toast('Everything is already translated.');
       b.disabled = true; b.textContent = 'Translating…';
       try {
-        const r = await fetch('/api/shaadi-paigaam/translate', { method: 'POST', headers: { 'content-type': 'application/json' }, credentials: 'same-origin', body: JSON.stringify({ from, to: l, texts }) });
+        const r = await fetch(API + '/translate', { method: 'POST', headers: { 'content-type': 'application/json' }, credentials: 'same-origin', body: JSON.stringify({ from, to: l, texts }) });
         const j = await r.json();
         if (!r.ok) throw 0;
         willChange(); S.data.i18n = S.data.i18n || {}; S.data.i18n[l] = S.data.i18n[l] || {};
@@ -1080,7 +1082,7 @@
         if (!C.SLUG_RE.test(v)) { S.slugState = { available: false }; st.className = 'slug-st no'; st.textContent = v.length < 3 ? 'At least 3 characters.' : 'Use lowercase letters, numbers and single hyphens (no hyphen at the start or end).'; sug.innerHTML = ''; paintErrors(); return; }
         st.className = 'slug-st'; st.textContent = 'Checking…';
         try {
-          const j = await (await fetch(`/api/shaadi-paigaam/slug?s=${encodeURIComponent(v)}&id=${encodeURIComponent(S.id || '')}`)).json();
+          const j = await (await fetch(`${API}/slug?s=${encodeURIComponent(v)}&id=${encodeURIComponent(S.id || '')}`)).json();
           if (si.value !== v) return;
           S.slugState = j;
           st.className = 'slug-st ' + (j.available ? 'ok' : 'no');
@@ -1101,7 +1103,7 @@
     if (pb) { pb.disabled = true; pb.textContent = S.live ? 'Updating…' : 'Publishing…'; }
     S.dirty = true; await saveServer();
     try {
-      const r = await fetch('/api/shaadi-paigaam/publish', { method: 'POST', headers: { 'content-type': 'application/json' }, credentials: 'same-origin', body: JSON.stringify({ id: S.id, slug: S.slugInput, confirmed: S.live ? true : !!S.confirmed }) });
+      const r = await fetch(API + '/publish', { method: 'POST', headers: { 'content-type': 'application/json' }, credentials: 'same-origin', body: JSON.stringify({ id: S.id, slug: S.slugInput, confirmed: S.live ? true : !!S.confirmed }) });
       const j = await r.json().catch(() => ({}));
       if (!r.ok) {
         if (j.error === 'incomplete') { toast('A few details still need attention.'); S.tried.add(6); go(6); }
@@ -1131,20 +1133,20 @@
     if (boot.open) {
       S.id = boot.open.id; S.data = boot.open.data; S.live = boot.open.live; S.status = boot.open.status; S.slug = boot.open.slug || '';
       if (local && !local.synced && local.data && local.at > Date.now() - 14 * 864e5) { S.data = C.validate(local.data).data; S.synced = false; S.dirty = true; setTimeout(() => toast('We restored changes you had not saved yet.', 'Discard', () => { S.data = boot.open.data; changed({ noUndo: true }); renderStep(); }, 8000), 400); }
-      try { S.manageUrl = localStorage.getItem('sp-ed:manage:' + S.id) || ''; } catch {}
+      try { S.manageUrl = localStorage.getItem(STORE + ':manage:' + S.id) || ''; } catch {}
       if (S.live && new URLSearchParams(location.search).get('tab') === 'dashboard') S.tab = 'guests';
     } else {
-      const lastId = (() => { try { return localStorage.getItem('sp-ed:last'); } catch { return null; } })();
+      const lastId = (() => { try { return localStorage.getItem(STORE + ':last'); } catch { return null; } })();
       if (local && local.data) { S.data = C.validate(local.data).data; S.synced = false; S.dirty = true; setTimeout(() => toast('Welcome back! We restored your draft.', 'Start over', async () => { if (await confirmBox('Start over?', 'This clears your draft on this device.', 'Start over', true)) { localStorage.removeItem(LS(null)); location.reload(); } }, 8000), 400); }
       else if (lastId) {
-        try { const r = await fetch('/api/shaadi-paigaam/me?id=' + encodeURIComponent(lastId), { credentials: 'same-origin' }); if (r.ok) { const j = await r.json(); location.replace('/create/shaadi-paigaam?id=' + encodeURIComponent(j.id)); return; } } catch {}
+        try { const r = await fetch(API + '/me?id=' + encodeURIComponent(lastId), { credentials: 'same-origin' }); if (r.ok) { const j = await r.json(); location.replace(CREATE + '?id=' + encodeURIComponent(j.id)); return; } } catch {}
       }
       if (!S.data && boot.resume) {
-        try { const r = await fetch('/api/shaadi-paigaam/me?id=' + encodeURIComponent(boot.resume.id), { credentials: 'same-origin' }); if (r.ok) { location.replace('/create/shaadi-paigaam?id=' + encodeURIComponent(boot.resume.id)); return; } } catch {}
+        try { const r = await fetch(API + '/me?id=' + encodeURIComponent(boot.resume.id), { credentials: 'same-origin' }); if (r.ok) { location.replace(CREATE + '?id=' + encodeURIComponent(boot.resume.id)); return; } } catch {}
       }
-      if (!S.data) S.data = C.validate(clone(C.SAMPLE)).data;
+      if (!S.data) { const starter = clone(C.SAMPLE); if (boot.slug === 'suvarna-vivah') { starter.palette.id = 'emerald-gold'; starter.palette.custom = { primary: '#0F5440', accent: '#C2A057', bg: '#F6F3E9' }; starter.font = 'royal'; } S.data = C.validate(starter).data; }
     }
-    try { const st = Number(localStorage.getItem('sp-ed:step:' + (S.id || 'new'))); if (st >= 0 && st < STEPS.length) S.step = st; } catch {}
+    try { const st = Number(localStorage.getItem(STORE + ':step:' + (S.id || 'new'))); if (st >= 0 && st < STEPS.length) S.step = st; } catch {}
     validateNow();
     render();
     if (!S.synced) { paintSave('busy', 'Saving…'); scheduleSave(); }

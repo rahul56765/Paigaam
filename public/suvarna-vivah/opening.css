@@ -1,0 +1,52 @@
+/* Suvarna Vivah — cinematic, full-bleed opening for the kalash film. */
+html.sv-opening-lock, body.sv-opening-lock { overflow: hidden !important; }
+.sv-opener {
+  --sv-gold: #E8C979; --sv-ivory: #FFF8E8;
+  position: fixed; inset: 0; z-index: 99999; display: grid; place-items: center; overflow: hidden;
+  isolation: isolate; background: #10130f; color: var(--sv-ivory); opacity: 1;
+  transition: opacity 1.45s cubic-bezier(.22,.7,.2,1), visibility 1.45s;
+  -webkit-tap-highlight-color: transparent;
+}
+.sv-opener::before {
+  content: ""; position: absolute; inset: -5%; z-index: -3;
+  background: url('/suvarna-vivah/opening-poster.jpg') center 42% / cover no-repeat;
+  filter: blur(30px) brightness(.32) saturate(.85); transform: scale(1.08);
+}
+.sv-opener__video { position: absolute; inset: 0; z-index: -2; width: 100%; height: 100%; object-fit: contain; background: transparent; }
+.sv-opener__veil { position: absolute; inset: 0; z-index: -1; background: linear-gradient(180deg,rgba(9,18,13,.12) 0%,rgba(9,18,13,.04) 40%,rgba(9,18,13,.48) 70%,rgba(9,18,13,.8) 100%); }
+.sv-opener__frame { position: absolute; inset: clamp(14px,2.2vw,32px); border: 1px solid rgba(232,201,121,.62); pointer-events: none; }
+.sv-opener__frame::before { content:""; position:absolute; inset:5px; border:1px solid rgba(255,248,232,.27); }
+.sv-opener__corner { position:absolute; width:46px; height:46px; color:var(--sv-gold); opacity:.82; }
+.sv-opener__corner--tl { top:-1px; left:-1px; }
+.sv-opener__corner--tr { top:-1px; right:-1px; transform:scaleX(-1); }
+.sv-opener__corner--bl { bottom:-1px; left:-1px; transform:scaleY(-1); }
+.sv-opener__corner--br { bottom:-1px; right:-1px; transform:scale(-1); }
+.sv-opener__copy { width:min(88vw,540px); position:absolute; bottom:clamp(38px,9vh,88px); left:50%; transform:translateX(-50%); text-align:center; display:grid; justify-items:center; gap:12px; transition:opacity .5s, transform .65s; }
+.sv-opener__lotus { width:62px; height:62px; margin-bottom:1px; color:var(--sv-gold); filter:drop-shadow(0 2px 10px rgba(0,0,0,.35)); }
+.sv-opener__kicker { margin:0; font:500 10px/1.4 'Josefin Sans',sans-serif; letter-spacing:.33em; text-transform:uppercase; color:#F1D798; }
+.sv-opener__names { margin:0; font:clamp(27px,5vw,43px)/1.08 var(--f-script,'Great Vibes'),cursive; color:#FFF4D9; text-shadow:0 2px 24px rgba(0,0,0,.6); }
+.sv-opener__title { max-width:360px; margin:0; font:400 clamp(16px,2.2vw,20px)/1.55 var(--f-serif,'Cormorant Garamond'),serif; letter-spacing:.035em; color:rgba(255,248,232,.94); }
+.sv-opener__play { display:inline-flex; align-items:center; gap:13px; margin-top:8px; padding:13px 24px 12px; border:1px solid rgba(232,201,121,.88); border-radius:999px; color:#FFF5DD; background:rgba(15,35,26,.6); backdrop-filter:blur(12px); font:500 10px/1 'Josefin Sans',sans-serif; letter-spacing:.22em; text-transform:uppercase; cursor:pointer; box-shadow:0 8px 32px rgba(0,0,0,.22); transition:background .2s, transform .2s, border-color .2s; }
+.sv-opener__play:hover { background:rgba(15,58,42,.8); transform:translateY(-2px); border-color:#F4D98F; }
+.sv-opener__play svg { width:13px; height:13px; fill:currentColor; }
+.sv-opener__skip { position:absolute; right:clamp(28px,5vw,64px); bottom:clamp(27px,5vh,50px); border:0; padding:10px; color:rgba(255,248,232,.78); background:transparent; font:500 9px/1 'Josefin Sans',sans-serif; letter-spacing:.18em; text-transform:uppercase; cursor:pointer; }
+.sv-opener__skip:hover { color:#fff; }
+.sv-opener__status { position:absolute; top:clamp(32px,6vh,58px); left:50%; transform:translateX(-50%); width:min(80vw,500px); text-align:center; color:#FFF8E8; font:500 10px/1.5 'Josefin Sans',sans-serif; letter-spacing:.16em; text-transform:uppercase; text-shadow:0 1px 10px #000; }
+.sv-opener.is-playing .sv-opener__copy { opacity:0; transform:translate(-50%,12px); pointer-events:none; }
+.sv-opener.is-playing .sv-opener__skip { opacity:.78; }
+.sv-opener.is-leaving { opacity:0; visibility:hidden; pointer-events:none; }
+.sv-opener.is-leaving .sv-opener__video { opacity:0; transition:opacity 1.4s ease; }
+@media (max-width:700px) {
+  .sv-opener__video { object-fit:cover; }
+  .sv-opener__frame { inset:10px; }
+  .sv-opener__frame::before { inset:4px; }
+  .sv-opener__corner { width:34px; height:34px; }
+  .sv-opener__copy { bottom:max(82px,calc(env(safe-area-inset-bottom) + 68px)); gap:10px; }
+  .sv-opener__lotus { width:52px; height:52px; }
+  .sv-opener__skip { right:22px; bottom:max(19px,env(safe-area-inset-bottom)); }
+  .sv-opener__status { top:max(28px,env(safe-area-inset-top)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sv-opener,.sv-opener__video,.sv-opener__copy { transition-duration:.12s !important; }
+  .sv-opener__play:hover { transform:none; }
+}
