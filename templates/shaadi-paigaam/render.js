@@ -8,7 +8,7 @@
 const C = require('../../public/shaadi-paigaam/core.js');
 const I = require('../../public/shaadi-paigaam/i18n.js');
 
-const ASSET_V = '1';
+const ASSET_V = '2';
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const jsonSafe = obj => JSON.stringify(obj).replace(/</g, '\\u003c').replace(/>/g, '\\u003e').replace(/&/g, '\\u0026').replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029');
 
@@ -51,7 +51,7 @@ ${o.url ? `<meta property="og:url" content="${esc(o.url)}"><link rel="canonical"
  * @param o { mode: guest|demo|preview|live|thumb, id, slug, url, rsvpUrl, ogImage, noindex, mapsKey, autoOpen }
  */
 function renderInvitation(data, o = {}) {
-  const boot = { mode: o.mode || 'guest', id: o.id || '', slug: o.slug || '', url: o.url || '', rsvpUrl: o.rsvpUrl || '', mapsKey: o.mapsKey || '', autoOpen: !!o.autoOpen, data };
+  const boot = { mode: o.mode || 'guest', id: o.id || '', slug: o.slug || '', url: o.url || '', rsvpUrl: o.rsvpUrl || '', mapsKey: o.mapsKey || '', autoOpen: !!o.autoOpen, simpleWhatsAppRsvp: !!o.simpleWhatsAppRsvp, lazyMusic: !!o.lazyMusic, data };
   return `${head(data, o)}
 </head>
 <body>

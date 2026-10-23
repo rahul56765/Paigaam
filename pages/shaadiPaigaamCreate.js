@@ -6,7 +6,7 @@
  * preview and the server all validate with the very same rules.
  */
 const C = require('../public/shaadi-paigaam/core.js');
-const V = '2';
+const V = '3';
 const json = o => JSON.stringify(o).replace(/</g, '\\u003c').replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029');
 
 function shaadiPaigaamCreatePage(opts = {}) {

@@ -50,13 +50,13 @@ function sample() {
     ok(r.status === 200 && html.includes('Aarav') && html.includes('sp-boot'), 'demo renders the sample couple');
     const bootMatch = html.match(/<script id="sp-boot" type="application\/json">([\s\S]*?)<\/script>/);
     const demoBoot = bootMatch && JSON.parse(bootMatch[1]);
-    ok(demoBoot && demoBoot.data.palette.id === 'emerald-gold' && demoBoot.data.font === 'royal' && !demoBoot.autoOpen, 'Suvarna starts in its matching Emerald & Gold / Royal Calligraphy style');
+    ok(demoBoot && demoBoot.data.palette.id === 'emerald-gold' && demoBoot.data.font === 'royal' && !demoBoot.autoOpen && !demoBoot.simpleWhatsAppRsvp && !demoBoot.lazyMusic, 'Suvarna keeps its existing RSVP and music behavior alongside Emerald & Gold / Royal Calligraphy');
     const skipHtml = await (await J('/suvarna-vivah/demo?skip=1')).text();
     ok(!skipHtml.includes('/suvarna-vivah/opening.js') && skipHtml.includes('\"autoOpen\":true'), 'demo skip link bypasses the clip and opens the invitation');
     ok((await J('/templates/suvarna-vivah')).status === 200, 'catalogue detail page exists');
     ok((await J('/template-view/suvarna-vivah')).status === 200, 'gallery thumbnail uses the Suvarna experience');
     const editorHtml = await (await J('/create/suvarna-vivah')).text();
-    ok(editorHtml.includes('/shaadi-paigaam/editor.js?v=2') && editorHtml.includes('\"slug\":\"suvarna-vivah\"'), 'editor page loads the cache-busted route-aware editor');
+    ok(editorHtml.includes('/shaadi-paigaam/editor.js?v=3') && editorHtml.includes('"slug":"suvarna-vivah"'), 'editor page loads the cache-busted route-aware editor');
     ok((await J('/shaadi-paigaam/core.js')).status === 200 && (await J('/suvarna-vivah/opening.css')).status === 200 && (await J('/suvarna-vivah/opening.js')).status === 200 && (await J('/suvarna-vivah/site.css')).status === 200 && (await J('/suvarna-vivah/site.js')).status === 200, 'shared data engine and Suvarna-specific design assets are served');
     ok((await J('/suvarna-vivah/ceremony-still-life.webp')).status === 200, 'original Suvarna ceremonial artwork is served');
     const siteScript = await (await J('/suvarna-vivah/site.js')).text();
