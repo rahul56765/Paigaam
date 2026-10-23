@@ -1,0 +1,10 @@
+{
+  "opening.mp4": {
+    "sha256": "a381b8f60b7b1e2b4f14f791a34b07d0b0e04f18e143d447c38140eb078a6ec5",
+    "parts": 2
+  },
+  "opening-poster.jpg": {
+    "sha256": "42f6fcbdc2ded11f6980af5fc060ff0b9b7b12dcf8a9315b0abf6acdf7bba03a",
+    "parts": 1
+  }
+}
