@@ -43,12 +43,14 @@ ${o.url ? `<meta property="og:url" content="${esc(o.url)}"><link rel="canonical"
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link id="sp-fonts" rel="stylesheet" href="${esc(C.googleFontsHref(d.font, d.lang.enabled))}">
 <link rel="preload" as="image" href="/shaadi-paigaam/art/door-relief.webp">
-<link rel="stylesheet" href="/shaadi-paigaam/invite.css?v=${ASSET_V}">`;
+<link rel="stylesheet" href="/shaadi-paigaam/invite.css?v=${ASSET_V}">
+${o.openingVideo ? '<link rel="stylesheet" href="/suvarna-vivah/opening.css?v=1">' : ''}
+${o.openingVideo ? '<script src="/suvarna-vivah/opening.js?v=1" defer></script>' : ''}`;
 }
 
 /**
  * @param data validated data (core.validate(...).data)
- * @param o { mode: guest|demo|preview|live|thumb, id, slug, url, rsvpUrl, ogImage, noindex, mapsKey, autoOpen }
+ * @param o { mode: guest|demo|preview|live|thumb, id, slug, url, rsvpUrl, ogImage, noindex, mapsKey, autoOpen, openingVideo }
  */
 function renderInvitation(data, o = {}) {
   const boot = { mode: o.mode || 'guest', id: o.id || '', slug: o.slug || '', url: o.url || '', rsvpUrl: o.rsvpUrl || '', mapsKey: o.mapsKey || '', autoOpen: !!o.autoOpen, data };

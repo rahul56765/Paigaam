@@ -10,14 +10,15 @@ const V = '1';
 const json = o => JSON.stringify(o).replace(/</g, '\\u003c').replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029');
 
 function shaadiPaigaamCreatePage(opts = {}) {
-  const boot = { price: opts.price || 0, listPrice: opts.listPrice || 0, open: opts.open || null, resume: opts.resume || null, mapsProvider: opts.mapsProvider || 'osm' };
+  const title = opts.slug === 'suvarna-vivah' ? 'Create your Suvarna Vivah · Paigaam' : 'Create your wedding invitation · Paigaam';
+  const boot = { price: opts.price || 0, listPrice: opts.listPrice || 0, open: opts.open || null, resume: opts.resume || null, mapsProvider: opts.mapsProvider || 'osm', slug: opts.slug || 'shaadi-paigaam' };
   const fonts = 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Cormorant+Garamond:wght@500;600&family=Noto+Sans+Devanagari:wght@400;600&family=Noto+Sans+Gujarati:wght@400;600&family=Noto+Sans+Tamil:wght@400;600&family=Noto+Sans+Telugu:wght@400;600&family=Noto+Naskh+Arabic:wght@400;600&' + C.FONTS.map(f => 'family=' + f.google).join('&') + '&display=swap';
   return `<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Create your wedding invitation · Paigaam</title>
+<title>${title}</title>
 <meta name="description" content="Make your own wedding invitation website on Paigaam: doors that open, a scratch-to-reveal date, maps, events, RSVP and 8 languages. Free to create and preview.">
 <meta name="robots" content="noindex,nofollow">
 <meta name="theme-color" content="#F7F1E6">
