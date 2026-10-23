@@ -55,7 +55,8 @@ function sample() {
     ok(!skipHtml.includes('/suvarna-vivah/opening.js') && skipHtml.includes('\"autoOpen\":true'), 'demo skip link bypasses the clip and opens the invitation');
     ok((await J('/templates/suvarna-vivah')).status === 200, 'catalogue detail page exists');
     ok((await J('/template-view/suvarna-vivah')).status === 200, 'gallery thumbnail uses the Suvarna experience');
-    ok((await J('/create/suvarna-vivah')).status === 200, 'editor page loads');
+    const editorHtml = await (await J('/create/suvarna-vivah')).text();
+    ok(editorHtml.includes('/shaadi-paigaam/editor.js?v=2') && editorHtml.includes('\"slug\":\"suvarna-vivah\"'), 'editor page loads the cache-busted route-aware editor');
     ok((await J('/shaadi-paigaam/invite.css')).status === 200 && (await J('/shaadi-paigaam/art/scene-base.webp')).status === 200 && (await J('/suvarna-vivah/opening.css')).status === 200 && (await J('/suvarna-vivah/opening.js')).status === 200, 'shared invitation art and new opener assets are served');
     const video = await fetch(base + '/suvarna-vivah/opening.mp4', { headers: { range: 'bytes=0-15' } });
     ok(video.status === 206 && /^bytes 0-15\//.test(video.headers.get('content-range') || ''), 'opening video supports byte-range playback');
@@ -178,6 +179,9 @@ function sample() {
     await J('/api/suvarna-vivah/publish', { id, confirmed: true }, cookie);
     html = await (await J('/aarav-ananya')).text();
     ok(html.includes('passcode') && !html.includes('Only your blessings'), 'a private invitation shows only the passcode gate');
+    ok((await J('/suvarna-vivah/card/' + id + '.jpg')).status === 404, 'guests cannot fetch a private invitation share card');
+    const ownerCard = await J('/suvarna-vivah/card/' + id + '.jpg', null, cookie);
+    ok([200, 503].includes(ownerCard.status), 'the owner can still fetch the private invitation share card');
     r = await fetch(base + '/suvarna-vivah/unlock/' + id, { method: 'POST', redirect: 'manual', headers: { 'content-type': 'application/x-www-form-urlencoded' }, body: 'passcode=wrong' });
     ok(r.headers.get('location') === '/aarav-ananya?wrong=1', 'a wrong passcode is refused');
     r = await fetch(base + '/suvarna-vivah/unlock/' + id, { method: 'POST', redirect: 'manual', headers: { 'content-type': 'application/x-www-form-urlencoded' }, body: 'passcode=shaadi26' });
