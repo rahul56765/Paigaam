@@ -57,17 +57,17 @@ function sample() {
     ok((await J('/template-view/suvarna-vivah')).status === 200, 'gallery thumbnail uses the Suvarna experience');
     const editorHtml = await (await J('/create/suvarna-vivah')).text();
     ok(editorHtml.includes('/shaadi-paigaam/editor.js?v=3') && editorHtml.includes('"slug":"suvarna-vivah"'), 'editor page loads the cache-busted route-aware editor');
-    ok((await J('/shaadi-paigaam/core.js')).status === 200 && (await J('/suvarna-vivah/opening.css')).status === 200 && (await J('/suvarna-vivah/opening.js')).status === 200 && (await J('/suvarna-vivah/site.css')).status === 200 && (await J('/suvarna-vivah/site.js')).status === 200, 'shared data engine and Suvarna-specific design assets are served');
-    ok((await J('/suvarna-vivah/ceremony-still-life.webp')).status === 200, 'original Suvarna ceremonial artwork is served');
-    const siteScript = await (await J('/suvarna-vivah/site.js')).text();
-    ok(siteScript.includes('sv-hero__art') && !siteScript.includes('intro-inner'), 'invitation uses the bespoke ceremonial layout, not Shaadi doors/courtyard');
-    ok(!html.includes('/shaadi-paigaam/invite.js') && html.includes('/suvarna-vivah/site.js'), 'demo runs the Suvarna renderer rather than the Shaadi page renderer');
+    ok((await J('/shaadi-paigaam/invite.css')).status === 200 && (await J('/shaadi-paigaam/art/scene-base.webp')).status === 200 && (await J('/suvarna-vivah/opening.css')).status === 200 && (await J('/suvarna-vivah/opening.js')).status === 200, 'shared invitation art and new opener assets are served');
     const video = await fetch(base + '/suvarna-vivah/opening.mp4', { headers: { range: 'bytes=0-15' } });
     ok(video.status === 206 && /^bytes 0-15\//.test(video.headers.get('content-range') || ''), 'opening video supports byte-range playback');
     ok((await J('/suvarna-vivah/opening-poster.jpg')).status === 200, 'video poster is served');
     ok(html.includes('/suvarna-vivah/opening.js') && html.includes('/suvarna-vivah/opening.css'), 'demo includes the click-to-play opening experience');
     const openerScript = await (await J('/suvarna-vivah/opening.js')).text();
     ok(openerScript.includes('video.play()') && openerScript.includes('opening.mp4'), 'opening film waits for a user gesture');
+    const siteAssets = await Promise.all(['/shaadi-paigaam/core.js','/suvarna-vivah/site.css','/suvarna-vivah/site.js','/suvarna-vivah/ceremony-still-life.webp'].map(path => J(path)));
+    ok(siteAssets.every(r => r.status === 200), 'shared data engine and Suvarna-specific design assets are served');
+    const siteScript = await (await J('/suvarna-vivah/site.js')).text();
+    ok(siteScript.includes('sv-hero__art') && !siteScript.includes('intro-inner') && !html.includes('/shaadi-paigaam/invite.js'), 'invitation uses its bespoke ceremonial layout, not Shaadi doors/courtyard');
     ok((await J('/shaadi-paigaam/music/shehnai-dawn.mp3')).status === 200, 'music library is served');
 
     // --- draft
