@@ -7,7 +7,8 @@
 const http = require('node:http');
 const fs = require('node:fs');
 const path = require('node:path');
-const { q } = require('./db');
+const crypto = require('node:crypto');
+const { q, DATA_DIR } = require('./db');
 const { TEMPLATES, getTemplateConfig, displayNames, displayDate } = require('./templates/registry');
 const { renderPaigaamPage, shareTitle } = require('./lib/renderPaigaam');
 const { templateSampleView } = require('./lib/templateView');
@@ -99,6 +100,24 @@ function serveStatic(req, res, urlPath) {
   if (!fs.existsSync(file)) return false;
   if (!fs.realpathSync(file).startsWith(fs.realpathSync(PUBLIC_DIR) + path.sep)) return false;
   return streamFile(req, res, file, MIME[path.extname(file)] || 'application/octet-stream');
+}
+
+function saveTemplateThumbnail(templateId, value) {
+  const raw = String(value || '');
+  const match = /^data:image\/jpeg;base64,([A-Za-z0-9+/]*={0,2})$/.exec(raw);
+  if (!match) return raw;
+  const bytes = Buffer.from(match[1], 'base64');
+  if (!bytes.length || bytes.length > 2 * 1024 * 1024 || bytes[0] !== 0xff || bytes[1] !== 0xd8 || bytes[bytes.length - 2] !== 0xff || bytes[bytes.length - 1] !== 0xd9) {
+    throw new Error('Thumbnail must be a valid JPEG under 2 MB.');
+  }
+  const safeId = String(templateId || '').replace(/[^A-Za-z0-9_-]/g, '');
+  if (!safeId) throw new Error('Could not identify the template for its thumbnail.');
+  const digest = crypto.createHash('sha256').update(bytes).digest('hex').slice(0, 12);
+  const filename = `template-${safeId}-${digest}.jpg`;
+  const dir = path.join(DATA_DIR, 'template-thumbnails');
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(path.join(dir, filename), bytes);
+  return `/template-thumbnails/${filename}`;
 }
 
 function slugifyNames(s) {
@@ -202,6 +221,14 @@ const server = http.createServer(async (req, res) => {
     if (await bfday.handle(req, res, u, { baseUrl: BASE_URL, isAdmin: !!getAdmin(req) })) return;
     if (await magazines.handle(req, res, u, { baseUrl: BASE_URL, admin: getAdmin(req) })) return;
     if (await weddingVideo.handle(req, res, u, { baseUrl: BASE_URL })) return;
+    m = p.match(/^\/template-thumbnails\/(template-[A-Za-z0-9_-]+-[a-f0-9]{12}\.jpg)$/);
+    if (['GET', 'HEAD'].includes(method) && m) {
+      const file = path.join(DATA_DIR, 'template-thumbnails', m[1]);
+      if (!fs.existsSync(file)) return send(res, 404, 'Not found');
+      const bytes = fs.readFileSync(file);
+      res.writeHead(200, { 'Content-Type': 'image/jpeg', 'Content-Length': bytes.length, 'Cache-Control': 'public, max-age=31536000, immutable', 'X-Content-Type-Options': 'nosniff' });
+      return res.end(method === 'HEAD' ? undefined : bytes);
+    }
     if (['GET', 'HEAD'].includes(method) && serveStatic(req, res, p)) return;
 
     /* ---------- health (checks storage persistence) ---------- */
@@ -658,7 +685,8 @@ Sitemap: ${origin}/sitemap.xml
         try {
           const t = buildTemplateFromForm(form);
           if (q.templateBySlug(t.slug)) return send(res, 400, errorPage('400', 'That slug is taken.', 'Choose another — slugs must be unique.'));
-          q.templateInsert(t);
+          const created = q.templateInsert(t);
+          if (t.thumbnail_url.startsWith('data:image/')) q.templateUpdate(created.id, { ...created, thumbnail_url: saveTemplateThumbnail(created.id, t.thumbnail_url) });
         } catch (e) {
           return send(res, 400, errorPage('400', 'The fields JSON needs a second look.', String(e.message)));
         }
@@ -674,8 +702,12 @@ Sitemap: ${origin}/sitemap.xml
         const tpl = q.templateById(m[1]);
         if (!tpl) return send(res, 404, errorPage('404', 'Template not found.', ''));
         const form = parseForm(await readBody(req));
-        try { q.templateUpdate(tpl.id, buildTemplateFromForm(form)); }
-        catch (e) { return send(res, 400, errorPage('400', 'The fields JSON needs a second look.', String(e.message))); }
+        try {
+          const updated = buildTemplateFromForm(form);
+          updated.thumbnail_url = saveTemplateThumbnail(tpl.id, updated.thumbnail_url);
+          q.templateUpdate(tpl.id, updated);
+        }
+        catch (e) { return send(res, 400, errorPage('400', 'The template could not be saved.', String(e.message))); }
         return redirect(res, '/admin/templates');
       }
       m = p.match(/^\/admin\/templates\/([A-Za-z0-9_-]+)\/status$/);
