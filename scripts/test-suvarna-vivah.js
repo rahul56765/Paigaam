@@ -46,13 +46,11 @@ function sample() {
     // This flow tests both paid/offline and free publishing. The live template now
     // seeds at ₹0, so make the isolated test row nominally paid for its first pass.
     { const { DatabaseSync } = require('node:sqlite'); const db = new DatabaseSync(path.join(dir, 'paigaam.db')); db.prepare("UPDATE templates SET price=1 WHERE slug='suvarna-vivah'").run(); db.close(); }
-    let r = await J('/suvarna-vivah/demo'); let html = await r.text();
+    let r = await J('/suvarna-vivah/demo?palette=emerald-gold'); let html = await r.text();
     ok(r.status === 200 && html.includes('Aarav') && html.includes('sp-boot'), 'demo renders the sample couple');
     const bootMatch = html.match(/<script id="sp-boot" type="application\/json">([\s\S]*?)<\/script>/);
     const demoBoot = bootMatch && JSON.parse(bootMatch[1]);
-    ok(demoBoot && demoBoot.data.palette.id === 'custom' && demoBoot.data.palette.custom.primary === '#70501F' && demoBoot.data.font === 'royal' && !demoBoot.autoOpen && !demoBoot.simpleWhatsAppRsvp && !demoBoot.lazyMusic && !demoBoot.removeMusic, 'Suvarna starts in its sunlit gold-and-ivory palette with Royal Calligraphy');
-    const customPreview = JSON.parse(JSON.stringify(C.SAMPLE)); customPreview.palette = { id: 'custom', custom: { primary: '#70501F', accent: '#BA8A31', bg: '#FBF4DE' } }; customPreview.font = 'royal';
-    ok(!C.validate(customPreview, { publish: true }).errors.length, 'the warm-gold default palette passes publish validation');
+    ok(demoBoot && demoBoot.data.palette.id === 'emerald-gold' && demoBoot.data.font === 'royal' && !demoBoot.autoOpen && !demoBoot.simpleWhatsAppRsvp && !demoBoot.lazyMusic && !demoBoot.removeMusic, 'Suvarna keeps its existing RSVP and music behavior alongside Emerald & Gold / Royal Calligraphy');
     const skipHtml = await (await J('/suvarna-vivah/demo?skip=1')).text();
     ok(!skipHtml.includes('/suvarna-vivah/opening.js') && skipHtml.includes('\"autoOpen\":true'), 'demo skip link bypasses the clip and opens the invitation');
     ok((await J('/templates/suvarna-vivah')).status === 200, 'catalogue detail page exists');
@@ -66,6 +64,12 @@ function sample() {
     ok(html.includes('/suvarna-vivah/opening.js') && html.includes('/suvarna-vivah/opening.css'), 'demo includes the click-to-play opening experience');
     const openerScript = await (await J('/suvarna-vivah/opening.js')).text();
     ok(openerScript.includes('video.play()') && openerScript.includes('opening.mp4'), 'opening film waits for a user gesture');
+    const defaultDemo = await (await J('/suvarna-vivah/demo')).text();
+    const defaultMatch = defaultDemo.match(/<script id="sp-boot" type="application\/json">([\s\S]*?)<\/script>/);
+    const defaultBoot = defaultMatch && JSON.parse(defaultMatch[1]);
+    ok(defaultBoot && defaultBoot.data.palette.id === 'custom' && defaultBoot.data.palette.custom.primary === '#70501F' && defaultBoot.data.palette.custom.bg === '#FBF4DE', 'Suvarna defaults to its warm ending-frame palette');
+    const customPreview = JSON.parse(JSON.stringify(C.SAMPLE)); customPreview.palette = { id: 'custom', custom: { primary: '#70501F', accent: '#BA8A31', bg: '#FBF4DE' } }; customPreview.font = 'royal';
+    ok(!C.validate(customPreview, { publish: true }).errors.length, 'the warm-gold default palette passes publish validation');
     ok(['en','hi','mr','gu','ta','te','ur','ar'].every(l => ['suvarnaLetterTitle','suvarnaGalleryTitle','suvarnaDetailsTitle','suvarnaArtAlt','suvarnaPreviewRsvp','suvarnaBackToTop','suvarnaScratchHint','suvarnaRevealDate','skipIntro'].every(k => C.I18N.t(l,k) !== k)), 'Suvarna invitation and scratch-reveal copy is translated in eight languages');
     const siteAssets = await Promise.all(['/shaadi-paigaam/core.js','/suvarna-vivah/site.css','/suvarna-vivah/site.js','/suvarna-vivah/continuity-ending.webp'].map(path => J(path)));
     ok(siteAssets.every(r => r.status === 200), 'shared data engine and Suvarna-specific design assets are served');
