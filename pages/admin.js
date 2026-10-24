@@ -284,7 +284,7 @@ function templateForm(tpl, isNew) {
     file.addEventListener('change', function () {
       var chosen = file.files && file.files[0];
       if (!chosen) return;
-      if (!/^image\/(jpeg|png|webp)$/i.test(chosen.type)) { status.textContent = 'Choose a JPG, PNG or WebP image.'; file.value = ''; return; }
+      if (!['image/jpeg', 'image/png', 'image/webp'].includes(String(chosen.type || '').toLowerCase())) { status.textContent = 'Choose a JPG, PNG or WebP image.'; file.value = ''; return; }
       var reader = new FileReader();
       reader.onload = function () {
         var img = new Image();
