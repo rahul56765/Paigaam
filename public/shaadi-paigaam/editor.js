@@ -11,6 +11,7 @@
   const STORE = boot.slug === 'suvarna-vivah' ? 'sv-ed' : 'sp-ed';
   const simpleWhatsAppRsvp = boot.slug !== 'suvarna-vivah';
   const lazyMusic = boot.slug !== 'suvarna-vivah';
+  const removeMusic = boot.slug !== 'suvarna-vivah';
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -43,7 +44,7 @@
     { id: 'couple', t: 'Couple & families', short: 'Couple', focus: 'hero' },
     { id: 'dates', t: 'Date & events', short: 'Events', focus: 'timeline' },
     { id: 'venue', t: 'Venue & travel', short: 'Venue', focus: 'venue' },
-    { id: 'media', t: 'Photos & music', short: 'Photos', focus: 'photos' },
+    { id: 'media', t: removeMusic ? 'Photos' : 'Photos & music', short: 'Photos', focus: 'photos' },
     { id: 'style', t: 'Colours & style', short: 'Style', focus: 'hero' },
     { id: 'lang', t: 'Language', short: 'Language', focus: 'welcome' },
     { id: 'review', t: 'Review & publish', short: 'Publish', focus: 'hero' },
@@ -57,7 +58,7 @@
     dirty: false, synced: true, saving: null, manageUrl: '', v: null, previewLang: null, device: 'phone', tab: 'edit', slugTimer: 0, slugState: null, autoTr: {}, published: null };
   const LS = id => STORE + ':' + (id || 'new');
 
-  function validateNow() { S.v = C.validate(S.data, { requireWhatsAppRsvp: simpleWhatsAppRsvp }); return S.v; }
+  function validateNow() { S.v = C.validate(S.data, { requireWhatsAppRsvp: simpleWhatsAppRsvp, removeMusic }); return S.v; }
   function getP(path) {
     const parts = path.split('.'); let o = S.data;
     for (const p of parts) { if (o == null) return undefined; o = o[p]; }
@@ -314,14 +315,14 @@
       <div class="tools"><button type="button" data-phalt="${i}" aria-label="Describe photo ${i + 1}">${IC.edit}</button><button type="button" data-phleft="${i}" aria-label="Move photo ${i + 1} earlier" ${i ? '' : 'hidden'}>${IC.up}</button><button type="button" data-phdel="${i}" aria-label="Remove photo ${i + 1}">${IC.trash}</button></div></div>`).join('');
     const canAdd = d.photos.length < C.LIMITS.photos;
     const tracks = C.MUSIC.map(m => `<label class="track ${d.music.track === m.id ? 'on' : ''}"><input type="radio" name="track" value="${m.id}" ${d.music.track === m.id ? 'checked' : ''}><span class="t"><b>${esc(m.title)}</b><small>${esc(m.instrument)} · ${esc(m.category)}</small></span><button type="button" class="play" data-play="/shaadi-paigaam/music/${m.id}.mp3" aria-label="Preview ${esc(m.title)}">${IC.play}</button></label>`).join('');
-    return `<h2 class="step-h" tabindex="-1">Photos &amp; music</h2><p class="step-p">JPG, PNG or WEBP. We resize and compress for you, and you choose the crop so no face is ever cut off.</p>
+    return `<h2 class="step-h" tabindex="-1">${removeMusic ? 'Photos' : 'Photos &amp; music'}</h2><p class="step-p">JPG, PNG or WEBP. We resize and compress for you, and you choose the crop so no face is ever cut off.</p>
       ${card(`Photo carousel (${d.photos.length}/${C.LIMITS.photos})`, `<div class="ph-grid" id="phGrid">${ph}${canAdd ? `<label class="ph add" tabindex="0">${IC.upload}<span>Add photos</span><input type="file" accept="image/jpeg,image/png,image/webp" multiple hidden id="phInput"></label>` : ''}</div>
         <div class="f" data-p="photos"><div class="msg e" role="alert">${IC.alert}<span></span></div><div class="msg w">${IC.info}<span></span></div></div>
         ${d.photos.some(p => /\/art\/demo-/.test(p.url)) ? `<button type="button" class="link" id="clearSamples">Remove the sample photos</button>` : ''}`, { toggle: tgl('sections.photos', 'Show'), off: d.sections.photos === false, focus: 'photos' })}
       ${card('Couple photo', `<div class="row">${d.couplePhoto ? `<div class="ph" style="width:96px;aspect-ratio:4/5"><img src="${esc(d.couplePhoto.url)}" alt="Couple photo"></div><button type="button" class="btn ghost small" id="cpDel">${IC.trash} Remove</button>` : ''}
           <label class="btn ghost small" tabindex="0">${IC.upload} ${d.couplePhoto ? 'Replace' : 'Add a couple photo'}<input type="file" accept="image/jpeg,image/png,image/webp" hidden id="cpInput"></label></div>
         <p class="hint">Optional. Appears in an arched gold frame above your welcome message.</p>`, { focus: 'welcome' })}
-      ${card('Music', `<div id="tracks">${tracks}</div>
+      ${removeMusic ? '' : card('Music', `<div id="tracks">${tracks}</div>
         <label class="track ${d.music.track === 'upload' ? 'on' : ''}"><input type="radio" name="track" value="upload" ${d.music.track === 'upload' ? 'checked' : ''} ${d.music.url ? '' : 'disabled'}><span class="t"><b>${d.music.url ? esc(d.music.title || 'Your song') : 'Your own song'}</b><small>${d.music.url ? 'Uploaded' : 'MP3, M4A or AAC, up to 10 MB'}</small></span>
           ${d.music.url ? `<button type="button" class="play" data-play="${esc(d.music.url)}" aria-label="Preview your song">${IC.play}</button>` : ''}<label class="btn ghost small" tabindex="0">${IC.upload} ${d.music.url ? 'Replace' : 'Upload'}<input type="file" accept="audio/mpeg,audio/mp3,audio/mp4,audio/x-m4a,audio/aac,audio/ogg" hidden id="muInput"></label></label>
         ${d.music.track === 'upload' ? `<div class="f" data-p="music.rightsOk"><label class="check"><input type="checkbox" data-path="music.rightsOk" ${d.music.rightsOk ? 'checked' : ''}><span>I own this song or have permission to use it. Film songs and commercial music are usually copyrighted.</span></label><div class="msg e" role="alert">${IC.alert}<span></span></div></div>` : ''}

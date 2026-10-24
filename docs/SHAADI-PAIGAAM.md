@@ -10,7 +10,7 @@
   embossed doors with a medallion, curtains that tie back over the courtyard, names and parents,
   the welcome message, the scratch-to-reveal heart with .ics and glitter, the photo carousel, the
   live countdown, the program timeline, the venue map, dress code, pre-wedding cards, transport,
-  stay, gifts, RSVP and the closing. RSVP is a two-choice WhatsApp handoff; optional music is user-triggered only.
+  stay, gifts, RSVP and the closing. RSVP is a two-choice WhatsApp handoff. Shaadi Paigaam has no music controls or playback.
 - **Recolouring:** door relief and courtyard are neutral layers tinted live with CSS variables
   and blend modes (roses are a separate mask). The medallion, curtains, icons, heart and confetti are
   SVG or canvas reading the same variables. A palette change never regenerates an image.
@@ -39,13 +39,8 @@
 | `RESEND_API_KEY` + `RSVP_FROM_EMAIL` | Legacy website RSVP API email notifications only; the new guest flow opens WhatsApp. |
 | `SP_SECRET` | Fixed secret for passcode cookies (otherwise generated once in DATA_DIR). |
 
-## Music library
-Music never autoplays or preloads on the guest invitation. Audio is requested only after the guest taps the music button. The editor's preview buttons remain click-to-play.
-
-Ten original instrumental tracks (shehnai, sitar, santoor, bansuri, veena, piano, piano and strings,
-guitar, harp and sarangi), synthesised for Paigaam, so there are no third-party rights. To replace one, drop an
-MP3 with the same file name into `public/shaadi-paigaam/music/`, run
-`node scripts/pack-shaadi-media.js` and commit `assets/shaadi-paigaam/`.
+## Music compatibility
+Shaadi Paigaam no longer exposes music controls or plays background audio. Older saved music selections are retained but ignored for compatibility. The shared audio library remains available to Suvarna Vivah, which uses the same renderer.
 
 ## Tests
 `node scripts/test-shaadi-paigaam.js` runs end-to-end checks for: drafts, ownership, sanitising,
@@ -54,4 +49,4 @@ link, live edits, versions, the passcode and expiry.
 
 
 ## Recent updates
-- 24 Oct 2026: Replaced Shaadi Paigaam's multi-field guest RSVP form with attending / not attending WhatsApp handoffs to the organiser's configured number. Publishing now requires that number when RSVP is enabled. Removed door-open music playback and delayed audio creation/source loading until the guest taps Play. Historical website RSVP records and the legacy API remain intact. Suvarna Vivah shares this renderer/editor but retains its existing RSVP and music behavior.
+- 24 Oct 2026: Replaced Shaadi Paigaam's multi-field guest RSVP form with attending / not attending WhatsApp handoffs to the organiser's configured number. Publishing now requires that number when RSVP is enabled. Removed Shaadi music controls and playback from the editor and guest invitation. Historical website RSVP records and the legacy API remain intact. Suvarna Vivah shares this renderer/editor but retains its existing RSVP and music behavior.
