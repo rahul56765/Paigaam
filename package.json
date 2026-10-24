@@ -1,7 +1,7 @@
 {
   "name": "paigaam",
   "version": "0.1.0",
-  "description": "Paigaam — beautiful greetings, made personal.",
+  "description": "Paigaam \u2014 beautiful greetings, made personal.",
   "type": "commonjs",
   "main": "server.js",
   "scripts": {
@@ -9,7 +9,7 @@
     "dev": "node --watch server.js",
     "build": "node scripts/prepare-ganapati.js && node scripts/prepare-wedding-video.js && node scripts/prepare-magazine-face.js",
     "postinstall": "node scripts/prepare-ganapati.js && node scripts/prepare-wedding-video.js && node scripts/prepare-magazine-face.js",
-    "test": "node --test tests/admin-ui.test.js tests/paigaam-admin-collection.test.js && node scripts/test-builder.js && node scripts/test-shaadi-paigaam.js && node scripts/test-suvarna-vivah.js && node scripts/test-premium-ux.js && node scripts/test-razorpay.js && node scripts/test-pricing-resume.js && node scripts/test-ganapati.js && node scripts/test-saalgirah.js && node scripts/test-birthday-paigaam.js && node scripts/test-courtyard.js && node scripts/test-lavender.js && node scripts/test-valentine.js && node scripts/test-love.js && node scripts/test-maafi.js && node --test tests/qr-card.test.js && node scripts/test-sauwajah.js && node scripts/test-sawaal.js && node scripts/test-bfday.js && node --test tests/bfday-studio.test.js && node scripts/test-wedding-post.js && node scripts/test-premium-ux.js && node --test tests/magazines.test.js tests/magazine-preview.test.js tests/magazine-sample-flow.test.js tests/magazine-face-framing.test.js && node scripts/test-magazines.js",
+    "test": "node --test tests/admin-ui.test.js tests/paigaam-admin-collection.test.js && node scripts/test-builder.js && node scripts/test-shaadi-paigaam.js && node scripts/test-suvarna-vivah.js && node scripts/test-kadali-vivah.js && node scripts/test-premium-ux.js && node scripts/test-razorpay.js && node scripts/test-pricing-resume.js && node scripts/test-ganapati.js && node scripts/test-saalgirah.js && node scripts/test-birthday-paigaam.js && node scripts/test-courtyard.js && node scripts/test-lavender.js && node scripts/test-valentine.js && node scripts/test-love.js && node scripts/test-maafi.js && node --test tests/qr-card.test.js && node scripts/test-sauwajah.js && node scripts/test-sawaal.js && node scripts/test-bfday.js && node --test tests/bfday-studio.test.js && node scripts/test-wedding-post.js && node scripts/test-premium-ux.js && node --test tests/magazines.test.js tests/magazine-preview.test.js tests/magazine-sample-flow.test.js tests/magazine-face-framing.test.js && node scripts/test-magazines.js",
     "test:saalgirah": "node scripts/test-saalgirah.js",
     "test:birthday-paigaam": "node scripts/test-birthday-paigaam.js",
     "test:shaadi-paigaam": "node scripts/test-shaadi-paigaam.js",
@@ -29,7 +29,9 @@
     "test:pricing": "node scripts/test-pricing-resume.js",
     "test:magazines": "node --test tests/magazines.test.js tests/magazine-preview.test.js tests/magazine-sample-flow.test.js tests/magazine-face-framing.test.js && node scripts/test-magazines.js",
     "test:wedding-video": "node --test wedding-video/tests/timeline.test.js && node --test tests/wedding-video.test.js",
-    "wedding-video:setup": "npm --prefix wedding-video ci && npm --prefix wedding-video run build:editor && cd wedding-video && npx remotion browser ensure"
+    "wedding-video:setup": "npm --prefix wedding-video ci && npm --prefix wedding-video run build:editor && cd wedding-video && npx remotion browser ensure",
+    "test:kadali-vivah": "node scripts/test-kadali-vivah.js",
+    "test:kadali-browser": "node scripts/test-kadali-browser.js"
   },
   "engines": {
     "node": ">=22.5.0 <25"

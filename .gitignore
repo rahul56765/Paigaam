@@ -32,3 +32,6 @@ wedding-video/public/sample/
 public/shaadi-paigaam/art/
 public/shaadi-paigaam/music/
 public/shaadi-paigaam/fonts/
+
+# Kadali Vivah generated art restored from checksummed source pack at boot
+public/kadali-vivah/art/*.webp

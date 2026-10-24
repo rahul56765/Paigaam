@@ -8,9 +8,9 @@
   const C = window.SPCore, I = window.SPI18N, ART = window.SPArt;
   const boot = JSON.parse(document.getElementById('spe-boot').textContent);
   const ROOT = '/' + (boot.slug || 'shaadi-paigaam'), API = '/api' + ROOT, CREATE = '/create' + ROOT;
-  const STORE = boot.slug === 'suvarna-vivah' ? 'sv-ed' : 'sp-ed';
-  const simpleWhatsAppRsvp = boot.slug !== 'suvarna-vivah';
-  const lazyMusic = boot.slug !== 'suvarna-vivah';
+  const STORE = boot.slug === 'kadali-vivah' ? 'kv-ed' : boot.slug === 'suvarna-vivah' ? 'sv-ed' : 'sp-ed';
+  const simpleWhatsAppRsvp = !['suvarna-vivah', 'kadali-vivah'].includes(boot.slug);
+  const lazyMusic = boot.slug === 'kadali-vivah' ? true : boot.slug !== 'suvarna-vivah';
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -1151,7 +1151,7 @@
       if (!S.data && boot.resume) {
         try { const r = await fetch(API + '/me?id=' + encodeURIComponent(boot.resume.id), { credentials: 'same-origin' }); if (r.ok) { location.replace(CREATE + '?id=' + encodeURIComponent(boot.resume.id)); return; } } catch {}
       }
-      if (!S.data) { const starter = clone(C.SAMPLE); if (boot.slug === 'suvarna-vivah') { starter.palette.id = 'emerald-gold'; starter.palette.custom = { primary: '#0F5440', accent: '#C2A057', bg: '#F6F3E9' }; starter.font = 'royal'; } S.data = C.validate(starter).data; }
+      if (!S.data) { const starter = clone(C.SAMPLE); if (boot.slug === 'suvarna-vivah') { starter.palette.id = 'emerald-gold'; starter.palette.custom = { primary: '#0F5440', accent: '#C2A057', bg: '#F6F3E9' }; starter.font = 'royal'; } if (boot.slug === 'kadali-vivah') { starter.palette.id = 'terracotta-cream'; starter.palette.custom = { primary: '#9C4E2B', accent: '#C1945A', bg: '#FBF3E8' }; starter.font = 'royal'; } S.data = C.validate(starter).data; }
     }
     try { const st = Number(localStorage.getItem(STORE + ':step:' + (S.id || 'new'))); if (st >= 0 && st < STEPS.length) S.step = st; } catch {}
     validateNow();
