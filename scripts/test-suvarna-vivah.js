@@ -50,13 +50,13 @@ function sample() {
     ok(r.status === 200 && html.includes('Aarav') && html.includes('sp-boot'), 'demo renders the sample couple');
     const bootMatch = html.match(/<script id="sp-boot" type="application\/json">([\s\S]*?)<\/script>/);
     const demoBoot = bootMatch && JSON.parse(bootMatch[1]);
-    ok(demoBoot && demoBoot.data.palette.id === 'emerald-gold' && demoBoot.data.font === 'royal' && !demoBoot.autoOpen && !demoBoot.simpleWhatsAppRsvp && !demoBoot.lazyMusic, 'Suvarna keeps its existing RSVP and music behavior alongside Emerald & Gold / Royal Calligraphy');
+    ok(demoBoot && demoBoot.data.palette.id === 'emerald-gold' && demoBoot.data.font === 'royal' && !demoBoot.autoOpen && !demoBoot.simpleWhatsAppRsvp && !demoBoot.lazyMusic && !demoBoot.removeMusic, 'Suvarna keeps its existing RSVP and music behavior alongside Emerald & Gold / Royal Calligraphy');
     const skipHtml = await (await J('/suvarna-vivah/demo?skip=1')).text();
     ok(!skipHtml.includes('/suvarna-vivah/opening.js') && skipHtml.includes('\"autoOpen\":true'), 'demo skip link bypasses the clip and opens the invitation');
     ok((await J('/templates/suvarna-vivah')).status === 200, 'catalogue detail page exists');
     ok((await J('/template-view/suvarna-vivah')).status === 200, 'gallery thumbnail uses the Suvarna experience');
     const editorHtml = await (await J('/create/suvarna-vivah')).text();
-    ok(editorHtml.includes('/shaadi-paigaam/editor.js?v=3') && editorHtml.includes('\"slug\":\"suvarna-vivah\"'), 'editor page loads the cache-busted route-aware editor');
+    ok(editorHtml.includes('/shaadi-paigaam/editor.js?v=4') && editorHtml.includes('\"slug\":\"suvarna-vivah\"'), 'editor page loads the cache-busted route-aware editor');
     ok((await J('/shaadi-paigaam/invite.css')).status === 200 && (await J('/shaadi-paigaam/art/scene-base.webp')).status === 200 && (await J('/suvarna-vivah/opening.css')).status === 200 && (await J('/suvarna-vivah/opening.js')).status === 200, 'shared invitation art and new opener assets are served');
     const video = await fetch(base + '/suvarna-vivah/opening.mp4', { headers: { range: 'bytes=0-15' } });
     ok(video.status === 206 && /^bytes 0-15\//.test(video.headers.get('content-range') || ''), 'opening video supports byte-range playback');

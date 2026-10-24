@@ -81,7 +81,7 @@ ${withIntro ? `<div class="intro" id="intro" role="dialog" aria-label="${esc(T('
   <main class="content" id="content"></main>
   <footer id="closing"></footer>
 </div>
-<div class="fab-wrap fab-top"><div><button class="music-btn" id="musicBtn" type="button" hidden></button></div></div>
+${cfg.removeMusic ? '' : `<div class="fab-wrap fab-top"><div><button class="music-btn" id="musicBtn" type="button" hidden></button></div></div>`}
 <div class="fab-wrap fab-bot"><div><div class="lang" id="lang" hidden></div></div></div>
 ${cfg.mode === 'preview' ? `<div class="badge">${esc(T('previewBadge'))}</div>` : ''}
 <canvas class="confetti" id="confetti" aria-hidden="true"></canvas>`;
@@ -274,7 +274,14 @@ ${cfg.mode === 'preview' ? `<div class="badge">${esc(T('previewBadge'))}</div>` 
     const closed = r.deadline && Date.now() > Date.parse(r.deadline + 'T23:59:59');
     if (closed && !live) return `<p class="lead">${esc(T('rsvpClosed'))}</p>`;
     const yes = C.whatsappRsvpLink(data, true, lang), no = C.whatsappRsvpLink(data, false, lang);
-    if (!yes || !no) return `<p class="lead">${esc(T('contactFamily'))}</p>`;
+    if (!yes || !no) {
+      return `<div class="rsvp">
+        ${r.deadline ? `<p class="by">${esc(T('rsvpBy').replace('{date}', C.fmtDate(r.deadline, lang, 'long')))}</p>` : ''}
+        <p class="rsvp-hint">${esc(T('rsvpWhatsappHint'))}</p>
+        <div class="rsvp-actions"><button class="btn wide" type="button" disabled>${esc(T('accept'))}</button><button class="btn wide ghost" type="button" disabled>${esc(T('decline'))}</button></div>
+        <p class="lead">${esc(T('contactFamily'))}</p>
+      </div>`;
+    }
     return `<div class="rsvp">
       ${r.deadline ? `<p class="by">${esc(T('rsvpBy').replace('{date}', C.fmtDate(r.deadline, lang, 'long')))}</p>` : ''}
       <p class="rsvp-hint">${esc(T('rsvpWhatsappHint'))}</p>
@@ -549,7 +556,7 @@ ${cfg.mode === 'preview' ? `<div class="badge">${esc(T('previewBadge'))}</div>` 
   /* =========================================================== music */
   let audio = null, musicWanted = false, audioSource = '';
   function musicSrc() {
-    if (!data.sections.music) return '';
+    if (cfg.removeMusic || !data.sections.music) return '';
     if (data.music.track === 'upload' && data.music.url) return data.music.url;
     return '/shaadi-paigaam/music/' + data.music.track + '.mp3';
   }
@@ -559,7 +566,8 @@ ${cfg.mode === 'preview' ? `<div class="badge">${esc(T('previewBadge'))}</div>` 
     audio.addEventListener('error', () => { if (audio.src) $('#musicBtn').hidden = true; });
   }
   function setupMusic() {
-    const btn = $('#musicBtn'), src = musicSrc();
+    const btn = $('#musicBtn'); if (!btn) return;
+    const src = musicSrc();
     if (!src || thumb) {
       btn.hidden = true;
       if (audio) { musicWanted = false; audio.pause(); audio.removeAttribute('src'); audio.load(); audioSource = ''; }

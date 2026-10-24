@@ -8,7 +8,7 @@
 const C = require('../../public/shaadi-paigaam/core.js');
 const I = require('../../public/shaadi-paigaam/i18n.js');
 
-const ASSET_V = '2';
+const ASSET_V = '3';
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const jsonSafe = obj => JSON.stringify(obj).replace(/</g, '\\u003c').replace(/>/g, '\\u003e').replace(/&/g, '\\u0026').replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029');
 
@@ -53,7 +53,7 @@ ${o.openingVideo ? '<script src="/suvarna-vivah/opening.js?v=1" defer></script>'
  * @param o { mode: guest|demo|preview|live|thumb, id, slug, url, rsvpUrl, ogImage, noindex, mapsKey, autoOpen, openingVideo }
  */
 function renderInvitation(data, o = {}) {
-  const boot = { mode: o.mode || 'guest', id: o.id || '', slug: o.slug || '', url: o.url || '', rsvpUrl: o.rsvpUrl || '', mapsKey: o.mapsKey || '', autoOpen: !!o.autoOpen, simpleWhatsAppRsvp: !!o.simpleWhatsAppRsvp, lazyMusic: !!o.lazyMusic, data };
+  const boot = { mode: o.mode || 'guest', id: o.id || '', slug: o.slug || '', url: o.url || '', rsvpUrl: o.rsvpUrl || '', mapsKey: o.mapsKey || '', autoOpen: !!o.autoOpen, simpleWhatsAppRsvp: !!o.simpleWhatsAppRsvp, lazyMusic: !!o.lazyMusic, removeMusic: !!o.removeMusic, data };
   return `${head(data, o)}
 </head>
 <body>
