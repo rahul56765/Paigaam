@@ -53,7 +53,7 @@ ${o.openingVideo ? '<script src="/suvarna-vivah/opening.js?v=1" defer></script>'
  * @param o { mode: guest|demo|preview|live|thumb, id, slug, url, rsvpUrl, ogImage, noindex, mapsKey, autoOpen, openingVideo }
  */
 function renderInvitation(data, o = {}) {
-  const boot = { mode: o.mode || 'guest', id: o.id || '', slug: o.slug || '', url: o.url || '', rsvpUrl: o.rsvpUrl || '', mapsKey: o.mapsKey || '', autoOpen: !!o.autoOpen, simpleWhatsAppRsvp: !!o.simpleWhatsAppRsvp, lazyMusic: !!o.lazyMusic, removeMusic: !!o.removeMusic, data };
+  const boot = { mode: o.mode || 'guest', id: o.id || '', slug: o.slug || '', url: o.url || '', rsvpUrl: o.rsvpUrl || '', mapsKey: o.mapsKey || '', autoOpen: !!o.autoOpen, simpleWhatsAppRsvp: !!o.simpleWhatsAppRsvp, lazyMusic: !!o.lazyMusic, data };
   return `${head(data, o)}
 </head>
 <body>

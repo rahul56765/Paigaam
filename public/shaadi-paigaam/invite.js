@@ -81,7 +81,7 @@ ${withIntro ? `<div class="intro" id="intro" role="dialog" aria-label="${esc(T('
   <main class="content" id="content"></main>
   <footer id="closing"></footer>
 </div>
-${cfg.removeMusic ? '' : `<div class="fab-wrap fab-top"><div><button class="music-btn" id="musicBtn" type="button" hidden></button></div></div>`}
+<div class="fab-wrap fab-top"><div><button class="music-btn" id="musicBtn" type="button" hidden></button></div></div>
 <div class="fab-wrap fab-bot"><div><div class="lang" id="lang" hidden></div></div></div>
 ${cfg.mode === 'preview' ? `<div class="badge">${esc(T('previewBadge'))}</div>` : ''}
 <canvas class="confetti" id="confetti" aria-hidden="true"></canvas>`;
@@ -556,7 +556,7 @@ ${cfg.mode === 'preview' ? `<div class="badge">${esc(T('previewBadge'))}</div>` 
   /* =========================================================== music */
   let audio = null, musicWanted = false, audioSource = '';
   function musicSrc() {
-    if (cfg.removeMusic || !data.sections.music) return '';
+    if (!data.sections.music) return '';
     if (data.music.track === 'upload' && data.music.url) return data.music.url;
     return '/shaadi-paigaam/music/' + data.music.track + '.mp3';
   }
