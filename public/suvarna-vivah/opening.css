@@ -1,7 +1,7 @@
 /* Suvarna Vivah — cinematic, full-bleed opening for the kalash film. */
 html.sv-opening-lock, body.sv-opening-lock { overflow: hidden !important; }
 .sv-opener {
-  --sv-gold: #E8C979; --sv-ivory: #FFF8E8;
+  --sv-gold: var(--sp-accent,#E8C979); --sv-ivory: #FFF8E8;
   position: fixed; inset: 0; z-index: 99999; display: grid; place-items: center; overflow: hidden;
   isolation: isolate; background: #10130f; color: var(--sv-ivory); opacity: 1;
   transition: opacity 1.45s cubic-bezier(.22,.7,.2,1), visibility 1.45s;

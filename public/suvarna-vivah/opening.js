@@ -5,8 +5,11 @@
   if (!bootEl || document.getElementById('sv-opener')) return;
   let boot;
   try { boot = JSON.parse(bootEl.textContent || '{}'); } catch { return; }
-  const d = boot.data || {}, couple = d.couple || {};
-  const names = [couple.groom && couple.groom.first, couple.bride && couple.bride.first].filter(Boolean).join(' & ');
+  const d = window.SVCurrentData || boot.data || {}, couple = d.couple || {};
+  const lang = (d.lang && d.lang.default) || 'en';
+  const C = window.SPCore, I = window.SPI18N;
+  const sides = couple.order === 'bride' ? ['bride', 'groom'] : ['groom', 'bride'];
+  const names = C ? sides.map(side => C.txt(d, lang, `couple.${side}.first`)).filter(Boolean).join(' & ') : sides.map(side => couple[side] && couple[side].first).filter(Boolean).join(' & ');
   const root = document.createElement('section');
   root.className = 'sv-opener'; root.id = 'sv-opener'; root.setAttribute('role','dialog');
   root.setAttribute('aria-modal','true'); root.setAttribute('aria-label','Suvarna Vivah opening film');
@@ -23,18 +26,22 @@
     </div>
     <div class="sv-opener__copy">
       <svg class="sv-opener__lotus" viewBox="0 0 72 72" fill="none" aria-hidden="true"><circle cx="36" cy="36" r="29" stroke="currentColor" stroke-opacity=".65"/><circle cx="36" cy="36" r="24" stroke="currentColor" stroke-opacity=".35" stroke-dasharray="1.4 3.5"/><path d="M36 51c-1-8-8-12-8-18 4 2 7 5 8 9 1-7 5-12 11-15-1 8-1 14-7 20M36 51c-4-7-12-9-17-7 4 5 9 8 17 7Zm0 0c4-7 12-9 17-7-4 5-9 8-17 7Zm-12-1h24M29 54h14M33 58h6" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"/><circle cx="36" cy="36" r="2" fill="currentColor"/></svg>
-      <p class="sv-opener__kicker">SUVARNA VIVAH · A WEDDING PAIGAAM</p>
+      <p class="sv-opener__kicker" id="svOpenerKicker"></p>
       <p class="sv-opener__names" id="svOpenerNames"></p>
-      <h1 class="sv-opener__title">With blessings, the celebration begins.</h1>
-      <button type="button" class="sv-opener__play" id="svPlay" aria-label="Play the wedding opening film"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15l12-7.5z"/></svg><span>Open the invitation</span></button>
+      <h1 class="sv-opener__title" id="svOpenerTitle"></h1>
+      <button type="button" class="sv-opener__play" id="svPlay" aria-label="Play the wedding opening film"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15l12-7.5z"/></svg><span id="svPlayLabel"></span></button>
     </div>
     <p class="sv-opener__status" id="svOpenerStatus" role="status" aria-live="polite"></p>
-    <button type="button" class="sv-opener__skip" id="svSkip">Skip opening</button>`;
+    <button type="button" class="sv-opener__skip" id="svSkip"></button>`;
   document.body.appendChild(root);
   document.documentElement.classList.add('sv-opening-lock');
   document.body.classList.add('sv-opening-lock');
   const nameEl = document.getElementById('svOpenerNames');
-  nameEl.textContent = names || 'A day made for forever';
+  nameEl.textContent = names || (I ? I.t(lang, 'suvarnaLetterTitle') : 'A day made for forever');
+  document.getElementById('svOpenerKicker').textContent = 'SUVARNA VIVAH · ' + (I ? I.t(lang, 'gettingMarried') : 'A WEDDING PAIGAAM');
+  document.getElementById('svOpenerTitle').textContent = I ? I.t(lang, 'gettingMarried') : 'With blessings, the celebration begins.';
+  document.getElementById('svPlayLabel').textContent = I ? I.t(lang, 'tapToOpen') : 'Open the invitation';
+  document.getElementById('svSkip').textContent = I ? I.t(lang, 'skipIntro') : 'Skip opening';
   const video = document.getElementById('svOpeningVideo');
   const play = document.getElementById('svPlay');
   const skip = document.getElementById('svSkip');
@@ -54,20 +61,20 @@
     if (started || leaving) return;
     started = true;
     root.classList.add('is-playing');
-    status.textContent = 'The celebration is unfolding';
+    status.textContent = I ? I.t(lang, 'gettingMarried') : 'The celebration is unfolding';
     video.currentTime = 0;
     try { await video.play(); }
     catch {
       started = false; root.classList.remove('is-playing');
-      status.textContent = 'The film could not start. You can skip straight to the invitation.';
-      play.querySelector('span').textContent = 'Try opening film again';
+      status.textContent = I ? I.t(lang, 'errGeneric') : 'The film could not start. You can skip straight to the invitation.';
+      play.querySelector('span').textContent = I ? I.t(lang, 'tapToOpen') : 'Try opening film again';
     }
   }
   play.addEventListener('click', start);
   video.addEventListener('click', start);
   root.addEventListener('click', e => { if (!e.target.closest('#svSkip') && !e.target.closest('#svPlay') && !started && !leaving) start(); });
   video.addEventListener('ended', reveal, { once: true });
-  video.addEventListener('error', () => { status.textContent = 'The film could not load. Skip to the invitation whenever you’re ready.'; });
+  video.addEventListener('error', () => { status.textContent = I ? I.t(lang, 'errGeneric') : 'The film could not load.'; });
   skip.addEventListener('click', reveal);
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && !leaving) reveal(); }, { once: false });
   play.focus({ preventScroll: true });

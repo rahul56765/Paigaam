@@ -46,7 +46,7 @@ function sample() {
     // This flow tests both paid/offline and free publishing. The live template now
     // seeds at ₹0, so make the isolated test row nominally paid for its first pass.
     { const { DatabaseSync } = require('node:sqlite'); const db = new DatabaseSync(path.join(dir, 'paigaam.db')); db.prepare("UPDATE templates SET price=1 WHERE slug='suvarna-vivah'").run(); db.close(); }
-    let r = await J('/suvarna-vivah/demo'); let html = await r.text();
+    let r = await J('/suvarna-vivah/demo?palette=emerald-gold'); let html = await r.text();
     ok(r.status === 200 && html.includes('Aarav') && html.includes('sp-boot'), 'demo renders the sample couple');
     const bootMatch = html.match(/<script id="sp-boot" type="application\/json">([\s\S]*?)<\/script>/);
     const demoBoot = bootMatch && JSON.parse(bootMatch[1]);
@@ -64,6 +64,20 @@ function sample() {
     ok(html.includes('/suvarna-vivah/opening.js') && html.includes('/suvarna-vivah/opening.css'), 'demo includes the click-to-play opening experience');
     const openerScript = await (await J('/suvarna-vivah/opening.js')).text();
     ok(openerScript.includes('video.play()') && openerScript.includes('opening.mp4'), 'opening film waits for a user gesture');
+    const defaultDemo = await (await J('/suvarna-vivah/demo')).text();
+    const defaultMatch = defaultDemo.match(/<script id="sp-boot" type="application\/json">([\s\S]*?)<\/script>/);
+    const defaultBoot = defaultMatch && JSON.parse(defaultMatch[1]);
+    ok(defaultBoot && defaultBoot.data.palette.id === 'custom' && defaultBoot.data.palette.custom.primary === '#70501F' && defaultBoot.data.palette.custom.bg === '#FBF4DE', 'Suvarna defaults to its warm ending-frame palette');
+    const customPreview = JSON.parse(JSON.stringify(C.SAMPLE)); customPreview.palette = { id: 'custom', custom: { primary: '#70501F', accent: '#BA8A31', bg: '#FBF4DE' } }; customPreview.font = 'royal';
+    ok(!C.validate(customPreview, { publish: true }).errors.length, 'the warm-gold default palette passes publish validation');
+    ok(['en','hi','mr','gu','ta','te','ur','ar'].every(l => ['suvarnaLetterTitle','suvarnaGalleryTitle','suvarnaDetailsTitle','suvarnaArtAlt','suvarnaPreviewRsvp','suvarnaBackToTop','suvarnaScratchHint','suvarnaRevealDate','skipIntro'].every(k => C.I18N.t(l,k) !== k)), 'Suvarna invitation and scratch-reveal copy is translated in eight languages');
+    const siteAssets = await Promise.all(['/shaadi-paigaam/core.js','/suvarna-vivah/site.css','/suvarna-vivah/site.js','/suvarna-vivah/continuity-ending.webp'].map(path => J(path)));
+    ok(siteAssets.every(r => r.status === 200), 'shared data engine and Suvarna-specific design assets are served');
+    const siteScript = await (await J('/suvarna-vivah/site.js')).text();
+    ok(siteScript.includes('sv-hero__art') && siteScript.includes('sv-date-reveal') && siteScript.includes('sv-scratch') && !siteScript.includes('intro-inner') && !html.includes('/shaadi-paigaam/invite.js'), 'invitation uses its bespoke ceremonial layout, not Shaadi doors/courtyard');
+    ok(siteScript.includes('window.parent !== window') && siteScript.includes('sp:ready'), 'guest preview is ready for the editor to send its current data');
+    ok(siteScript.includes('website:form.elements.website.value') && siteScript.includes('Date.now()-pageOpened') && !siteScript.includes('Math.max(3000'), 'RSVP preserves the server honeypot and minimum-time anti-bot checks');
+    ok(['en','hi','mr','gu','ta','te','ur','ar'].every(l => ['suvarnaLetterTitle','suvarnaGalleryTitle','suvarnaDetailsTitle','suvarnaArtAlt','suvarnaPreviewRsvp','suvarnaBackToTop','skipIntro'].every(k => C.I18N.t(l,k) !== k)), 'Suvarna editorial and opener copy is localized in all eight supported languages');
     ok((await J('/shaadi-paigaam/music/shehnai-dawn.mp3')).status === 200, 'music library is served');
 
     // --- draft
@@ -126,6 +140,7 @@ function sample() {
     ok(r.status === 200 && j.url === base + '/aarav-ananya', 'free publish returns the short link');
     r = await J('/aarav-ananya'); html = await r.text();
     ok(r.status === 200 && html.includes('"mode":"guest"') && html.includes('og:image'), 'paigaam.cc/aarav-ananya serves the invitation with a share card');
+    ok(html.includes('/suvarna-vivah/site.js') && html.includes('/suvarna-vivah/opening.js') && !html.includes('/shaadi-paigaam/invite.js'), 'published link uses the original Suvarna renderer and video opener');
     ok((await J(photoUrl)).status === 200, 'photos become public once published');
     r = await J('/p/aarav-ananya'); ok(r.status === 301 && r.headers.get('location') === '/aarav-ananya', '/p/<link> redirects to the short link');
     ok((await J('/no-such-couple')).status === 404, 'unknown short links fall through to the normal 404');

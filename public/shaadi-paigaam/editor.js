@@ -639,7 +639,7 @@
     $$('#stepNav button').forEach(b => b.onclick = () => go(Number(b.dataset.step), true));
     $('#resetStep').onclick = resetStep;
     $$('[data-dev]').forEach(b => b.onclick = () => { S.device = b.dataset.dev; $$('[data-dev]').forEach(x => x.setAttribute('aria-pressed', x === b)); sizeDevice(); });
-    $('#replayBtn').onclick = () => { const f = $('#pv'); if (f) f.contentWindow.postMessage({ type: 'sp:replay' }, location.origin); };
+    $('#replayBtn').onclick = () => { const f = $('#pv'); if (!f) return; if (boot.slug === 'suvarna-vivah') { pvReady = false; f.src = ROOT + '/frame?guest=1&r=' + Date.now(); return; } f.contentWindow.postMessage({ type: 'sp:replay' }, location.origin); };
     $('#pvLang').onchange = e => { S.previewLang = e.target.value; postPreview(); };
     document.onkeydown = e => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !e.target.matches('input,textarea')) { e.preventDefault(); e.shiftKey ? redo() : undo(); }
@@ -1151,7 +1151,7 @@
       if (!S.data && boot.resume) {
         try { const r = await fetch(API + '/me?id=' + encodeURIComponent(boot.resume.id), { credentials: 'same-origin' }); if (r.ok) { location.replace(CREATE + '?id=' + encodeURIComponent(boot.resume.id)); return; } } catch {}
       }
-      if (!S.data) { const starter = clone(C.SAMPLE); if (boot.slug === 'suvarna-vivah') { starter.palette.id = 'emerald-gold'; starter.palette.custom = { primary: '#0F5440', accent: '#C2A057', bg: '#F6F3E9' }; starter.font = 'royal'; } S.data = C.validate(starter).data; }
+      if (!S.data) { const starter = clone(C.SAMPLE); if (boot.slug === 'suvarna-vivah') { starter.palette.id = 'custom'; starter.palette.custom = { primary: '#70501F', accent: '#BA8A31', bg: '#FBF4DE' }; starter.font = 'royal'; } S.data = C.validate(starter).data; }
     }
     try { const st = Number(localStorage.getItem(STORE + ':step:' + (S.id || 'new'))); if (st >= 0 && st < STEPS.length) S.step = st; } catch {}
     validateNow();

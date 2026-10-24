@@ -6,5 +6,9 @@
   "opening-poster.jpg": {
     "sha256": "42f6fcbdc2ded11f6980af5fc060ff0b9b7b12dcf8a9315b0abf6acdf7bba03a",
     "parts": 1
+  },
+  "continuity-ending.webp": {
+    "sha256": "2a1893af707d94a6ec6c60ea3b04e76a99955163f08f1234f1008583c1fb1700",
+    "parts": 1
   }
 }
