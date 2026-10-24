@@ -106,4 +106,4 @@ public/js/create.js     multi-step form + live preview + autosave
 
 ## Kadali Vivah wedding website
 
-The third ceremonial wedding website, with an interactive 3D banana-leaf unwrapping welcome and the existing seven-step editor. See [docs/KADALI-VIVAH.md](docs/KADALI-VIVAH.md) for routes, asset packaging, editing/publishing behavior and tests. This is independent of the wedding-video feature and the Suvarna redesign.
+The third ceremonial wedding website, with the exact uploaded opening film, a real WebGL scroll-directed temple/mandap journey, simple organiser WhatsApp RSVP and the existing seven-step editor. See [docs/KADALI-VIVAH.md](docs/KADALI-VIVAH.md) for routes, asset packaging, editing/publishing behavior and tests. This is independent of the wedding-video feature and the Suvarna redesign.

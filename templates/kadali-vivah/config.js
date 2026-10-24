@@ -10,9 +10,9 @@ module.exports = {
   category: 'Wedding',
   price: 0,
   currency: 'INR',
-  description: 'A sculptural banana-leaf welcome: tap to open a 3D Indian wedding invitation website with live countdown, events, venue, website RSVP and guest dashboard. Eight palettes, four type styles and eight languages.',
+  description: 'Your original ceremonial film opens into an immersive 3D wedding journey: carved temple colonnades, marigold garlands, a copper kalash and a scroll-directed mandap. Personalise with Paigaam’s seven-step editor; guests RSVP directly to your organiser on WhatsApp.',
   thumbnail_url: '/kadali-vivah/art/kalash.webp',
-  version: 1,
+  version: 2,
   editable: true,
   fields: [
     { id: 'groom', label: 'Groom', type: 'text', required: true, group: 'couple' },

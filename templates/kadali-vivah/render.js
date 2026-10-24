@@ -1,14 +1,14 @@
 'use strict';
 /**
  * Kadali Vivah — server HTML for the invitation runtime.
- * The page ships the validated data as JSON; public/shaadi-paigaam/invite.js
+ * The page ships the validated data as JSON; public/kadali-vivah/invite.js
  * renders everything (so preview == published). Palette variables are inlined
  * for a correct first paint, and share/SEO tags are rendered here.
  */
 const C = require('../../public/shaadi-paigaam/core.js');
 const I = require('../../public/shaadi-paigaam/i18n.js');
 
-const ASSET_V = '1';
+const ASSET_V = '2';
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const jsonSafe = obj => JSON.stringify(obj).replace(/</g, '\\u003c').replace(/>/g, '\\u003e').replace(/&/g, '\\u0026').replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029');
 
@@ -42,7 +42,7 @@ ${o.url ? `<meta property="og:url" content="${esc(o.url)}"><link rel="canonical"
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link id="sp-fonts" rel="stylesheet" href="${esc(C.googleFontsHref(d.font, d.lang.enabled))}">
-<link rel="preload" as="image" href="/kadali-vivah/art/leaf.webp">
+<link rel="preload" as="image" href="/kadali-vivah/opening-poster.jpg">
 <link rel="stylesheet" href="/kadali-vivah/invite.css?v=${ASSET_V}">
 `;
 }
@@ -52,15 +52,16 @@ ${o.url ? `<meta property="og:url" content="${esc(o.url)}"><link rel="canonical"
  * @param o { mode: guest|demo|preview|live|thumb, id, slug, url, rsvpUrl, ogImage, noindex, mapsKey, autoOpen, openingVideo }
  */
 function renderInvitation(data, o = {}) {
-  const boot = { mode: o.mode || 'guest', id: o.id || '', slug: o.slug || '', url: o.url || '', rsvpUrl: o.rsvpUrl || '', mapsKey: o.mapsKey || '', autoOpen: !!o.autoOpen, simpleWhatsAppRsvp: !!o.simpleWhatsAppRsvp, lazyMusic: true, data };
+  const boot = { mode: o.mode || 'guest', id: o.id || '', slug: o.slug || '', url: o.url || '', rsvpUrl: o.rsvpUrl || '', videoSrc: o.videoSrc || '', mapsKey: o.mapsKey || '', autoOpen: !!o.autoOpen, simpleWhatsAppRsvp: true, lazyMusic: true, data };
   return `${head(data, o)}
 </head>
 <body class="kadali">
 <noscript><div style="padding:40px 24px;text-align:center;font-family:Georgia,serif"><h1>${esc(names(data))}</h1><p>${esc(C.fmtDate(data.wedding.date, 'en', 'full'))} · ${esc(C.fmtTime(data.wedding.time, 'en'))}</p><p>${esc([data.venue.name, data.venue.address, data.venue.city].filter(Boolean).join(', '))}</p><p>Please enable JavaScript to open the invitation.</p></div></noscript>
 <script id="sp-boot" type="application/json">${jsonSafe(boot)}</script>
 <script src="/shaadi-paigaam/i18n.js?v=${ASSET_V}"></script>
-<script src="/shaadi-paigaam/core.js?v=6"></script>
-<script src="/shaadi-paigaam/art.js?v=${ASSET_V}"></script>
+<script src="/shaadi-paigaam/core.js?v=7"></script>
+<script src="/kadali-vivah/vendor/three-0.160.0.min.js"></script>
+<script src="/kadali-vivah/stage.js?v=${ASSET_V}"></script>
 <script src="/kadali-vivah/invite.js?v=${ASSET_V}"></script>
 </body>
 </html>`;

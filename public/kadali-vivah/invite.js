@@ -1,613 +1,251 @@
-/* Kadali Vivah — original ceremonial wedding website.
- * Shared functional foundation: Paigaam wedding schema and invitation mechanics.
- * Renders the whole invitation from one validated data object (core.validate),
- * so the published page, the demo and the editor's live preview are the same code.
- * Modes: guest (published) · demo · preview (owner, badge) · live (editor iframe) · thumb. */
+/* Kadali Vivah v2 — original scroll-directed 3D wedding invitation.
+ * Only the data/editor contract is shared with Paigaam. No existing invitation
+ * renderer, visual markup, art library or guest-form UI is used here. */
 (function () {
   'use strict';
-  const C = window.SPCore, I = window.SPI18N, ART = window.SPArt;
-  const bootEl = document.getElementById('sp-boot');
-  const cfg = JSON.parse(bootEl ? bootEl.textContent : '{}');
-  const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const isIOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-  const isAndroid = /Android/i.test(navigator.userAgent);
+  const C = window.SPCore, I = window.SPI18N;
+  const cfg = JSON.parse(document.getElementById('sp-boot').textContent);
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const live = cfg.mode === 'live', thumb = cfg.mode === 'thumb';
-  let data = C.validate(cfg.data || C.SAMPLE, { allowPast: true }).data;
-  let lang = pickLang();
-  let scratched = false, introDone = false, countdownTimer = 0, carTimers = [], observer = null;
+  let data = C.validate(cfg.data, {allowPast:true}).data, lang = data.lang.default;
+  let stage = null, raf = 0, clock = 0, audio = null, audioWanted = false, galleryIndex = 0;
+  let destroyed = false, renderGeneration = 0, revealObserver = null;
+  let videoStarted = false, opened = live || thumb || cfg.autoOpen, sectionMetrics = [];
+  let pendingProgress = 0, lastRenderTime = 0;
+  const $ = (s,root=document) => root.querySelector(s), $$ = s => Array.from(document.querySelectorAll(s));
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const T = key => I.t(lang, key), X = path => C.txt(data, lang, path);
+  const pair = () => (data.couple.order === 'bride' ? ['bride','groom'] : ['groom','bride']);
+  const couple = () => pair().map(s => X('couple.'+s+'.first')).join(' & ');
+  const ornament = '<svg class="sigil" viewBox="0 0 120 40" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width=".8"><path d="M4 20H39Q49 20 60 6Q71 20 81 20H116M37 20Q51 20 60 34Q69 20 83 20M60 6Q42 19 60 34Q78 19 60 6Z"/><circle cx="60" cy="20" r="4"/><path d="M8 20q8-17 18-5q-10 13-18 5m104 0q-8-17-18-5q10 13 18 5"/></g></svg>';
+  const icon = name => ({arrow:'↗',close:'×',play:'▶',pause:'Ⅱ',replay:'↺',down:'↓',calendar:'＋',music:'♪',sound:'♫',pin:'⌖'}[name] || '✧');
+  const mediaURL = p => window.KVPreviewMedia && window.KVPreviewMedia[p] || p;
 
-  const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-  const T = k => I.t(lang, k);
-  const dateLabels = {
-    en: ['Unfold our date', 'Fold date closed'], hi: ['तारीख़ खोलें', 'तारीख़ बंद करें'],
-    mr: ['तारीख उघडा', 'तारीख बंद करा'], gu: ['તારીખ ખોલો', 'તારીખ બંધ કરો'],
-    ta: ['தேதியைத் திறக்கவும்', 'தேதியை மூடவும்'], te: ['తేదీని తెరవండి', 'తేదీని మూసివేయండి'],
-    ur: ['تاریخ کھولیں', 'تاریخ بند کریں'], ar: ['اكشفوا الموعد', 'أغلقوا الموعد']
-  };
-  const dateLabel = () => (dateLabels[lang] || dateLabels.en)[scratched ? 1 : 0];
-  const X = path => C.txt(data, lang, path);
-  const $ = (s, r = document) => r.querySelector(s);
-  const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
-
-  function pickLang() {
-    const en = data.lang.enabled;
-    try { const saved = localStorage.getItem('sp-lang-' + (cfg.slug || cfg.id || 'demo')); if (saved && en.includes(saved)) return saved; } catch {}
-    const q = new URLSearchParams(location.search).get('lang');
-    if (q && en.includes(q)) return q;
-    return data.lang.default;
-  }
-
-  /* =========================================================== theme */
-  function applyTheme() {
-    const built = C.buildPalette(data.palette);
-    const root = document.documentElement;
-    for (const [k, v] of Object.entries(built.vars)) root.style.setProperty(k, v);
+  function theme() {
+    const palette = C.buildPalette(data.palette), root = document.documentElement;
+    Object.entries(palette.vars).forEach(([k,v]) => root.style.setProperty(k,v));
     const f = C.FONT_BY_ID[data.font] || C.FONTS[0];
-    const sf = C.scriptFontFor(lang);
-    root.style.setProperty('--f-script', f.script);
-    root.style.setProperty('--f-serif', f.serif + (sf ? ',' + sf.family : ''));
-    root.style.setProperty('--f-script-fallback', sf ? sf.family : 'serif');
-    root.style.setProperty('--f-script-scale', sf ? 1 : f.scriptScale);
-    root.style.setProperty('--f-script-style', f.scriptStyle || 'normal');
-    root.style.setProperty('--f-amp', f.amp || f.script);
-    root.style.setProperty('--f-amp-style', f.ampStyle || f.scriptStyle || 'normal');
-    root.style.setProperty('--f-script-case', f.scriptUpper ? 'uppercase' : 'none');
-    root.style.setProperty('--f-script-track', f.scriptUpper ? '.08em' : '0');
-    root.classList.toggle('dark-bg', built.palette.dark);
-    root.classList.toggle('dark-scene', built.palette.dark);
-    let link = document.getElementById('sp-fonts');
-    const href = C.googleFontsHref(data.font, data.lang.enabled);
-    if (!link) { link = document.createElement('link'); link.id = 'sp-fonts'; link.rel = 'stylesheet'; document.head.appendChild(link); }
-    if (link.getAttribute('href') !== href) link.setAttribute('href', href);
-    const L = I.LANGS[lang];
-    root.lang = lang; root.dir = L.dir; root.dataset.script = lang === 'mr' ? 'deva' : L.script;
-    const meta = document.querySelector('meta[name=theme-color]'); if (meta) meta.content = built.palette.primary;
+    root.style.setProperty('--font-names', f.script); root.style.setProperty('--font-body', f.serif);
+    root.lang = lang; root.dir = I.LANGS[lang].dir;
+    const link = $('#sp-fonts'); if (link) link.href = C.googleFontsHref(data.font,data.lang.enabled);
+    if (stage) stage.setPalette(palette.palette);
+    return palette.palette;
   }
 
-  /* Layered leaf parcel, an interactive scene rather than a video player. */
-  let openingTimers = [], openingActive = false;
-  const later = (fn, ms) => { const id = setTimeout(fn, ms); openingTimers.push(id); return id; };
-  function clearOpening() { openingTimers.forEach(clearTimeout); openingTimers = []; }
-  const petals = () => Array.from({length: 18}, (_, i) => `<i style="--i:${i};--x:${(i * 37 + 13) % 100}%;--r:${i * 23}deg"></i>`).join('');
-  function shell(force) {
-    clearOpening(); openingActive = false;
-    const withIntro = force || (!live && !thumb && !cfg.autoOpen);
-    document.body.classList.toggle('locked', !!withIntro);
-    document.documentElement.classList.toggle('intro-on', !!withIntro);
-    document.body.innerHTML = `
-${withIntro ? `<div class="kv-opening" id="intro" role="dialog" aria-modal="true" aria-label="${esc(T('tapToOpen'))}">
-  <div class="kv-ambience" aria-hidden="true"></div>
-  <div class="kv-opening-caption"><span>PAIGAAM · KADALI VIVAH</span><p id="openingNames"></p></div>
-  <div class="kv-ritual" aria-hidden="true"><img src="/kadali-vivah/art/kalash.webp" alt=""><div class="kv-halo"></div></div>
-  <div class="kv-parcel" id="leafParcel" aria-hidden="true">
-    <div class="kv-leaf kv-leaf-base"></div>
-    <div class="kv-leaf kv-leaf-top"></div><div class="kv-leaf kv-leaf-bottom"></div>
-    <div class="kv-leaf kv-leaf-left"></div><div class="kv-leaf kv-leaf-right"></div>
-    <div class="kv-cord"><span class="kv-string"></span><svg viewBox="0 0 240 180" class="kv-bow"><defs><filter id="cord-shadow"><feDropShadow dx="1" dy="3" stdDeviation="2" flood-opacity=".5"/></filter><linearGradient id="gold-cord"><stop stop-color="#7d4c12"/><stop offset=".35" stop-color="#ffe4a0"/><stop offset=".6" stop-color="#c49a3d"/><stop offset="1" stop-color="#f7d687"/></linearGradient></defs><g fill="none" stroke="url(#gold-cord)" stroke-width="4" stroke-linecap="round" filter="url(#cord-shadow)"><path d="M120 74C30 76 34 6 75 25S119 81 120 74C135 0 195 8 186 45S132 79 120 74"/><path d="M120 74Q85 97 67 158M120 74Q148 109 165 158"/><path d="M113 72q9-9 17 3q-6 12-17 2z"/></g><g stroke="#d8ac52" stroke-width="2"><path d="M67 151l-9 21m11-20-2 22m3-22 6 21M164 151l-5 21m7-20 3 22m-1-22 11 19"/></g></svg></div>
-  </div>
-  <div class="kv-light" aria-hidden="true"></div><div class="kv-petals" aria-hidden="true">${petals()}</div>
-  <div class="kv-open-controls"><button type="button" id="openBtn" class="kv-open-btn">${esc(T('tapToOpen'))}<span aria-hidden="true"> ↗</span></button><p id="openingStatus" role="status" aria-live="polite">A little blessing, wrapped with love.</p></div>
-  <button type="button" id="skipBtn" class="kv-skip">Skip opening</button>
-</div>` : ''}
-<div class="page" id="page" ${withIntro ? 'inert' : ''}>
-  <nav class="kv-nav"><a href="#hero" class="kv-monogram" id="navNames"></a><div><a href="#s-timeline">${esc(T('timelineTitle'))}</a><a href="#s-venue">${esc(T('venueTitle'))}</a><a href="#s-rsvp">${esc(T('rsvpTitle'))}</a></div><button type="button" id="replayBtn" aria-label="Replay the banana leaf opening">↺ <span>Unwrap again</span></button></nav>
-  <header class="hero" id="hero" tabindex="-1"><div class="kv-hero-art" aria-hidden="true"><img src="/kadali-vivah/art/kalash.webp" alt="" fetchpriority="high" decoding="async"></div><div class="hero-text" id="heroText"></div><a class="kv-scroll" href="#s-welcome">${esc(T('welcomeTitle') === 'welcomeTitle' ? 'Scroll to celebrate' : T('gettingMarried'))}<span>↓</span></a></header>
-  <main class="content" id="content"></main><footer id="closing"></footer>
-</div>
-<div class="fab-wrap fab-top" ${withIntro ? 'inert' : ''}><div><button class="music-btn" id="musicBtn" type="button" hidden></button></div></div>
-<div class="fab-wrap fab-bot" ${withIntro ? 'inert' : ''}><div><div class="lang" id="lang" hidden></div></div></div>
-${cfg.mode === 'preview' ? `<div class="badge">${esc(T('previewBadge'))}</div>` : ''}
-<canvas class="confetti" id="confetti" aria-hidden="true"></canvas>`;
-    introDone = !withIntro;
-    if (withIntro) {
-      $('#openBtn').addEventListener('click', openDoors);
-      $('#skipBtn').addEventListener('click', finishOpening);
-    }
-    $('#replayBtn').addEventListener('click', replayIntro);
-    if (reduce) document.documentElement.classList.add('rm');
-    // Tiny pointer depth, never needed to use the invitation. No device-motion permission.
-    const parcel = $('#leafParcel');
-    if (parcel) parcel.addEventListener('click', openDoors);
-    if (parcel && !reduce && matchMedia('(hover:hover)').matches) {
-      $('#intro').addEventListener('pointermove', e => {
-        if (openingActive) return;
-        parcel.style.setProperty('--tilt-x', (-(e.clientY / innerHeight - .5) * 5) + 'deg');
-        parcel.style.setProperty('--tilt-y', ((e.clientX / innerWidth - .5) * 7) + 'deg');
-      });
-    }
-  }
-
-  function renderHero() {
-    const order = data.couple.order === 'bride' ? ['bride', 'groom'] : ['groom', 'bride'];
-    const first = side => X(`couple.${side}.first`) || (side === 'groom' ? 'Groom' : 'Bride');
-    const person = side => `<div class="kv-person"><h1 class="name" data-fit>${esc(first(side))}${!data.couple.showParents && X(`couple.${side}.last`) ? `<small>${esc(X(`couple.${side}.last`))}</small>` : ''}</h1>${data.couple.showParents ? `<p class="parents">${esc(C.parentLine(data, lang, side))}</p>` : ''}</div>`;
-    $('#heroText').innerHTML = `<p class="kv-eyebrow">${esc(T('gettingMarried'))}</p><div class="kv-line"></div>${person(order[0])}<span class="amp">&amp;</span>${person(order[1])}<div class="kv-hero-date"><span>${esc(C.fmtDate(data.wedding.date, lang, 'long'))}</span><span>${esc([X('venue.name'), X('venue.city')].filter(Boolean).join(' · '))}</span></div><a href="#s-rsvp" class="btn">${esc(T('rsvpTitle'))} <span aria-hidden="true">↗</span></a>`;
-    const initials = order.map(s => first(s).slice(0, 1)).join(' & ');
-    $('#navNames').textContent = initials;
-    const openingNames = $('#openingNames'); if (openingNames) openingNames.textContent = order.map(first).join(' & ');
-    fitNames();
-  }
-  function fitNames() {
-    // Shrink each name until it fits (≤2 lines), then give both names the same size so a
-    // short name never towers over a long one.
-    const run = () => {
-      const els = $$('[data-fit]'); if (!els.length) return;
-      const sizes = els.map(el => {
-        const box = el.parentElement.getBoundingClientRect().width || 300;
-        let size = Math.min(60, box / 4.6); const min = 24;
-        el.style.fontSize = size + 'px';
-        const fits = () => el.scrollWidth <= Math.ceil(el.clientWidth) + 1 && el.getBoundingClientRect().height <= size * 1.4 * 2.05;
-        while (size > min && !fits()) { size -= 2; el.style.fontSize = size + 'px'; }
-        return size;
-      });
-      const s = Math.min(...sizes);
-      els.forEach(el => { el.style.fontSize = s + 'px'; });
-    };
-    run();
-    if (document.fonts && document.fonts.ready) document.fonts.ready.then(run);
-  }
-
-  function finishOpening() {
-    const intro = $('#intro'); if (!intro || intro.classList.contains('gone')) return;
-    clearOpening(); introDone = true; openingActive = false;
-    intro.classList.add('gone'); intro.setAttribute('aria-hidden', 'true'); intro.setAttribute('inert', '');
-    document.body.classList.remove('locked'); document.documentElement.classList.remove('intro-on');
-    $$('#page, .fab-wrap').forEach(el => el.removeAttribute('inert'));
-    $('#hero').classList.add('show'); $('#hero').focus({preventScroll:true});
-    later(() => intro.remove(), reduce ? 0 : 750);
-  }
-  function openDoors() {
-    const intro = $('#intro'); if (!intro || openingActive || introDone) return;
-    if (reduce) { finishOpening(); return; }
-    openingActive = true; $('#openBtn').disabled = true;
-    $('#openingStatus').textContent = 'Unwrapping your invitation…';
-    intro.classList.add('untie');
-    later(() => { intro.classList.add('unfold'); $('#openingStatus').textContent = 'A new beginning, with blessings.'; }, 750);
-    later(() => intro.classList.add('blessing'), 2100);
-    later(() => intro.classList.add('petal-reveal'), 3200);
-    later(finishOpening, 4800);
-    // Sequence is timer-backed and has no video/decode/network dependency.
-  }
-  function replayIntro() { clearOpening(); scratched = false; introDone = false; shell(true); renderAll(); scrollTo(0,0); $('#openBtn').focus({preventScroll:true}); }
-  document.addEventListener('keydown', e => {
-    const intro = $('#intro'); if (!intro || intro.classList.contains('gone')) return;
-    if (e.key === 'Escape') { e.preventDefault(); finishOpening(); }
-    if (e.key === 'Tab') {
-      const buttons = $$('button:not(:disabled)', intro); if (!buttons.length) return;
-      const first = buttons[0], last = buttons[buttons.length-1];
-      if (e.shiftKey && (document.activeElement === first || !intro.contains(document.activeElement))) { e.preventDefault(); last.focus(); }
-      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
-    }
-  });
-
-  /* =========================================================== sections */
-  const head = (icon, title, id) => `<div class="sec-head"><span class="sico">${ART.icon[icon] || ART.icon.heart}</span><h2 id="${id}">${esc(title)}</h2><span class="divider">${ART.divider('heart')}</span></div>`;
-  const sec = (id, inner, extra = '') => `<section class="sec reveal ${extra}" id="s-${id}" aria-labelledby="h-${id}">${inner}</section>`;
-  const when = ev => [C.fmtDate(ev.date, lang, 'short'), [C.fmtTime(ev.start, lang), ev.end ? C.fmtTime(ev.end, lang) : ''].filter(Boolean).join(' – ')].filter(Boolean).join(', ');
-  const evx = (ev, f) => C.txt(data, lang, `events.${ev.id}.${f}`);
-
-  function sections() {
-    const out = [];
-    const S = data.sections;
-    // 3. welcome (+ optional couple photo)
-    const welcome = C.fillNames(X('welcome.text'), data, lang);
-    if (welcome || data.couplePhoto) {
-      out.push(`<section class="sec reveal" id="s-welcome" aria-label="Welcome">${data.couplePhoto ? `<div class="cameo"><img src="${esc(data.couplePhoto.url)}" alt="${esc(X('couple.groom.first') + ' & ' + X('couple.bride.first'))}" style="object-position:${data.couplePhoto.fx}% ${data.couplePhoto.fy}%" loading="lazy"></div>` : ''}
-        <span class="mini-heart">${ART.icon.heartFill}</span>${welcome ? `<p class="lead">${esc(welcome)}</p>` : ''}<span class="mini-heart">${ART.icon.heartFill}</span></section>`);
-    }
-    // A folded gold-leaf date card, with an accessible button (no scratch canvas).
-    if (data.wedding.date) {
-      out.push(sec('scratch', `${head('sparkle', T('saveOurDate'), 'h-scratch')}
-        <div class="kv-date-card ${scratched ? 'done' : ''}" id="scratchBox"><div class="kv-date-under"><span class="so">${esc(T('foreverBegins'))}</span><strong>${esc(C.fmtDate(data.wedding.date, lang, 'long'))}</strong><span>${esc(C.fmtDate(data.wedding.date, lang, 'weekday'))} · ${esc(C.fmtTime(data.wedding.time, lang))}</span></div><div class="kv-date-fold" aria-hidden="true"><span>✦</span><span>${esc(T('saveOurDate'))}</span></div></div>
-        <button class="reveal-btn" type="button" id="revealBtn" aria-expanded="${scratched}" aria-controls="scratchBox">${esc(dateLabel())} ↗</button><div><button class="btn ghost" type="button" id="icsBtn">${ART.icon.calendar}<span>${esc(T('saveTheDate'))}</span></button></div>`, 'scratch-sec'));
-    }
-    // 5. photos
-    if (S.photos && (data.photos.length || live)) {
-      const ph = data.photos;
-      out.push(`<section class="sec reveal" id="s-photos" aria-label="${esc(T('photosTitle'))}">${ph.length ? `<div class="car" id="car">
-        <div class="car-track" tabindex="0">${ph.map((p, i) => `<div class="car-slide"><img src="${esc(p.url)}" alt="${esc(p.alt || T('photosTitle') + ' ' + (i + 1))}" style="object-position:${p.fx}% ${p.fy}%" ${i ? 'loading="lazy"' : ''} decoding="async"></div>`).join('')}</div>
-        ${ph.length > 1 ? `<button class="car-nav prev" type="button" aria-label="Previous">‹</button><button class="car-nav next" type="button" aria-label="Next">›</button><div class="car-dots">${ph.map((_, i) => `<button type="button" aria-label="${i + 1}"${i ? '' : ' class="on"'}></button>`).join('')}</div>` : ''}</div>`
-        : `<div class="photo-ph">${ART.icon.camera}<span>${esc(T('photosSoon'))}</span></div>`}</section>`);
-    }
-    // 6. countdown
-    if (data.wedding.date && data.wedding.time) {
-      out.push(sec('countdown', `${head('hourglass', T('countdownTitle'), 'h-countdown')}<div class="cd" id="cd" role="timer" aria-live="off">${['days', 'hours', 'minutes', 'seconds'].map(k => `<div class="cd-box"><span class="cd-num" data-k="${k}">00</span><span class="cd-lab">${esc(T(k))}</span></div>`).join('')}</div>`));
-    }
-    out.push(`<section class="kv-mandap reveal" aria-label="Wedding mandap"><img src="/kadali-vivah/art/mandap.webp" alt="Illustrative Indian wedding mandap decorated with marigolds and banana leaves" loading="lazy"><div><span>${esc(T('withLove'))}</span><p>${esc(T('gettingMarried'))}</p></div></section>`);
-    // 7. timeline
-    const sch = C.schedule(data);
-    if (sch.days.length) {
-      const multi = sch.days.length > 1;
-      out.push(sec('timeline', `${head('clock', T('timelineTitle'), 'h-timeline')}<div class="tl">${sch.days.map(d => `${multi ? `<div class="tl-day">${esc(C.fmtDate(d.date, lang, 'daymonth'))}</div>` : ''}${d.events.map(ev => {
-        const venue = evx(ev, 'venue'), note = evx(ev, 'note'), dress = evx(ev, 'dress');
-        return `<div class="tl-item"><h3>${esc(C.eventName(data, lang, ev))}</h3><div class="when">${esc(when(ev))}</div>${venue ? `<div class="where">${esc(venue)}</div>` : ''}${note ? `<div class="note">${esc(note)}${ART.icon.heartFill}</div>` : ''}${dress ? `<span class="dress">${esc(T('dressFor'))}: ${esc(dress)}</span>` : ''}</div>`;
-      }).join('')}`).join('')}</div>`));
-    }
-    // 8. venue
-    const vblock = (v, prefix, label) => {
-      const addr = [C.txt(data, lang, prefix + '.address'), [C.txt(data, lang, prefix + '.city'), C.txt(data, lang, prefix + '.state')].filter(Boolean).join(', '), v.pin].filter(Boolean).join(', ');
-      const links = C.mapsLinks(v);
-      const embed = cfg.mapsKey && v.lat != null ? `https://www.google.com/maps/embed/v1/place?key=${encodeURIComponent(cfg.mapsKey)}&q=${v.lat},${v.lng}&zoom=15` : links.osmEmbed;
-      const open = isIOS ? links.apple : links.google;
-      return `<div class="venue-block">${label ? `<div class="venue-label">${esc(label)}</div>` : ''}<p class="v-name">${esc(C.txt(data, lang, prefix + '.name'))}</p>${addr ? `<p class="v-addr">${esc(addr)}</p>` : ''}
-        <div class="map"><div class="fallback">${ART.icon.pin}<span>${esc(T('mapUnavailable'))}</span></div>${embed ? `<iframe data-src="${esc(embed)}" title="${esc(T('venueTitle'))}: ${esc(v.name)}" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>` : ''}
-        <a class="chip" href="${esc(open)}" target="_blank" rel="noopener">${esc(T('openInMaps'))}${ART.icon.external}</a></div>
-        <a class="btn" href="${esc(links.google)}" target="_blank" rel="noopener">${ART.icon.pin}<span>${esc(T('viewOnGoogleMaps'))}</span></a></div>`;
-    };
-    if (data.venue.name || live) {
-      out.push(sec('venue', `${head('pin', T('venueTitle'), 'h-venue')}${vblock(data.venue, 'venue', data.reception.enabled && data.reception.name ? I.eventTypeName('wedding', lang) : '')}${data.reception.enabled && data.reception.name ? vblock(data.reception, 'reception', T('receptionVenue')) : ''}`));
-    }
-    // 9. dress code
-    if (S.dressCode) {
-      const w = X('dress.women'), m = X('dress.men'), c = X('dress.common');
-      if (w || m || c) out.push(sec('dress', `${head('dress', T('dressTitle'), 'h-dress')}${c ? `<div class="dc"><h3>${esc(T('everyone'))}</h3><span class="ln"></span><p>${esc(c)}</p></div>` : ''}${w ? `<div class="dc"><h3>${esc(T('women'))}</h3><span class="ln"></span><p>${esc(w)}</p></div>` : ''}${m ? `<div class="dc"><h3>${esc(T('men'))}</h3><span class="ln"></span><p>${esc(m)}</p></div>` : ''}`));
-    }
-    // 10. pre-wedding
-    if (S.preWedding && sch.pre.length) {
-      out.push(sec('pre', `${head('party', T('preWeddingTitle'), 'h-pre')}<div class="cards">${sch.pre.map(ev => {
-        const venue = evx(ev, 'venue'), address = evx(ev, 'address'), note = evx(ev, 'note'), dress = evx(ev, 'dress');
-        const q = [ev.venue, ev.address].filter(Boolean).join(', ');
-        const icon = (I.EVENT_TYPES[ev.type] || {}).icon || 'sparkle';
-        return `<article class="card"><div class="cico">${ART.icon[icon] || ART.icon.sparkle}</div><h3>${esc(C.eventName(data, lang, ev))}</h3><div class="when">${esc(when(ev))}</div>${venue || address ? `<div class="where">${esc([venue, address].filter(Boolean).join(', '))}</div>` : ''}${note ? `<div class="note">${esc(note)}</div>` : ''}${dress ? `<span class="dress">${esc(T('dressFor'))}: ${esc(dress)}</span>` : ''}${q ? `<div><a class="dir" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}" target="_blank" rel="noopener">${ART.icon.pin}${esc(T('openInMaps'))}</a></div>` : ''}</article>`;
-      }).join('')}</div>`));
-    }
-    // 11-13. transport, accommodation, gifts
-    if (S.transport && X('transport')) out.push(sec('transport', `${head('car', T('transportTitle'), 'h-transport')}<p class="lead">${esc(X('transport'))}</p>`));
-    if (S.accommodation && (X('accommodation.text') || data.accommodation.code)) out.push(sec('stay', `${head('hotel', T('accommodationTitle'), 'h-stay')}${X('accommodation.text') ? `<p class="lead">${esc(X('accommodation.text'))}</p>` : ''}${data.accommodation.code ? `<div class="code"><span><small>${esc(T('bookingCode'))}</small><b>${esc(data.accommodation.code)}</b></span><button type="button" data-copy="${esc(data.accommodation.code)}">${ART.icon.copy}<span>${esc(T('copy'))}</span></button></div>` : ''}`));
-    if (S.gifts && X('gifts')) out.push(sec('gifts', `${head('gift', T('giftsTitle'), 'h-gifts')}<p class="lead">${esc(X('gifts'))}</p>`));
-    // 14. rsvp
-    if (S.rsvp) out.push(sec('rsvp', `${head('mail', T('rsvpTitle'), 'h-rsvp')}${rsvpForm()}`));
-    return out.join('');
-  }
-
-  function rsvpForm() {
-    return cfg.simpleWhatsAppRsvp ? whatsappRsvpForm() : websiteRsvpForm();
-  }
-  function whatsappRsvpForm() {
-    const r = data.rsvp;
-    const closed = r.deadline && Date.now() > Date.parse(r.deadline + 'T23:59:59');
-    if (closed && !live) return `<p class="lead">${esc(T('rsvpClosed'))}</p>`;
-    const yes = C.whatsappRsvpLink(data, true, lang), no = C.whatsappRsvpLink(data, false, lang);
-    if (!yes || !no) {
-      return `<div class="rsvp">
-        ${r.deadline ? `<p class="by">${esc(T('rsvpBy').replace('{date}', C.fmtDate(r.deadline, lang, 'long')))}</p>` : ''}
-        <p class="rsvp-hint">${esc(T('rsvpWhatsappHint'))}</p>
-        <div class="rsvp-actions"><button class="btn wide" type="button" disabled>${esc(T('accept'))}</button><button class="btn wide ghost" type="button" disabled>${esc(T('decline'))}</button></div>
-        <p class="lead">${esc(T('contactFamily'))}</p>
-      </div>`;
-    }
-    return `<div class="rsvp">
-      ${r.deadline ? `<p class="by">${esc(T('rsvpBy').replace('{date}', C.fmtDate(r.deadline, lang, 'long')))}</p>` : ''}
-      <p class="rsvp-hint">${esc(T('rsvpWhatsappHint'))}</p>
-      <div class="rsvp-actions">
-        <a class="btn wide" href="${esc(yes)}" target="_blank" rel="noopener noreferrer">${esc(T('accept'))}</a>
-        <a class="btn wide ghost" href="${esc(no)}" target="_blank" rel="noopener noreferrer">${esc(T('decline'))}</a>
-      </div>
+  function introMarkup() {
+    if (opened) return '';
+    return `<div class="film-gate" id="intro" role="dialog" aria-modal="true" aria-label="Open your wedding invitation">
+      <div class="film-room" aria-hidden="true"></div>
+      <video id="openingFilm" playsinline preload="none" poster="/kadali-vivah/opening-poster.jpg" aria-label="Original wedding opening film"></video>
+      <button class="film-start" id="openBtn" type="button"><span class="film-start-ring">${icon('play')}</span><span>${esc(T('tapToOpen'))}</span></button>
+      <p class="film-status" id="filmStatus" role="status" aria-live="polite"></p>
+      <div class="film-tools"><button id="filmPause" type="button" hidden aria-label="Pause opening">${icon('pause')}</button><button id="skipBtn" type="button">Skip opening ${icon('arrow')}</button></div>
     </div>`;
   }
-  function websiteRsvpForm() {
-    const r = data.rsvp;
-    const closed = r.deadline && Date.now() > Date.parse(r.deadline + 'T23:59:59') ;
-    if (closed && !live) return `<p class="lead">${esc(T('rsvpClosed'))}</p>`;
-    const opts = Array.from({ length: r.maxGuests }, (_, i) => `<option value="${i + 1}">${C.fmtNum(i + 1, lang).replace(/^0/, '')}</option>`).join('');
-    return `<form class="rsvp" id="rsvpForm" novalidate>
-      ${r.deadline ? `<p class="by">${esc(T('rsvpBy').replace('{date}', C.fmtDate(r.deadline, lang, 'long')))}</p>` : ''}
-      <div class="fld"><label for="rv-name">${esc(T('yourName'))}<span class="req">*</span></label><input id="rv-name" name="name" autocomplete="name" maxlength="60" placeholder="${esc(T('yourNamePh'))}" required><div class="err">${esc(T('errRequired'))}</div></div>
-      <div class="fld"><label for="rv-email">${esc(T('email'))}<span class="req">*</span></label><input id="rv-email" name="email" type="email" inputmode="email" autocomplete="email" maxlength="120" placeholder="${esc(T('emailPh'))}"><div class="err">${esc(T('errEmail'))}</div></div>
-      <div class="fld"><label for="rv-phone">${esc(T('phone'))}</label><input id="rv-phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" maxlength="18" placeholder="${esc(T('phonePh'))}"><div class="help">${esc(T('contactHint'))}</div><div class="err">${esc(T('errPhone'))}</div></div>
-      <div class="fld"><label for="rv-att">${esc(T('attending'))}<span class="req">*</span></label><select id="rv-att" name="attending" required><option value="">${esc(T('select'))}</option><option value="yes">${esc(T('accept'))}</option><option value="no">${esc(T('decline'))}</option></select><div class="err">${esc(T('errRequired'))}</div></div>
-      <div class="fld" id="rv-guests-f" hidden><label for="rv-guests">${esc(T('guests'))}</label><select id="rv-guests" name="guests">${opts}</select></div>
-      ${r.meal ? `<div class="fld" id="rv-meal-f" hidden><label for="rv-meal">${esc(T('meal'))}</label><select id="rv-meal" name="meal"><option value="">${esc(T('select'))}</option>${r.mealOptions.map(m => `<option>${esc(m)}</option>`).join('')}</select></div>` : ''}
-      <div class="fld"><label for="rv-msg">${esc(T('message'))}</label><textarea id="rv-msg" name="message" maxlength="500" rows="3" placeholder="${esc(T('messagePh'))}"></textarea></div>
-      <input class="hp" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
-      <button class="btn wide" type="submit" id="rv-send">${ART.icon.mail}<span>${esc(T('send'))}</span></button>
-      <div class="rsvp-msg" id="rv-out" role="status" aria-live="polite"></div>
-    </form>`;
+  function shell() {
+    document.body.innerHTML = `<div class="scene-wrap" id="sceneWrap" aria-hidden="true"><div id="stage"></div><div class="scene-shade"></div><div class="scene-grain"></div></div>
+      ${introMarkup()}
+      <div id="page" ${!opened?'inert':''}>
+        <header class="journey-header"><a href="#hero" class="brand-mark" id="monogram" aria-label="Wedding invitation"></a><span class="journey-label">A WEDDING CELEBRATION</span><button type="button" id="replayBtn" aria-label="Replay the original opening film">${icon('replay')}</button></header>
+        <nav class="chapter-nav" id="chapterNav" aria-label="Invitation chapters"></nav>
+        <main id="story"></main>
+        <footer class="journey-footer">${esc(T('madeWith'))} <a href="https://paigaam.cc" target="_blank" rel="noopener noreferrer">PAIGAAM</a></footer>
+      </div>
+      <div class="utility" ${!opened?'inert':''}><button id="musicBtn" type="button" hidden aria-label="Play optional music">${icon('music')}</button><select id="langSelect" aria-label="Invitation language"></select></div>
+      ${cfg.mode==='preview'?`<div class="preview-badge">${esc(T('previewBadge'))}</div>`:''}`;
+    document.body.classList.toggle('film-locked',!opened);
+    document.documentElement.classList.toggle('intro-on',!opened);
+    $('#replayBtn').onclick = replay;
+    if (!opened) bindFilm();
+    if (opened) initializeStage();
   }
-
-  function closing() {
-    const order = data.couple.order === 'bride' ? ['bride', 'groom'] : ['groom', 'bride'];
-    const names = order.map(s => X(`couple.${s}.first`)).filter(Boolean).join(' & ');
-    $('#closing').innerHTML = `<div class="closing reveal"><div class="wl">${esc(T('withLove'))},</div><div class="cn">${order.map(s => X(`couple.${s}.first`)).filter(Boolean).map(esc).join(' <span class="amp-i">&amp;</span> ')}</div>${X('closing') ? `<p class="cl">${esc(X('closing'))}</p>` : ''}<span class="flourish">${ART.flourish}</span></div>
-      <div class="foot">${esc(T('madeWith'))} · <a href="https://paigaam.cc" target="_blank" rel="noopener">paigaam.cc</a></div>`;
-  }
-
-  /* =========================================================== behaviours */
-  function bindScratch() {
-    const box = $('#scratchBox'), btn = $('#revealBtn'); if (!box || !btn) return;
-    btn.addEventListener('click', () => {
-      scratched = !scratched; box.classList.toggle('done', scratched); btn.setAttribute('aria-expanded', String(scratched)); btn.textContent = dateLabel() + ' ↗';
-      if (scratched && !reduce) { const r = box.getBoundingClientRect(); burst(r.left+r.width/2, r.top+r.height/2); }
-    });
-  }
-
-  /* glitter confetti */
-  let parts = [], raf = 0;
-  function burst(x, y) {
-    const cv = $('#confetti'); if (!cv || reduce) return;
-    const dpr = Math.min(2, devicePixelRatio || 1);
-    cv.width = innerWidth * dpr; cv.height = innerHeight * dpr;
-    const cs = getComputedStyle(document.documentElement);
-    const cols = ['--sp-accent', '--sp-primary', '--sp-flower', '--sp-deep', '--sp-champagne'].map(k => cs.getPropertyValue(k).trim()).concat(['#F6E3A8', '#FFFFFF']);
-    const n = reduce ? 40 : 170;
-    for (let i = 0; i < n; i++) {
-      const a = Math.random() * Math.PI * 2, s = 3 + Math.random() * 9;
-      parts.push({ x: x * dpr, y: y * dpr, vx: Math.cos(a) * s * dpr, vy: (Math.sin(a) * s - 6) * dpr, r: (1.5 + Math.random() * 3.5) * dpr, c: cols[i % cols.length], rot: Math.random() * 6, vr: (Math.random() - 0.5) * 0.3, shape: i % 9 === 0 ? 'heart' : i % 3 === 0 ? 'rect' : 'dot', life: 1, tw: Math.random() * 6 });
-    }
-    // a gentle rain of glitter from the top, like the reference
-    for (let i = 0; i < (reduce ? 0 : 90); i++) parts.push({ x: Math.random() * cv.width, y: -Math.random() * cv.height * 0.6, vx: (Math.random() - 0.5) * dpr, vy: (1 + Math.random() * 2) * dpr, r: (1 + Math.random() * 2.2) * dpr, c: cols[i % 4], rot: 0, vr: 0, shape: 'dot', life: 1, tw: Math.random() * 6, slow: true });
-    if (!raf) raf = requestAnimationFrame(tick);
-    function tick() {
-      const ctx = cv.getContext('2d');
-      ctx.clearRect(0, 0, cv.width, cv.height);
-      parts = parts.filter(p => p.life > 0 && p.y < cv.height + 40);
-      for (const p of parts) {
-        p.vx *= p.slow ? 1 : 0.985; p.vy = p.vy * (p.slow ? 1 : 0.985) + (p.slow ? 0.01 : 0.22) * dpr; p.x += p.vx; p.y += p.vy; p.rot += p.vr; p.tw += 0.2;
-        p.life -= p.slow ? 0.0035 : 0.006;
-        ctx.globalAlpha = Math.max(0, Math.min(1, p.life * 1.4)) * (0.65 + 0.35 * Math.sin(p.tw));
-        ctx.fillStyle = p.c;
-        ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot);
-        if (p.shape === 'rect') ctx.fillRect(-p.r, -p.r * 0.45, p.r * 2, p.r * 0.9);
-        else if (p.shape === 'heart') { const s = p.r / 6; ctx.scale(s, s); ctx.beginPath(); ctx.moveTo(0, 6); ctx.bezierCurveTo(-8, 0, -6, -7, 0, -3); ctx.bezierCurveTo(6, -7, 8, 0, 0, 6); ctx.fill(); }
-        else { ctx.beginPath(); ctx.arc(0, 0, p.r * 0.75, 0, 6.283); ctx.fill(); }
-        ctx.restore();
-      }
-      ctx.globalAlpha = 1;
-      if (parts.length) raf = requestAnimationFrame(tick); else { raf = 0; ctx.clearRect(0, 0, cv.width, cv.height); }
-    }
-  }
-
-  function bindIcs() {
-    const b = $('#icsBtn'); if (!b) return;
-    b.addEventListener('click', () => {
-      const url = cfg.url || location.href.split('?')[0];
-      if (isAndroid) {
-        const s = C.zonedToUtc(data.wedding.date, data.wedding.time, data.wedding.tz), f = ms => new Date(ms).toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
-        const v = data.venue;
-        const title = `${X('couple.groom.first')} & ${X('couple.bride.first')}`;
-        window.open(`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${f(s)}/${f(s + 4 * 36e5)}&location=${encodeURIComponent([v.name, v.address, v.city].filter(Boolean).join(', '))}&details=${encodeURIComponent(url)}`, '_blank', 'noopener');
-        return;
-      }
-      const blob = new Blob([C.icsFor(data, lang, url)], { type: 'text/calendar;charset=utf-8' });
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = C.slugify(X('couple.groom.first') + '-' + X('couple.bride.first')) + '-wedding.ics';
-      document.body.appendChild(a); a.click(); a.remove();
-      setTimeout(() => URL.revokeObjectURL(a.href), 4000);
-    });
-  }
-
-  function bindCarousel() {
-    carTimers.forEach(clearInterval); carTimers = [];
-    const car = $('#car'); if (!car) return;
-    const track = $('.car-track', car), dots = $$('.car-dots button', car), n = $$('.car-slide', car).length;
-    const go = i => track.scrollTo({ left: ((i + n) % n) * track.clientWidth, behavior: reduce ? 'auto' : 'smooth' });
-    const cur = () => Math.round(track.scrollLeft / Math.max(1, track.clientWidth));
-    let idle = 0;
-    track.addEventListener('scroll', () => { const i = cur(); dots.forEach((d, k) => d.classList.toggle('on', k === Math.abs(i))); idle = Date.now(); }, { passive: true });
-    dots.forEach((d, k) => d.addEventListener('click', () => go(k)));
-    const pv = $('.car-nav.prev', car), nx = $('.car-nav.next', car);
-    if (pv) { pv.addEventListener('click', () => go(cur() - (document.dir === 'rtl' ? -1 : 1))); nx.addEventListener('click', () => go(cur() + (document.dir === 'rtl' ? -1 : 1))); }
-    track.addEventListener('keydown', e => { if (e.key === 'ArrowRight') go(cur() + 1); if (e.key === 'ArrowLeft') go(cur() - 1); });
-    if (n > 1 && !reduce && !thumb) carTimers.push(setInterval(() => { if (Date.now() - idle > 5000 && document.visibilityState === 'visible' && introDone) go(cur() + 1); }, 4500));
-  }
-
-  function bindCountdown() {
-    clearInterval(countdownTimer);
-    const cd = $('#cd'); if (!cd) return;
-    const target = C.zonedToUtc(data.wedding.date, data.wedding.time, data.wedding.tz);
-    const nums = {}; $$('.cd-num', cd).forEach(el => { nums[el.dataset.k] = el; });
-    const tick = () => {
-      let ms = target - Date.now();
-      if (ms <= 0) {
-        clearInterval(countdownTimer);
-        cd.outerHTML = `<div class="cd-done">${esc(ms > -864e5 ? T('todayIsTheDay') : T('married'))}</div>`;
-        return;
-      }
-      const s = Math.floor(ms / 1000);
-      const vals = { days: Math.floor(s / 86400), hours: Math.floor(s % 86400 / 3600), minutes: Math.floor(s % 3600 / 60), seconds: s % 60 };
-      for (const k in vals) { const t = C.fmtNum(vals[k], lang); if (nums[k].textContent !== t) nums[k].textContent = t; }
+  function bindFilm() {
+    const v=$('#openingFilm'), start=$('#openBtn'), pause=$('#filmPause'), status=$('#filmStatus');
+    start.onclick = async () => {
+      status.textContent = 'Loading the opening…'; start.disabled=true;
+      if (!v.getAttribute('src')) v.src = cfg.videoSrc || '/kadali-vivah/opening.mp4';
+      try { await v.play(); videoStarted=true; start.hidden=true; pause.hidden=false; status.textContent=''; $('#intro').classList.add('playing'); }
+      catch { start.disabled=false; start.hidden=false; status.textContent='Tap to try again, or skip the opening.'; }
     };
-    tick(); countdownTimer = setInterval(tick, 1000);
+    pause.onclick=()=>{ if(v.paused){v.play().catch(()=>{});pause.textContent=icon('pause');pause.setAttribute('aria-label','Pause opening');}else{v.pause();pause.textContent=icon('play');pause.setAttribute('aria-label','Resume opening');} };
+    v.addEventListener('waiting',()=>{if(videoStarted)status.textContent='Buffering…';});
+    v.addEventListener('playing',()=>status.textContent='');
+    v.addEventListener('ended',finishFilm);
+    v.addEventListener('error',()=>{status.textContent='The opening could not load. You can retry or continue to the invitation.';start.hidden=false;start.disabled=false;});
+    $('#skipBtn').onclick=finishFilm;
+    start.focus({preventScroll:true});
+  }
+  function finishFilm() {
+    const intro=$('#intro'); if(!intro||opened)return;
+    opened=true; const v=$('#openingFilm'); if(v)v.pause();
+    intro.classList.add('finished'); intro.setAttribute('inert',''); intro.setAttribute('aria-hidden','true');
+    document.body.classList.remove('film-locked');document.documentElement.classList.remove('intro-on');
+    $('#page').removeAttribute('inert');$('.utility').removeAttribute('inert');
+    initializeStage(); updateScroll(); $('#hero').focus({preventScroll:true});
+    if(reduced)intro.remove();else intro.addEventListener('transitionend',()=>intro.remove(),{once:true});
+    // Safety removal is independent of WebGL init, media readiness and CSS support.
+    setTimeout(()=>{if(intro.isConnected)intro.remove();},1000);
+  }
+  function replay() {
+    if(stage){stage.dispose();stage=null;}
+    if(audio)audio.pause(); opened=false; videoStarted=false;
+    shell();render();scrollTo({top:0,behavior:'instant'});
+  }
+  function initializeStage() {
+    if(stage||destroyed||!window.KadaliStage)return;
+    try {
+      stage=window.KadaliStage.create($('#stage'),{reduced:reduced||thumb,palette:C.buildPalette(data.palette).palette,onReady:()=>$('#sceneWrap')?.classList.add('gl-ready')});
+      stage.setProgress(pendingProgress);
+    } catch { $('#sceneWrap').classList.add('scene-fallback'); }
   }
 
-  function bindMaps() {
-    const frames = $$('.map iframe[data-src]'); if (!frames.length) return;
-    const load = f => { if (!f.src) f.src = f.dataset.src; };
-    if (!('IntersectionObserver' in window) || live) { frames.forEach(load); return; }
-    const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { load(e.target); io.unobserve(e.target); } }), { rootMargin: '400px' });
-    frames.forEach(f => io.observe(f));
+  function plate(id, num, title, content, options={}) {
+    return `<section class="chapter ${options.side||''} ${options.extra||''}" id="${id}" data-chapter="${id}" tabindex="-1"><div class="chapter-space" aria-hidden="true"></div><div class="chapter-inner"><article class="ceremony-plate"><div class="plate-relief" aria-hidden="true"></div><div class="plate-face"><div class="chapter-kicker"><span>${String(num).padStart(2,'0')}</span><span>${esc(title)}</span><i></i></div>${content}</div><div class="plate-foot" aria-hidden="true">${ornament}</div></article></div></section>`;
+  }
+  function namesMarkup() {
+    return pair().map((side,n)=>`${n?'<span class="name-amp">&amp;</span>':''}<div class="person"><h1 class="name">${esc(X('couple.'+side+'.first'))}</h1>${!data.couple.showParents&&X('couple.'+side+'.last')?`<span class="surname">${esc(X('couple.'+side+'.last'))}</span>`:''}${data.couple.showParents?`<p class="parent-line">${esc(C.parentLine(data,lang,side))}</p>`:''}</div>`).join('');
+  }
+  function heroMarkup() {
+    return plate('hero',1,T('gettingMarried'),`<p class="blessing-invocation">Two souls. One sacred beginning.</p>${ornament}<div class="couple-names">${namesMarkup()}</div><div class="hero-date"><span>${esc(C.fmtDate(data.wedding.date,lang,'long'))}</span><span>${esc(X('venue.city'))}</span></div><a href="#s-welcome" class="scroll-invitation">Scroll to enter ${icon('down')}</a>`,{extra:'hero-chapter'});
+  }
+  function welcomeMarkup() {
+    const text=C.fillNames(X('welcome.text'),data,lang);
+    return plate('s-welcome',2,T('withLove'),`${data.couplePhoto?`<div class="portrait-portal"><img src="${esc(mediaURL(data.couplePhoto.url))}" alt="${esc(couple())}" style="object-position:${data.couplePhoto.fx}% ${data.couplePhoto.fy}%"></div>`:''}<h2>A promise,<br><em>with blessings.</em></h2><p class="ceremony-copy">${esc(text)}</p>${ornament}`,{side:'right',extra:'family-chapter'});
+  }
+  function dateMarkup() {
+    return plate('s-scratch',3,T('saveOurDate'),`<div class="date-orbit"><span class="orbit-ring r1" aria-hidden="true"></span><span class="orbit-ring r2" aria-hidden="true"></span><div class="date-seal"><span>${esc(C.fmtDate(data.wedding.date,lang,'weekday'))}</span><strong>${esc(C.fmtDate(data.wedding.date,lang,'daymonth'))}</strong><span>${esc(C.fmtTime(data.wedding.time,lang))}</span></div></div><h2>${esc(T('countdownTitle'))}</h2><div class="countdown" id="cd" role="timer">${['days','hours','minutes','seconds'].map(k=>`<div><strong data-k="${k}">00</strong><span>${esc(T(k))}</span></div>`).join('')}</div><button class="action outline" type="button" id="calendarBtn">${esc(T('saveTheDate'))} ${icon('calendar')}</button>`,{extra:'date-chapter'});
+  }
+  function galleryMarkup() {
+    if(!data.sections.photos||!data.photos.length)return '';
+    return plate('s-photos',4,T('photosTitle'),`<h2>Moments to<br><em>treasure.</em></h2><div class="memory-stage" id="memoryStage">${data.photos.map((p,n)=>`<figure class="memory ${n===galleryIndex?'selected':''}" style="--slot:${n}" data-photo="${n}"><img src="${esc(mediaURL(p.url))}" alt="${esc(p.alt||couple())}" style="object-position:${p.fx}% ${p.fy}%" loading="lazy"><figcaption>${String(n+1).padStart(2,'0')} / ${String(data.photos.length).padStart(2,'0')}</figcaption></figure>`).join('')}</div><div class="memory-controls"><button type="button" id="photoPrev" aria-label="Previous photo">←</button><span>${esc(T('photosTitle'))}</span><button type="button" id="photoNext" aria-label="Next photo">→</button></div>`,{side:'right',extra:'gallery-chapter'});
+  }
+  function eventsMarkup() {
+    const events=data.events.filter(e=>data.sections.preWedding||['wedding','arrival','reception'].includes(e.type)).slice().sort((a,b)=>(a.date+a.start).localeCompare(b.date+b.start));
+    return plate('s-timeline',data.photos.length?5:4,T('timelineTitle'),`<h2>Every ritual.<br><em>Every joy.</em></h2><div class="rituals">${events.map((e,n)=>`<article class="ritual-ticket" style="--ticket:${n}"><span class="ritual-number">${String(n+1).padStart(2,'0')}</span><div><h3>${esc(C.eventName(data,lang,e))}</h3><p class="ritual-when">${esc(C.fmtDate(e.date,lang,'short'))} · ${esc(C.fmtTime(e.start,lang))}${e.end?' – '+esc(C.fmtTime(e.end,lang)):''}</p>${C.txt(data,lang,'events.'+e.id+'.venue')?`<p>${esc(C.txt(data,lang,'events.'+e.id+'.venue'))}</p>`:''}${C.txt(data,lang,'events.'+e.id+'.note')?`<p class="ritual-note">${esc(C.txt(data,lang,'events.'+e.id+'.note'))}</p>`:''}${C.txt(data,lang,'events.'+e.id+'.dress')?`<p class="ritual-dress">${esc(C.txt(data,lang,'events.'+e.id+'.dress'))}</p>`:''}</div></article>`).join('')}</div>`,{side:'right',extra:'events-chapter'});
+  }
+  function venueBlock(v,prefix) {
+    const links=C.mapsLinks(v);
+    return `<div class="venue-plaque"><h3>${esc(X(prefix+'.name'))}</h3><p>${esc([X(prefix+'.address'),X(prefix+'.city'),X(prefix+'.state'),v.pin].filter(Boolean).join(', '))}</p><a class="action" href="${esc(links.google)}" target="_blank" rel="noopener noreferrer">${esc(T('openInMaps'))} ${icon('arrow')}</a></div>`;
+  }
+  function guestDetails() {
+    const details=[];
+    if(data.sections.dressCode){const dress=[X('dress.common'),X('dress.women')&&T('women')+': '+X('dress.women'),X('dress.men')&&T('men')+': '+X('dress.men')].filter(Boolean).join('\n');if(dress)details.push([T('dressTitle'),dress]);}
+    if(data.sections.transport&&X('transport'))details.push([T('transportTitle'),X('transport')]);
+    if(data.sections.accommodation&&(X('accommodation.text')||data.accommodation.code))details.push([T('accommodationTitle'),[X('accommodation.text'),data.accommodation.code].filter(Boolean).join('\n')]);
+    if(data.sections.gifts&&X('gifts'))details.push([T('giftsTitle'),X('gifts')]);
+    return details.length?`<div class="guest-details">${details.map(([title,text])=>`<details><summary>${esc(title)} <span>＋</span></summary><p>${esc(text)}</p></details>`).join('')}</div>`:'';
+  }
+  function venueMarkup() {
+    return plate('s-venue',data.photos.length?6:5,T('venueTitle'),`<h2>Where our<br><em>forever begins.</em></h2>${venueBlock(data.venue,'venue')}${data.reception.enabled&&data.reception.name?venueBlock(data.reception,'reception'):''}${guestDetails()}`,{extra:'venue-chapter'});
+  }
+  function rsvpMarkup() {
+    const yes=C.whatsappRsvpLink(data,true,lang), no=C.whatsappRsvpLink(data,false,lang);
+    const closed=data.rsvp.deadline&&Date.now()>Date.parse(data.rsvp.deadline+'T23:59:59');
+    let rsvp='';
+    if(data.sections.rsvp){
+      rsvp=`<h2>Your presence.<br><em>Our happiness.</em></h2>${data.rsvp.deadline?`<p class="rsvp-deadline">${esc(T('rsvpBy').replace('{date}',C.fmtDate(data.rsvp.deadline,lang,'long')))}</p>`:''}`;
+      if(closed&&!live)rsvp+=`<p>${esc(T('rsvpClosed'))}</p>`;
+      else rsvp+=`<div class="rsvp-choices">${[[yes,T('accept'),'yes'],[no,T('decline'),'no']].map(([href,label,answer])=>href?`<a class="action ${answer==='no'?'outline':''}" data-rsvp="${answer}" href="${esc(href)}" target="_blank" rel="noopener noreferrer">${esc(label)} ${icon('arrow')}</a>`:`<button class="action ${answer==='no'?'outline':''}" type="button" data-rsvp="${answer}" disabled>${esc(label)} ${icon('arrow')}</button>`).join('')}</div><p class="rsvp-explain">${esc(yes?T('rsvpWhatsappHint'):'The organiser’s WhatsApp number activates these choices when the invitation is published.')}</p>`;
+    }
+    return plate('s-rsvp',data.photos.length?7:6,T('withLove'),`${rsvp}${ornament}<p class="closing-small">${esc(T('withLove'))}</p><div class="closing-names">${esc(couple())}</div>${X('closing')?`<p class="ceremony-copy">${esc(X('closing'))}</p>`:''}`,{side:'right',extra:'rsvp-chapter'});
   }
 
-  function bindCopy() {
-    $$('[data-copy]').forEach(b => b.addEventListener('click', async () => {
-      try { await navigator.clipboard.writeText(b.dataset.copy); } catch { const t = document.createElement('textarea'); t.value = b.dataset.copy; document.body.appendChild(t); t.select(); try { document.execCommand('copy'); } catch {} t.remove(); }
-      const s = $('span', b), old = s.textContent; s.textContent = T('copied'); setTimeout(() => { s.textContent = old; }, 1600);
-    }));
+  function render() {
+    const y=scrollY; renderGeneration++; const palette=theme();
+    $('#story').innerHTML=heroMarkup()+welcomeMarkup()+dateMarkup()+galleryMarkup()+eventsMarkup()+venueMarkup()+rsvpMarkup();
+    $('#monogram').textContent=pair().map(s=>X('couple.'+s+'.first').slice(0,1)).join(' · ');
+    const chapters=$$('.chapter');
+    $('#chapterNav').innerHTML=chapters.map((el,n)=>`<a href="#${el.id}" aria-label="Chapter ${n+1}: ${esc($('.chapter-kicker',el)?.textContent||'')}" data-nav="${n}"><span>${String(n+1).padStart(2,'0')}</span><i></i></a>`).join('');
+    // Keep the existing editor's focus anchors without inheriting its page layout.
+    const date=$('#s-scratch');if(date)date.dataset.alias='countdown';
+    setupLanguage();setupMusic();bindCalendar();bindGallery();bindCountdown();bindReveals();
+    fitNames();measure();scrollTo(0,y);updateScroll();
+    if(stage)stage.setPalette(palette);
   }
-
-
-  function bindRsvp() {
-    const f = $('#rsvpForm'); if (!f) return;
-    const opened = Date.now();
-    let confirmUpdate = false;
-    const att = $('#rv-att', f);
-    att.addEventListener('change', () => { const yes = att.value === 'yes'; $('#rv-guests-f', f).hidden = !yes; const m = $('#rv-meal-f', f); if (m) m.hidden = !yes; });
-    const out = $('#rv-out', f);
-    const show = (msg, warn) => { out.textContent = msg; out.className = 'rsvp-msg show' + (warn ? ' warn' : ''); };
-    f.addEventListener('submit', async e => {
-      e.preventDefault();
-      $$('.fld', f).forEach(x => x.classList.remove('bad'));
-      const v = Object.fromEntries(new FormData(f).entries());
-      let bad = false;
-      const mark = (id, msg) => { const fl = $('#' + id, f).closest('.fld'); fl.classList.add('bad'); if (msg) $('.err', fl).textContent = msg; bad = true; };
-      if (!String(v.name || '').trim()) mark('rv-name');
-      const email = String(v.email || '').trim(), phone = String(v.phone || '').trim();
-      if (!email && !phone) mark('rv-email', T('errContact'));
-      if (email && !C.EMAIL_RE.test(email)) mark('rv-email', T('errEmail'));
-      if (phone && !C.cleanPhone(phone).ok) mark('rv-phone', T('errPhone'));
-      if (!v.attending) mark('rv-att');
-      if (bad) { const first = $('.fld.bad input, .fld.bad select', f); if (first) first.focus(); return; }
-      const btn = $('#rv-send', f), label = $('span', btn), old = label.textContent;
-      btn.disabled = true; label.textContent = T('sending');
-      const payload = { name: v.name, email, phone, attending: v.attending, guests: v.attending === 'yes' ? Number(v.guests || 1) : 0, meal: v.meal || '', message: v.message || '', website: v.website || '', t: Date.now() - opened, lang, confirmUpdate };
-      try {
-        if (!cfg.rsvpUrl) { await new Promise(r => setTimeout(r, 600)); return thank(payload.attending, true); }
-        const r = await fetch(cfg.rsvpUrl, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload) });
-        if (r.ok) return thank(payload.attending);
-        const j = await r.json().catch(() => ({}));
-        if (r.status === 409 && j.error === 'duplicate') { confirmUpdate = true; label.textContent = T('update'); btn.disabled = false; return show(T('duplicate'), true); }
-        if (r.status === 410) return show(T('rsvpClosed'), true);
-        show(r.status === 429 ? T('errSlow') : T('errGeneric'), true);
-      } catch { show(T('errGeneric'), true); }
-      btn.disabled = false; if (label.textContent === T('sending')) label.textContent = old;
+  function setupLanguage() {
+    const select=$('#langSelect');select.innerHTML=data.lang.enabled.map(l=>`<option value="${l}" ${l===lang?'selected':''}>${esc(I.LANGS[l].native)}</option>`).join('');
+    select.hidden=data.lang.enabled.length<2;select.onchange=()=>setLang(select.value);
+  }
+  function setLang(value){if(!data.lang.enabled.includes(value))return;lang=value;render();}
+  function fitNames(){
+    const run=()=>{$$('.name').forEach(el=>{el.style.fontSize='';const max=innerWidth<650?64:86;let n=max;el.style.fontSize=n+'px';while(n>27&&el.scrollWidth>el.clientWidth+1){n-=2;el.style.fontSize=n+'px';}});};
+    run();if(document.fonts)document.fonts.ready.then(()=>{if(!destroyed){run();measure();}});
+  }
+  function measure(){sectionMetrics=$$('.chapter').map(el=>({el,top:el.offsetTop,height:el.offsetHeight}));}
+  function updateScroll(){
+    if(destroyed)return;
+    const y=scrollY, view=innerHeight||800, total=Math.max(1,(document.documentElement.scrollHeight-view));
+    pendingProgress=Math.max(0,Math.min(1,y/total));
+    if(stage&&opened)stage.setProgress(pendingProgress);
+    let active=0;
+    sectionMetrics.forEach((m,n)=>{
+      const relative=(y+view*.5-(m.top+m.height*.5))/Math.max(view,m.height);
+      const visible=Math.max(0,1-Math.abs(relative)*1.3);
+      const p=Math.max(-1,Math.min(1,relative));
+      m.el.style.setProperty('--pass',String(reduced?0:p));
+      m.el.style.setProperty('--presence',String(reduced?1:visible));
+      if(y+view*.55>=m.top)active=n;
     });
-    function thank(a, demo) {
-      f.innerHTML = `<div class="rsvp-done"><div class="big">${esc(a === 'yes' ? T('thanksYes') : T('thanksNo'))}</div>${demo ? '<p style="font-size:13px;opacity:.7;margin-top:10px">(Sample invitation: responses are not saved.)</p>' : ''}</div>`;
-      if (a === 'yes') { const r = f.getBoundingClientRect(); burst(r.left + r.width / 2, r.top + 40); }
-    }
+    $$('[data-nav]').forEach((el,n)=>{el.classList.toggle('active',n===active);if(n===active)el.setAttribute('aria-current','step');else el.removeAttribute('aria-current');});
+    document.documentElement.style.setProperty('--journey',String(pendingProgress));
+    raf=0;
   }
-
-
-  function bindReveal() {
-    if (observer) observer.disconnect();
-    const els = $$('.reveal');
-    if (live || thumb || !('IntersectionObserver' in window)) { els.forEach(e => e.classList.add('in')); return; }
-    observer = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); observer.unobserve(e.target); } }), { threshold: 0.12, rootMargin: '0px 0px -6% 0px' });
-    els.forEach(e => observer.observe(e));
+  function queueScroll(){if(!raf)raf=requestAnimationFrame(updateScroll);}
+  function bindReveals(){
+    if(revealObserver)revealObserver.disconnect();
+    if(reduced||live||thumb||!('IntersectionObserver'in window)){$$('.ritual-ticket').forEach(el=>el.classList.add('entered'));return;}
+    revealObserver=new IntersectionObserver(entries=>entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('entered');revealObserver.unobserve(e.target);}}),{threshold:.12});
+    $$('.ritual-ticket').forEach(el=>revealObserver.observe(el));
   }
-
-  /* =========================================================== music */
-  let audio = null, musicWanted = false, audioSource = '';
-  function musicSrc() {
-    if (!data.sections.music) return '';
-    if (data.music.track === 'upload' && data.music.url) return data.music.url;
-    return '/shaadi-paigaam/music/' + data.music.track + '.mp3';
+  function bindCalendar(){
+    $('#calendarBtn').onclick=()=>{const blob=new Blob([C.icsFor(data,lang,cfg.url||'')],{type:'text/calendar;charset=utf-8'});const href=URL.createObjectURL(blob),a=document.createElement('a');a.href=href;a.download='wedding-invitation.ics';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(href),2000);};
   }
-  function createAudio() {
-    if (audio) return;
-    audio = new Audio(); audio.loop = true; audio.preload = 'none';
-    audio.addEventListener('error', () => { if (audio.src) $('#musicBtn').hidden = true; });
+  function bindCountdown(){
+    clearInterval(clock);const target=C.zonedToUtc(data.wedding.date,data.wedding.time,data.wedding.tz);
+    const tick=()=>{const diff=Math.max(0,Math.floor((target-Date.now())/1000)),values={days:Math.floor(diff/86400),hours:Math.floor(diff/3600)%24,minutes:Math.floor(diff/60)%60,seconds:diff%60};Object.entries(values).forEach(([k,v])=>{const el=$('[data-k="'+k+'"]');if(el)el.textContent=C.fmtNum(v,lang);});};tick();clock=setInterval(tick,1000);
   }
-  function setupMusic() {
-    const btn = $('#musicBtn'); if (!btn) return;
-    const src = musicSrc();
-    if (!src || thumb) {
-      btn.hidden = true;
-      if (audio) { musicWanted = false; audio.pause(); audio.removeAttribute('src'); audio.load(); audioSource = ''; }
-      return;
-    }
-    btn.hidden = false;
-    if (!cfg.lazyMusic) {
-      createAudio();
-      if (!audio.src.endsWith(src)) { const was = !audio.paused; audio.src = src; audioSource = src; if (was) audio.play().catch(() => {}); }
-      btn.onclick = () => { if (audio.paused) startMusic(false); else { musicWanted = false; fade(0, () => audio.pause()); paintBtn(); } };
-      paintBtn();
-      return;
-    }
-    // For Shaadi Paigaam, do not create audio or request the file until a guest taps Play.
-    if (audio && audioSource && audioSource !== src) {
-      musicWanted = false; audio.pause(); audio.removeAttribute('src'); audio.load(); audioSource = '';
-    }
-    btn.onclick = () => {
-      if (audio && !audio.paused) { musicWanted = false; fade(0, () => audio.pause()); paintBtn(); }
-      else startMusic(false);
+  function bindGallery(){
+    const n=data.photos.length;if(!$('#memoryStage')||!n)return;
+    const go=direction=>{galleryIndex=(galleryIndex+direction+n)%n;$$('.memory').forEach((el,index)=>{el.classList.toggle('selected',index===galleryIndex);el.style.setProperty('--away',String((index-galleryIndex+n)%n));});};
+    $('#photoPrev').onclick=()=>go(-1);$('#photoNext').onclick=()=>go(1);go(0);
+  }
+  function setupMusic(){
+    const button=$('#musicBtn');const source=data.sections.music?(data.music.track==='upload'?data.music.url:'/shaadi-paigaam/music/'+data.music.track+'.mp3'):'';
+    button.hidden=!source||thumb;
+    if(audio&&audio.getAttribute('src')!==source){audio.pause();audio.removeAttribute('src');audio.load();audio=null;audioWanted=false;}
+    button.onclick=async()=>{
+      if(!audio){audio=new Audio();audio.preload='none';audio.loop=true;audio.src=source;audio.volume=.5;}
+      if(audio.paused){try{await audio.play();audioWanted=true;button.textContent=icon('sound');button.setAttribute('aria-label','Pause music');}catch{audioWanted=false;}}
+      else{audio.pause();audioWanted=false;button.textContent=icon('music');button.setAttribute('aria-label','Play optional music');}
     };
-    paintBtn();
   }
-  function startMusic(fromDoor) {
-    const src = musicSrc();
-    if (!src) return;
-    if (cfg.lazyMusic) {
-      createAudio();
-      if (audioSource !== src) { audio.src = src; audioSource = src; }
-    } else if (!audio) return;
-    if (fromDoor && data.music.startMuted) return;
-    musicWanted = true;
-    audio.volume = 0;
-    audio.play().then(() => { fade(0.55); paintBtn(); }).catch(() => { musicWanted = false; paintBtn(); });
-  }
-  function fade(to, cb) {
-    const from = audio.volume, t0 = performance.now(), d = 1200;
-    const st = n => { const t = Math.max(0, Math.min(1, (n - t0) / d)); audio.volume = Math.max(0, Math.min(1, from + (to - from) * t)); if (t < 1) requestAnimationFrame(st); else if (cb) cb(); };
-    requestAnimationFrame(st);
-  }
-  function paintBtn() {
-    const btn = $('#musicBtn'); if (!btn) return;
-    const on = audio && !audio.paused && musicWanted;
-    btn.innerHTML = on ? ART.icon.soundOn : ART.icon.soundOff;
-    btn.classList.toggle('playing', !!on);
-    btn.setAttribute('aria-label', on ? T('musicOff') : T('musicOn'));
-    btn.setAttribute('aria-pressed', on ? 'true' : 'false');
-  }
-  document.addEventListener('visibilitychange', () => { if (!audio) return; if (document.hidden) audio.pause(); else if (musicWanted) audio.play().catch(() => {}); });
-
-  /* =========================================================== language */
-  function setupLang() {
-    const box = $('#lang'); const en = data.lang.enabled;
-    if (en.length < 2 || thumb) { box.hidden = true; return; }
-    box.hidden = false;
-    box.innerHTML = `<button class="lang-btn" type="button" aria-haspopup="true" aria-expanded="false">${ART.icon.globe}<span>${esc(I.LANGS[lang].native)}</span></button>
-      <div class="lang-menu" role="menu">${en.map(l => `<button type="button" role="menuitemradio" aria-checked="${l === lang}" data-l="${l}"><span>${esc(I.LANGS[l].native)}</span><small>${esc(I.LANGS[l].name)}</small></button>`).join('')}</div>`;
-    const b = $('.lang-btn', box);
-    b.addEventListener('click', e => { e.stopPropagation(); const o = box.classList.toggle('open'); b.setAttribute('aria-expanded', o); });
-    $$('[data-l]', box).forEach(x => x.addEventListener('click', () => { box.classList.remove('open'); setLang(x.dataset.l); }));
-    document.addEventListener('click', () => box.classList.remove('open'));
-    document.addEventListener('keydown', e => { if (e.key === 'Escape') box.classList.remove('open'); });
-  }
-  function setLang(l) {
-    if (!data.lang.enabled.includes(l)) return;
-    lang = l;
-    try { localStorage.setItem('sp-lang-' + (cfg.slug || cfg.id || 'demo'), l); } catch {}
-    const y = scrollY;
-    applyTheme(); renderAll(true);
-    const med = $('.med-label'); if (med) med.textContent = T('tapToOpen');
-    scrollTo(0, y);
-  }
-
-  /* =========================================================== render */
-  function renderAll(keep) {
-    renderHero();
-    $('#content').innerHTML = sections();
-    closing();
-    bindScratch(); bindIcs(); bindCarousel(); bindCountdown(); bindMaps(); bindCopy(); bindRsvp(); bindReveal();
-    setupMusic(); setupLang();
-    if (introDone) $$('#heroText > *').forEach(el => { el.style.transitionDelay = '0ms'; });
-  }
-
-  window.addEventListener('resize', () => { clearTimeout(window.__fitT); window.__fitT = setTimeout(fitNames, 120); });
-
-  // Editor live preview bridge (same-origin only).
-  window.addEventListener('message', e => {
-    if (e.source !== window.parent || e.origin !== location.origin || !e.data || typeof e.data !== 'object') return;
-    const m = e.data;
-    if (m.type === 'sp:data' && m.data) {
-      data = C.validate(m.data, { allowPast: true }).data;
-      // The editor preview follows the chosen preview language, else the invitation's default.
-      lang = m.lang && data.lang.enabled.includes(m.lang) ? m.lang : (live ? data.lang.default : (data.lang.enabled.includes(lang) ? lang : data.lang.default));
-      const y = scrollY;
-      applyTheme(); renderAll(true);
-      if (m.focus && !$('#intro:not(.gone)')) { const t = document.getElementById('s-' + m.focus) || (m.focus === 'hero' ? $('#hero') : null); if (t) t.scrollIntoView({ behavior: 'smooth', block: m.focus === 'hero' ? 'start' : 'center' }); else scrollTo(0, y); }
-      else scrollTo(0, y);
-    } else if (m.type === 'sp:replay') { replayIntro(); scrollTo(0, 0); }
-    else if (m.type === 'sp:lang' && m.lang) setLang(m.lang);
-    else if (m.type === 'sp:open') openDoors();
-    else if (m.type === 'sp:revealAll') $$('.reveal').forEach(el => el.classList.add('in'));
-    else if (m.type === 'sp:reveal') window.SPInvite.reveal();
-    else if (m.type === 'sp:go') window.SPInvite.go(m.id);
-    else if (m.type === 'sp:scroll') scrollTo(0, m.y || 0);
+  function go(id){const aliases={countdown:'scratch',welcome:'welcome',hero:'hero'};const key=aliases[id]||id;const el=document.getElementById(key==='hero'?'hero':'s-'+key);if(el)el.scrollIntoView({behavior:reduced?'auto':'smooth',block:'start'});}
+  function cleanup(){destroyed=true;cancelAnimationFrame(raf);clearInterval(clock);if(stage)stage.dispose();if(audio)audio.pause();if(revealObserver)revealObserver.disconnect();}
+  window.addEventListener('scroll',queueScroll,{passive:true});
+  window.addEventListener('resize',()=>{fitNames();measure();if(stage)stage.resize();queueScroll();});
+  window.addEventListener('pagehide',cleanup,{once:true});
+  document.addEventListener('visibilitychange',()=>{if(audio){if(document.hidden)audio.pause();else if(audioWanted)audio.play().catch(()=>{});}});
+  document.addEventListener('keydown',event=>{
+    const intro=$('#intro:not(.finished)');if(!intro)return;
+    if(event.key==='Escape'){event.preventDefault();finishFilm();}
+    if(event.key==='Tab'){
+      const controls=Array.from(intro.querySelectorAll('button:not([hidden]):not(:disabled)'));const first=controls[0],last=controls[controls.length-1];
+      if(event.shiftKey&&(document.activeElement===first||!intro.contains(document.activeElement))){event.preventDefault();last?.focus();}
+      else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first?.focus();}
+    }
   });
-
-  // Small hook for automated QA and the editor ("preview as guest").
-  window.SPInvite = {
-    open: openDoors, replay: replayIntro, setLang,
-    reveal: () => { const b = document.getElementById('revealBtn'); if (b) b.click(); },
-    go: id => { const t = document.getElementById('s-' + id); if (t) t.scrollIntoView({ block: 'start' }); },
-  };
-
-  applyTheme();
-  shell();
-  renderAll();
-  if (window.parent !== window) window.parent.postMessage({ type: 'sp:ready' }, location.origin);
-  if ($('#openBtn') && window.parent === window) $('#openBtn').focus({preventScroll:true});
+  window.addEventListener('message',event=>{
+    if(event.source!==parent||event.origin!==location.origin||!event.data||typeof event.data!=='object')return;
+    const m=event.data;
+    if(m.type==='sp:data'&&m.data){data=C.validate(m.data,{allowPast:true}).data;lang=m.lang&&data.lang.enabled.includes(m.lang)?m.lang:data.lang.default;render();if(m.focus&&opened)go(m.focus);}
+    else if(m.type==='sp:replay')replay();
+    else if(m.type==='sp:open')$('#openBtn')?.click();
+    else if(m.type==='sp:lang')setLang(m.lang);
+    else if(m.type==='sp:go')go(m.id);
+    else if(m.type==='sp:scroll')scrollTo(0,m.y||0);
+    else if(m.type==='sp:revealAll')$$('.ritual-ticket').forEach(el=>el.classList.add('entered'));
+  });
+  window.SPInvite={open:()=>$('#openBtn')?.click(),replay,setLang,go,reveal:()=>go('scratch'),stage:()=>stage?.stats()||null,progress:()=>pendingProgress};
+  theme();shell();render();
+  if(parent!==window)parent.postMessage({type:'sp:ready'},location.origin);
 })();
