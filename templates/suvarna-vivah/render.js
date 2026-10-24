@@ -5,7 +5,7 @@
  */
 const C = require('../../public/shaadi-paigaam/core.js');
 const I = C.I18N;
-const ASSET_V = '3';
+const ASSET_V = '4';
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const jsonSafe = x => JSON.stringify(x).replace(/</g, '\\u003c').replace(/>/g, '\\u003e').replace(/&/g, '\\u0026').replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029');
 function names(d, lang) {
@@ -38,9 +38,9 @@ ${o.url ? `<meta property="og:url" content="${esc(o.url)}"><link rel="canonical"
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link id="sv-fonts" rel="stylesheet" href="${esc(C.googleFontsHref(data.font, data.lang.enabled))}">
-<link rel="preload" as="image" href="/suvarna-vivah/ceremony-still-life.webp">
+<link rel="preload" as="image" href="/suvarna-vivah/continuity-ending.webp">
 <link rel="stylesheet" href="/suvarna-vivah/site.css?v=${ASSET_V}">
-${o.openingVideo ? `<link rel="stylesheet" href="/suvarna-vivah/opening.css?v=2"><script src="/suvarna-vivah/opening.js?v=2" defer></script>` : ''}
+${o.openingVideo ? `<link rel="stylesheet" href="/suvarna-vivah/opening.css?v=3"><script src="/suvarna-vivah/opening.js?v=3" defer></script>` : ''}
 </head>`;
 }
 function renderInvitation(data, o = {}) {
@@ -51,8 +51,8 @@ function renderInvitation(data, o = {}) {
 <div id="sv-app"><div class="sv-loading" aria-live="polite">${esc(I.t(lang, 'gettingMarried'))}</div></div>
 <noscript><main class="sv-noscript"><p>SUVARNA VIVAH</p><h1>${esc(names(data, lang))}</h1><p>${esc(C.fmtDate(data.wedding.date, lang, 'full'))} · ${esc(C.fmtTime(data.wedding.time, lang))}</p><p>${esc([data.venue.name, data.venue.address, data.venue.city].filter(Boolean).join(', '))}</p><p>Please enable JavaScript to open this invitation.</p></main></noscript>
 <script id="sp-boot" type="application/json">${jsonSafe(boot)}</script>
-<script src="/shaadi-paigaam/i18n.js?v=2"></script>
-<script src="/shaadi-paigaam/core.js?v=2"></script>
+<script src="/shaadi-paigaam/i18n.js?v=${ASSET_V}"></script>
+<script src="/shaadi-paigaam/core.js?v=${ASSET_V}"></script>
 <script src="/suvarna-vivah/site.js?v=${ASSET_V}"></script>
 </body></html>`;
 }

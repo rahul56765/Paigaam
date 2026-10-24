@@ -5,7 +5,7 @@
   if (!bootEl || document.getElementById('sv-opener')) return;
   let boot;
   try { boot = JSON.parse(bootEl.textContent || '{}'); } catch { return; }
-  const d = boot.data || {}, couple = d.couple || {};
+  const d = window.SVCurrentData || boot.data || {}, couple = d.couple || {};
   const lang = (d.lang && d.lang.default) || 'en';
   const C = window.SPCore, I = window.SPI18N;
   const sides = couple.order === 'bride' ? ['bride', 'groom'] : ['groom', 'bride'];
@@ -67,7 +67,7 @@
     catch {
       started = false; root.classList.remove('is-playing');
       status.textContent = I ? I.t(lang, 'errGeneric') : 'The film could not start. You can skip straight to the invitation.';
-      play.querySelector('span').textContent = 'Try opening film again';
+      play.querySelector('span').textContent = I ? I.t(lang, 'tapToOpen') : 'Try opening film again';
     }
   }
   play.addEventListener('click', start);
