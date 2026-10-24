@@ -30,6 +30,10 @@ test('template editor supports frame capture and image uploads for collection ar
   assert.match(html, /type="file" accept="image\/jpeg,image\/png,image\/webp"/);
   assert.match(html, /html2canvas-1\.4\.1\.min\.js/);
   assert.match(html, /Captured or uploaded image/);
+  const captureScript = [...html.matchAll(/<script[^>]*>([\s\S]*?)<\/script>/g)]
+    .map(match => match[1]).find(source => source.includes('thumbnail_capture'));
+  assert.ok(captureScript, 'thumbnail editor script is present');
+  assert.doesNotThrow(() => new Function(captureScript), 'thumbnail editor script must parse in the browser');
 });
 
 test('collection cards and quick looks stay static and silent until a visitor opens a full preview', () => {

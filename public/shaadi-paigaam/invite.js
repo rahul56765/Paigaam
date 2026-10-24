@@ -274,7 +274,14 @@ ${cfg.mode === 'preview' ? `<div class="badge">${esc(T('previewBadge'))}</div>` 
     const closed = r.deadline && Date.now() > Date.parse(r.deadline + 'T23:59:59');
     if (closed && !live) return `<p class="lead">${esc(T('rsvpClosed'))}</p>`;
     const yes = C.whatsappRsvpLink(data, true, lang), no = C.whatsappRsvpLink(data, false, lang);
-    if (!yes || !no) return `<p class="lead">${esc(T('contactFamily'))}</p>`;
+    if (!yes || !no) {
+      return `<div class="rsvp">
+        ${r.deadline ? `<p class="by">${esc(T('rsvpBy').replace('{date}', C.fmtDate(r.deadline, lang, 'long')))}</p>` : ''}
+        <p class="rsvp-hint">${esc(T('rsvpWhatsappHint'))}</p>
+        <div class="rsvp-actions"><button class="btn wide" type="button" disabled>${esc(T('accept'))}</button><button class="btn wide ghost" type="button" disabled>${esc(T('decline'))}</button></div>
+        <p class="lead">${esc(T('contactFamily'))}</p>
+      </div>`;
+    }
     return `<div class="rsvp">
       ${r.deadline ? `<p class="by">${esc(T('rsvpBy').replace('{date}', C.fmtDate(r.deadline, lang, 'long')))}</p>` : ''}
       <p class="rsvp-hint">${esc(T('rsvpWhatsappHint'))}</p>
@@ -559,7 +566,8 @@ ${cfg.mode === 'preview' ? `<div class="badge">${esc(T('previewBadge'))}</div>` 
     audio.addEventListener('error', () => { if (audio.src) $('#musicBtn').hidden = true; });
   }
   function setupMusic() {
-    const btn = $('#musicBtn'), src = musicSrc();
+    const btn = $('#musicBtn'); if (!btn) return;
+    const src = musicSrc();
     if (!src || thumb) {
       btn.hidden = true;
       if (audio) { musicWanted = false; audio.pause(); audio.removeAttribute('src'); audio.load(); audioSource = ''; }
