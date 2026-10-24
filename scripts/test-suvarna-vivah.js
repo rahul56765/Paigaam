@@ -50,7 +50,7 @@ function sample() {
     ok(r.status === 200 && html.includes('Aarav') && html.includes('sp-boot'), 'demo renders the sample couple');
     const bootMatch = html.match(/<script id="sp-boot" type="application\/json">([\s\S]*?)<\/script>/);
     const demoBoot = bootMatch && JSON.parse(bootMatch[1]);
-    ok(demoBoot && demoBoot.data.palette.id === 'custom' && demoBoot.data.palette.custom.primary === '#70501F' && demoBoot.data.font === 'royal' && !demoBoot.autoOpen && !demoBoot.simpleWhatsAppRsvp && !demoBoot.lazyMusic, 'Suvarna starts in its sunlit gold-and-ivory palette with Royal Calligraphy');
+    ok(demoBoot && demoBoot.data.palette.id === 'custom' && demoBoot.data.palette.custom.primary === '#70501F' && demoBoot.data.font === 'royal' && !demoBoot.autoOpen && !demoBoot.simpleWhatsAppRsvp && !demoBoot.lazyMusic && !demoBoot.removeMusic, 'Suvarna starts in its sunlit gold-and-ivory palette with Royal Calligraphy');
     const customPreview = JSON.parse(JSON.stringify(C.SAMPLE)); customPreview.palette = { id: 'custom', custom: { primary: '#70501F', accent: '#BA8A31', bg: '#FBF4DE' } }; customPreview.font = 'royal';
     ok(!C.validate(customPreview, { publish: true }).errors.length, 'the warm-gold default palette passes publish validation');
     const skipHtml = await (await J('/suvarna-vivah/demo?skip=1')).text();
@@ -58,7 +58,7 @@ function sample() {
     ok((await J('/templates/suvarna-vivah')).status === 200, 'catalogue detail page exists');
     ok((await J('/template-view/suvarna-vivah')).status === 200, 'gallery thumbnail uses the Suvarna experience');
     const editorHtml = await (await J('/create/suvarna-vivah')).text();
-    ok(editorHtml.includes('/shaadi-paigaam/editor.js?v=4') && editorHtml.includes('\"slug\":\"suvarna-vivah\"'), 'editor page loads the cache-busted route-aware editor');
+    ok(editorHtml.includes('/shaadi-paigaam/editor.js?v=5') && editorHtml.includes('\"slug\":\"suvarna-vivah\"'), 'editor page loads the cache-busted route-aware editor');
     ok((await J('/shaadi-paigaam/invite.css')).status === 200 && (await J('/shaadi-paigaam/art/scene-base.webp')).status === 200 && (await J('/suvarna-vivah/opening.css')).status === 200 && (await J('/suvarna-vivah/opening.js')).status === 200, 'shared invitation art and new opener assets are served');
     const video = await fetch(base + '/suvarna-vivah/opening.mp4', { headers: { range: 'bytes=0-15' } });
     ok(video.status === 206 && /^bytes 0-15\//.test(video.headers.get('content-range') || ''), 'opening video supports byte-range playback');
