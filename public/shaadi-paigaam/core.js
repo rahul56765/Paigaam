@@ -533,7 +533,7 @@
     const mu = src.music || {};
     d.music = { track: mu.track === 'upload' ? 'upload' : (MUSIC_IDS.has(mu.track) ? mu.track : 'shehnai-dawn'), url: isAudio(mu.url) ? mu.url : '', title: cleanText(mu.title, 60), startMuted: !!mu.startMuted, rightsOk: !!mu.rightsOk };
     if (d.music.track === 'upload' && !d.music.url) { d.music.track = 'shehnai-dawn'; }
-    if (!opts.removeMusic && d.music.track === 'upload' && !d.music.rightsOk) err('music.rightsOk', 'Please confirm you have the right to use this song.');
+    if (d.music.track === 'upload' && !d.music.rightsOk) err('music.rightsOk', 'Please confirm you have the right to use this song.');
 
     // ---- style
     const pa = src.palette || {};
