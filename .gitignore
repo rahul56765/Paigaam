@@ -32,3 +32,6 @@ wedding-video/public/sample/
 public/shaadi-paigaam/art/
 public/shaadi-paigaam/music/
 public/shaadi-paigaam/fonts/
+
+# Aasmaan artwork is restored from checked source chunks at boot.
+public/aasmaan/*.webp
