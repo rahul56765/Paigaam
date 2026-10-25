@@ -387,6 +387,10 @@
    * opts.now (ms) for tests; opts.publish adds publish-only requirements.
    */
   function validate(input, opts = {}) {
+    // Aasmaan opts into its own upload namespace; existing templates stay unchanged.
+    const aasmaanMedia = /^\/aasmaan\/media\/[a-f0-9]{48}\.(jpg|png|webp|mp3|m4a|ogg|aac|wav)$/;
+    const imageAllowed = u => isImage(u) || (opts.mediaNamespace === 'aasmaan' && aasmaanMedia.test(u || '') && /\.(jpg|png|webp)$/.test(u));
+    const audioAllowed = u => isAudio(u) || (opts.mediaNamespace === 'aasmaan' && aasmaanMedia.test(u || '') && /\.(mp3|m4a|ogg|aac|wav)$/.test(u));
     const now = opts.now || Date.now();
     const src = (input && typeof input === 'object') ? input : {};
     const E = [], W = [];
@@ -524,14 +528,14 @@
     // ---- media
     d.photos = [];
     for (const ph of (Array.isArray(src.photos) ? src.photos : []).slice(0, LIMITS.photos)) {
-      if (!ph || !isImage(ph.url)) continue;
+      if (!ph || !imageAllowed(ph.url)) continue;
       d.photos.push({ url: ph.url, alt: cleanText(ph.alt, LIMITS.alt), fx: num(ph.fx, 0, 100, 50), fy: num(ph.fy, 0, 100, 50) });
     }
     if (Array.isArray(src.photos) && src.photos.length > LIMITS.photos) warn('photos', `Up to ${LIMITS.photos} photos. We kept the first ${LIMITS.photos}.`);
     if (d.photos.some(p => /\/art\/demo-/.test(p.url))) warn('photos', 'Some sample photos are still in your gallery. Replace them with your own, or remove them.');
-    d.couplePhoto = src.couplePhoto && isImage(src.couplePhoto.url) ? { url: src.couplePhoto.url, fx: num(src.couplePhoto.fx, 0, 100, 50), fy: num(src.couplePhoto.fy, 0, 100, 50) } : null;
+    d.couplePhoto = src.couplePhoto && imageAllowed(src.couplePhoto.url) ? { url: src.couplePhoto.url, fx: num(src.couplePhoto.fx, 0, 100, 50), fy: num(src.couplePhoto.fy, 0, 100, 50) } : null;
     const mu = src.music || {};
-    d.music = { track: mu.track === 'upload' ? 'upload' : (MUSIC_IDS.has(mu.track) ? mu.track : 'shehnai-dawn'), url: isAudio(mu.url) ? mu.url : '', title: cleanText(mu.title, 60), startMuted: !!mu.startMuted, rightsOk: !!mu.rightsOk };
+    d.music = { track: mu.track === 'upload' ? 'upload' : (MUSIC_IDS.has(mu.track) ? mu.track : 'shehnai-dawn'), url: audioAllowed(mu.url) ? mu.url : '', title: cleanText(mu.title, 60), startMuted: !!mu.startMuted, rightsOk: !!mu.rightsOk };
     if (d.music.track === 'upload' && !d.music.url) { d.music.track = 'shehnai-dawn'; }
     if (d.music.track === 'upload' && !d.music.rightsOk) err('music.rightsOk', 'Please confirm you have the right to use this song.');
 

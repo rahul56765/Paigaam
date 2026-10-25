@@ -1,0 +1,17 @@
+'use strict';
+const C = require('../public/shaadi-paigaam/core.js');
+const esc = v => String(v == null ? '' : v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const safeJSON = v => JSON.stringify(v).replace(/</g,'\\u003c').replace(/>/g,'\\u003e').replace(/&/g,'\\u0026').replace(/\u2028/g,'\\u2028').replace(/\u2029/g,'\\u2029');
+function renderInvitation(data,opts={}) {
+ const d=C.validate(data,{mediaNamespace:'aasmaan'}).data;
+ const title=[d.couple.groom.first,d.couple.bride.first].filter(Boolean).join(' & ')+' · Aasmaan';
+ const description=[C.fmtDate(d.wedding.date,d.lang.default,'full'),d.venue.name,d.venue.city].filter(Boolean).join(' · ');
+ return `<!doctype html><html lang="${esc(d.lang.default)}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>${esc(title)}</title><meta name="description" content="${esc(description)}"><meta name="theme-color" content="#061b45">${opts.noindex?'<meta name="robots" content="noindex,nofollow">':''}<meta property="og:title" content="${esc(title)}"><meta property="og:description" content="${esc(description)}"><meta property="og:type" content="website">${opts.url?`<link rel="canonical" href="${esc(opts.url)}"><meta property="og:url" content="${esc(opts.url)}">`:''}${opts.ogImage?`<meta property="og:image" content="${esc(opts.ogImage)}">`:''}<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=DM+Sans:wght@400;500;600&family=Noto+Serif+Devanagari:wght@400;500&display=swap" rel="stylesheet"><link rel="preload" as="image" href="/aasmaan/sky.webp"><link rel="stylesheet" href="/aasmaan/aasmaan.css?v=1"></head><body>
+ <div id="sky" aria-hidden="true"></div><div id="world" aria-hidden="true"></div><div class="vignette" aria-hidden="true"></div><div class="edge" aria-hidden="true"></div>
+ <header class="masthead"><a href="#beginning" class="monogram" aria-label="Back to the beginning">A</a><span id="chapter-label">A CELESTIAL WEDDING</span><div class="header-controls"><select id="lang-switch" aria-label="Invitation language"></select><button id="motion" type="button" aria-pressed="false" title="Pause decorative motion">Ⅱ <span>Motion</span></button></div></header>
+ <main id="invitation"></main><nav id="chapter-nav" aria-label="Invitation chapters"></nav><button id="music" type="button" hidden aria-pressed="false">♫ <span>Play your song</span></button><div id="live-status" class="sr" role="status"></div>
+ <dialog id="lightbox"><button id="close-lightbox" type="button" aria-label="Close photograph">×</button><img alt=""><p></p></dialog>
+ <noscript><section class="no-script"><h1>${esc(title)}</h1><p>${esc(description)}</p><p>${esc([d.venue.address,d.venue.city].filter(Boolean).join(', '))}</p><p>Enable JavaScript to explore this invitation.</p></section></noscript>
+ <script id="aasmaan-boot" type="application/json">${safeJSON({mode:opts.mode||'guest',data:d})}</script><script src="/shaadi-paigaam/i18n.js?v=1"></script><script src="/shaadi-paigaam/core.js?v=1"></script><script src="/aasmaan/vendor/three.min.js"></script><script src="/aasmaan/aasmaan.js?v=1"></script></body></html>`;
+}
+module.exports={renderInvitation};

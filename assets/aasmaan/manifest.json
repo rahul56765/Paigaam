@@ -1,0 +1,72 @@
+{
+  "balloon.webp": {
+    "sha256": "8da92f882f0b191503c382136507407b0736a1e9e0779fcc26da8e31be3054ab",
+    "bytes": 87742,
+    "parts": 1
+  },
+  "blessing.webp": {
+    "sha256": "b46f674ef08f86536cda044dbb3ed34137586098158e244715a0c48dee0e5b35",
+    "bytes": 53724,
+    "parts": 1
+  },
+  "cloud.webp": {
+    "sha256": "bef3d0f443a556e6df0701be5509e07fdd173c55564d05442dd23680a2742ef1",
+    "bytes": 26218,
+    "parts": 1
+  },
+  "haldi.webp": {
+    "sha256": "5bf16336fc63a7352144a66687b5fe4f7d80a3899c29924fa6f91e7af2a9c69d",
+    "bytes": 223528,
+    "parts": 2
+  },
+  "hero.webp": {
+    "sha256": "e40e17a77e75d582e8674e517b6700dd84310c4e18d20fc97d66001e2cd598ee",
+    "bytes": 245262,
+    "parts": 2
+  },
+  "marble.webp": {
+    "sha256": "b57fc957d2bc00e26c94d02ecadb528bd37f034d9a22819224f0c7c8e3193068",
+    "bytes": 86934,
+    "parts": 1
+  },
+  "mehendi.webp": {
+    "sha256": "589f39a1e210765c0e2fa3b10e4506475d48123d0d128936f2c1741300034ed7",
+    "bytes": 274396,
+    "parts": 3
+  },
+  "moon.webp": {
+    "sha256": "7b15578509a2c5c146fa86a100b31f894ee01c4774cd241e26c4fa3a28976cbc",
+    "bytes": 57850,
+    "parts": 1
+  },
+  "palace.webp": {
+    "sha256": "fdab027791566f41edcfddb632f99d1077d2e85fa89c559c9f87e8e7b7d9db7f",
+    "bytes": 232418,
+    "parts": 2
+  },
+  "pavilion.webp": {
+    "sha256": "62562ecb06abae4f7a96dd6e1767a5ea770ee0417d45d1161b1386ab2c389d89",
+    "bytes": 45202,
+    "parts": 1
+  },
+  "pheras.webp": {
+    "sha256": "8d374e5b76fd57de2195c156d6fb41aab78ebce427db339f4e21f2cb3b933196",
+    "bytes": 227040,
+    "parts": 2
+  },
+  "portal.webp": {
+    "sha256": "61f0a088a9c97f1ef0617dd33bbdd0ce1f68e690f5deb5718d5e94c8714922dd",
+    "bytes": 411124,
+    "parts": 4
+  },
+  "reception.webp": {
+    "sha256": "efbd17c9a1f270a4d2f542da790f40bf7cf2393361bef115b84399168b47e8f9",
+    "bytes": 253764,
+    "parts": 2
+  },
+  "sky.webp": {
+    "sha256": "000b67fadbaf8e77065c53a770d651ffdeb58402ef7f96d949eb0090f92c2215",
+    "bytes": 116796,
+    "parts": 1
+  }
+}

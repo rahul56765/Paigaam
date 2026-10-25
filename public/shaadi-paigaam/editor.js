@@ -8,7 +8,9 @@
   const C = window.SPCore, I = window.SPI18N, ART = window.SPArt;
   const boot = JSON.parse(document.getElementById('spe-boot').textContent);
   const ROOT = '/' + (boot.slug || 'shaadi-paigaam'), API = '/api' + ROOT, CREATE = '/create' + ROOT;
-  const STORE = boot.slug === 'suvarna-vivah' ? 'sv-ed' : 'sp-ed';
+  const isAasmaan = boot.slug === 'aasmaan';
+  const STORE = isAasmaan ? 'aasmaan-ed' : boot.slug === 'suvarna-vivah' ? 'sv-ed' : 'sp-ed';
+  const validate = (data, opts = {}) => C.validate(data, Object.assign({}, opts, isAasmaan ? { mediaNamespace: 'aasmaan' } : {}));
   const simpleWhatsAppRsvp = boot.slug !== 'suvarna-vivah';
   const lazyMusic = boot.slug !== 'suvarna-vivah';
   const $ = (s, r = document) => r.querySelector(s);
@@ -57,7 +59,7 @@
     dirty: false, synced: true, saving: null, manageUrl: '', v: null, previewLang: null, device: 'phone', tab: 'edit', slugTimer: 0, slugState: null, autoTr: {}, published: null };
   const LS = id => STORE + ':' + (id || 'new');
 
-  function validateNow() { S.v = C.validate(S.data, { requireWhatsAppRsvp: simpleWhatsAppRsvp }); return S.v; }
+  function validateNow() { S.v = validate(S.data, { requireWhatsAppRsvp: simpleWhatsAppRsvp }); if (isAasmaan && !S.v.data.rsvp.whatsapp && !S.v.errors.some(e => e.path === 'rsvp.whatsapp')) S.v.errors.push({ path: 'rsvp.whatsapp', msg: 'Add the organiser’s WhatsApp number so guests can RSVP.' }); return S.v; }
   function getP(path) {
     const parts = path.split('.'); let o = S.data;
     for (const p of parts) { if (o == null) return undefined; o = o[p]; }
@@ -213,8 +215,8 @@
     const r = d.rsvp;
     const rsvpCard = simpleWhatsAppRsvp
       ? card('RSVP', `${fld({ p: 'rsvp.deadline', label: 'Reply by', type: 'date', optional: true, attrs: `min="${today()}" ${d.wedding.date ? `max="${d.wedding.date}"` : ''}` })}
-        ${fld({ p: 'rsvp.whatsapp', label: "Organiser's WhatsApp number", type: 'tel', req: d.sections.rsvp, optional: !d.sections.rsvp, max: 18, ph: '+91 98765 43210', attrs: 'inputmode="tel" autocomplete="tel"', hint: 'Choose the country code. Guests only choose attending or not attending; WhatsApp opens a prepared message and they tap Send.' })}
-        <p class="hint">New replies arrive in this WhatsApp chat; Paigaam does not store them. Older website replies, if any, remain in the reply history.</p>`, { toggle: tgl('sections.rsvp', 'Show RSVP'), off: d.sections.rsvp === false, focus: 'rsvp' })
+        ${fld({ p: 'rsvp.whatsapp', label: "Organiser's WhatsApp number", type: 'tel', req: isAasmaan || d.sections.rsvp, optional: !isAasmaan && !d.sections.rsvp, max: 18, ph: '+91 98765 43210', attrs: 'inputmode="tel" autocomplete="tel"', hint: 'Choose the country code. Guests only choose attending or not attending; WhatsApp opens a prepared message and they tap Send.' })}
+        <p class="hint">New replies arrive in this WhatsApp chat; Paigaam does not store them. ${isAasmaan ? '' : 'Older website replies, if any, remain in the reply history.'}</p>`, { toggle: tgl('sections.rsvp', 'Show RSVP'), off: d.sections.rsvp === false, focus: 'rsvp' })
       : card('RSVP', `<div class="grid2">
           ${fld({ p: 'rsvp.deadline', label: 'Reply by', type: 'date', optional: true, attrs: `min="${today()}" ${d.wedding.date ? `max="${d.wedding.date}"` : ''}` })}
           ${fld({ p: 'rsvp.maxGuests', label: 'Max guests per reply', type: 'select', options: Array.from({ length: 20 }, (_, i) => [i + 1, String(i + 1)]) })}
@@ -337,6 +339,7 @@
       <span class="nm"><i style="background:${b.primary}"></i><i style="background:${b.accent}"></i><i style="background:${b.flower}"></i>${esc(p.name)}</span><span class="tick">${IC.check}</span></button>`;
   }
   function stepStyle() {
+    if (isAasmaan) return `<h2 class="step-h" tabindex="-1">Celestial style</h2><p class="step-p">Aasmaan's original cobalt, ivory and gold artwork is art-directed as one coordinated world. Change your typography below; the artwork colours stay true to the design.</p>${card('A sky made for you', '<img src="/aasmaan/hero.webp" alt="Aasmaan cobalt and gold celestial artwork" style="width:100%;max-height:320px;object-fit:contain"><p class="hint">Real-time 3D architecture, moonlit artwork and your editable invitation details. No doors, scratch-heart or flower recolouring from another template.</p>')}${card('Font style', `<div class="fonts">${C.FONTS.map(f => `<button type="button" class="font" data-font="${f.id}" aria-pressed="${S.data.font === f.id}"><span class="s" style="font-family:${f.script}">${esc(C.txt(S.data, S.data.lang.base, 'couple.groom.first') || 'Aarav')}</span><small style="font-family:${f.serif}">${esc(f.name)}</small></button>`).join('')}</div>`, { focus: 'hero' })}`;
     const d = S.data, cu = d.palette.custom;
     const built = C.buildPalette({ id: 'custom', custom: cu });
     const isCustom = d.palette.id === 'custom';
@@ -421,7 +424,7 @@
   function dashboard() {
     const url = location.origin + '/' + S.slug;
     const names = C.txt(S.data, S.data.lang.base, 'couple.groom.first') + ' & ' + C.txt(S.data, S.data.lang.base, 'couple.bride.first');
-    const tabs = [['edit', 'Edit invitation'], ['guests', simpleWhatsAppRsvp ? 'Website replies' : 'Guests (RSVP)'], ['share', 'Share'], ['versions', 'Versions']];
+    const tabs = [['edit', 'Edit invitation'], ...(!isAasmaan ? [['guests', simpleWhatsAppRsvp ? 'Website replies' : 'Guests (RSVP)']] : []), ['share', 'Share'], ['versions', 'Versions']];
     return `<div class="tabs" role="tablist">${tabs.map(([k, l]) => `<button type="button" role="tab" data-tab="${k}" aria-selected="${S.tab === k}">${l}</button>`).join('')}</div>
       <div id="dash"></div>`;
   }
@@ -438,9 +441,10 @@
         <a class="btn ghost" href="${ROOT}/qr/${encodeURIComponent(S.id)}.png" download>${IC.qr} QR code</a><a class="btn ghost" href="${ROOT}/card/${encodeURIComponent(S.id)}.jpg?kind=story&download=1" download>${IC.image} Story image</a></div>
       <div class="og"><img src="${ROOT}/card/${encodeURIComponent(S.id)}.jpg?t=${Date.now()}" alt="The preview card guests see on WhatsApp" loading="lazy" onerror="this.parentNode.hidden=true"></div>
       <p class="hint">This is the preview card WhatsApp shows with your link.</p></div>
-      ${manage ? card('Your private manage link', `<p class="sub">Bookmark this. It opens your editor and guest list on any phone or computer. Don't share it.</p><div class="url row"><input class="in" readonly value="${esc(manage)}" style="flex:1" aria-label="Private manage link"><button type="button" class="btn ghost small" data-copy="${esc(manage)}">Copy</button></div>`) : ''}`;
+      ${manage ? card('Your private manage link', `<p class="sub">Bookmark this. It opens your editor${isAasmaan ? '' : ' and guest list'} on any phone or computer. Don't share it.</p><div class="url row"><input class="in" readonly value="${esc(manage)}" style="flex:1" aria-label="Private manage link"><button type="button" class="btn ghost small" data-copy="${esc(manage)}">Copy</button></div>`) : ''}`;
   }
   async function guestsHtml(box) {
+    if (isAasmaan) { box.innerHTML = '<div class="empty">RSVP replies arrive directly in your organiser’s WhatsApp chat. Paigaam does not store them.</div>'; return; }
     box.innerHTML = '<div class="empty">Loading replies…</div>';
     try {
       const r = await fetch(API + '/rsvps?id=' + encodeURIComponent(S.id), { credentials: 'same-origin' });
@@ -1139,19 +1143,19 @@
     try { local = JSON.parse(localStorage.getItem(LS(boot.open ? boot.open.id : null)) || 'null'); } catch {}
     if (boot.open) {
       S.id = boot.open.id; S.data = boot.open.data; S.live = boot.open.live; S.status = boot.open.status; S.slug = boot.open.slug || '';
-      if (local && !local.synced && local.data && local.at > Date.now() - 14 * 864e5) { S.data = C.validate(local.data).data; S.synced = false; S.dirty = true; setTimeout(() => toast('We restored changes you had not saved yet.', 'Discard', () => { S.data = boot.open.data; changed({ noUndo: true }); renderStep(); }, 8000), 400); }
+      if (local && !local.synced && local.data && local.at > Date.now() - 14 * 864e5) { S.data = validate(local.data).data; S.synced = false; S.dirty = true; setTimeout(() => toast('We restored changes you had not saved yet.', 'Discard', () => { S.data = boot.open.data; changed({ noUndo: true }); renderStep(); }, 8000), 400); }
       try { S.manageUrl = localStorage.getItem(STORE + ':manage:' + S.id) || ''; } catch {}
-      if (S.live && new URLSearchParams(location.search).get('tab') === 'dashboard') S.tab = 'guests';
+      if (S.live && new URLSearchParams(location.search).get('tab') === 'dashboard') S.tab = isAasmaan ? 'share' : 'guests';
     } else {
       const lastId = (() => { try { return localStorage.getItem(STORE + ':last'); } catch { return null; } })();
-      if (local && local.data) { S.data = C.validate(local.data).data; S.synced = false; S.dirty = true; setTimeout(() => toast('Welcome back! We restored your draft.', 'Start over', async () => { if (await confirmBox('Start over?', 'This clears your draft on this device.', 'Start over', true)) { localStorage.removeItem(LS(null)); location.reload(); } }, 8000), 400); }
+      if (local && local.data) { S.data = validate(local.data).data; S.synced = false; S.dirty = true; setTimeout(() => toast('Welcome back! We restored your draft.', 'Start over', async () => { if (await confirmBox('Start over?', 'This clears your draft on this device.', 'Start over', true)) { localStorage.removeItem(LS(null)); location.reload(); } }, 8000), 400); }
       else if (lastId) {
         try { const r = await fetch(API + '/me?id=' + encodeURIComponent(lastId), { credentials: 'same-origin' }); if (r.ok) { const j = await r.json(); location.replace(CREATE + '?id=' + encodeURIComponent(j.id)); return; } } catch {}
       }
       if (!S.data && boot.resume) {
         try { const r = await fetch(API + '/me?id=' + encodeURIComponent(boot.resume.id), { credentials: 'same-origin' }); if (r.ok) { location.replace(CREATE + '?id=' + encodeURIComponent(boot.resume.id)); return; } } catch {}
       }
-      if (!S.data) { const starter = clone(C.SAMPLE); if (boot.slug === 'suvarna-vivah') { starter.palette.id = 'emerald-gold'; starter.palette.custom = { primary: '#0F5440', accent: '#C2A057', bg: '#F6F3E9' }; starter.font = 'royal'; } S.data = C.validate(starter).data; }
+      if (!S.data) { const starter = clone(C.SAMPLE); if (isAasmaan) { starter.music = { track: 'none', url: '', startMuted: true, rightsOk: false }; starter.photos = []; starter.couplePhoto = null; starter.palette.id = 'navy-gold'; } if (boot.slug === 'suvarna-vivah') { starter.palette.id = 'emerald-gold'; starter.palette.custom = { primary: '#0F5440', accent: '#C2A057', bg: '#F6F3E9' }; starter.font = 'royal'; } S.data = validate(starter).data; }
     }
     try { const st = Number(localStorage.getItem(STORE + ':step:' + (S.id || 'new'))); if (st >= 0 && st < STEPS.length) S.step = st; } catch {}
     validateNow();
