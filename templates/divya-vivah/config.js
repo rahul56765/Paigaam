@@ -1,0 +1,147 @@
+'use strict';
+
+// Keep original Marathi artwork copy as editable Unicode, never baked into art.
+const copy = {
+  prayer: '॥ श्री गणेशाय नमः ॥',
+  introduction: 'आपणांस कळविण्यात अत्यंत आनंद होत आहे की,\nआमचे चिरंजीव आणि सौ. यांचा शुभविवाह सोहळा\nआयोजित केला आहे.',
+  groomName: 'पियुष',
+  brideName: 'स्नेहा',
+  joiner: 'आणि',
+  weddingHeading: 'यांचा शुभविवाह सोहळा',
+  dateLabel: 'दिनांक',
+  weekday: 'गुरुवार',
+  dayText: '२४',
+  monthYearText: 'मे २०२६',
+  timeLabel: 'वेळ',
+  timePeriod: 'सायंकाळी',
+  timeText: '६.००',
+  timeSuffix: 'वाजता',
+  venueLabel: 'स्थळ',
+  venueName: 'आनंदम लॉन्स',
+  venueAddress: 'सातपूर रोड, नाशिक फाटा जवळ,\nनाशिक - ४२२२२२',
+  presenceMessage: 'आपली उपस्थिती व शुभाशीर्वाद\nआमच्यासाठी अत्यंत मोलाचे आहेत.',
+  hostsLabel: 'निमंत्रक',
+  familyDetails: 'देशमुख परिवार',
+  contactText: 'मो. ९८२२३ ४५६७८',
+  gateLabel: 'शुभविवाहाचे आमंत्रण',
+  tapLabel: 'स्पर्श करून उघडा',
+  countdownHeading: 'शुभक्षणाची प्रतीक्षा',
+  countdownDescription: 'आपल्या उपस्थितीने हा सोहळा अविस्मरणीय होवो.',
+  locationHeading: 'विवाहस्थळ',
+  directionsLabel: 'दिशा पहा',
+  nextLabel: 'शुभक्षण व विवाहस्थळ',
+  backLabel: 'आमंत्रण पहा',
+  weddingDayMessage: 'आज आहे तो मंगल दिवस!',
+  afterWeddingMessage: 'आपल्या शुभाशीर्वादांसाठी धन्यवाद!',
+  daysLabel: 'दिवस',
+  hoursLabel: 'तास',
+  minutesLabel: 'मिनिटे',
+  secondsLabel: 'सेकंद',
+};
+const text = (id, label, maxLength, extra = {}) => ({ id, type: 'text', label, maxLength, default: copy[id], ...extra });
+const area = (id, label, maxLength, rows = 3) => ({ id, type: 'textarea', label, maxLength, rows, default: copy[id] });
+
+module.exports = {
+  slug: 'divya-vivah',
+  family: 'bfday',
+  name: 'Divya Vivah',
+  category: 'Wedding',
+  price: 0,
+  currency: 'INR',
+  description: 'A Marathi wedding invitation with a tap-to-open divine-hands film, editable Devanagari copy, a live countdown and venue directions.',
+  thumbnail_url: '/divya-vivah/opening-poster.jpg',
+  ogImage: '/divya-vivah/invitation.webp',
+  version: 1,
+  editable: true,
+  backgroundMusic: false,
+  displayField: 'groomName',
+  fields: [
+    text('prayer', 'मंगलाचरण / Prayer', 80),
+    area('introduction', 'आमंत्रणाचा प्रारंभ / Introduction', 400, 4),
+    text('groomName', 'वराचे नाव / Groom’s name', 26, { required: true }),
+    text('joiner', 'नावांमधील शब्द / Name joiner', 20),
+    text('brideName', 'वधूचे नाव / Bride’s name', 26, { required: true }),
+    text('weddingHeading', 'विवाह शीर्षक / Wedding heading', 100),
+    text('dateLabel', 'दर्शविलेल्या तारखेचे शीर्षक / Display date label', 30),
+    text('weekday', 'कार्डवर दिसणारा वार / Displayed weekday', 30),
+    text('dayText', 'कार्डवर दिसणारा दिवस / Displayed day text', 12),
+    text('monthYearText', 'कार्डवर दिसणारा महिना व वर्ष / Displayed month and year', 50, { hint: 'Displayed copy only, NOT the countdown date. Original sample says मे २०२६; the countdown uses the same 2026-05-24. Edit this year and weekday to match your real wedding.' }),
+    text('timeLabel', 'दर्शविलेल्या वेळेचे शीर्षक / Display time label', 30),
+    text('timePeriod', 'कार्डवर दिसणारा प्रहर / Displayed time period', 30),
+    text('timeText', 'कार्डवर दिसणारी वेळ / Displayed time text', 20),
+    text('timeSuffix', 'वेळेनंतरचा शब्द / Display time suffix', 20),
+    text('venueLabel', 'स्थळाचे शीर्षक / Venue label', 30),
+    text('venueName', 'विवाहस्थळाचे नाव / Venue name', 100),
+    area('venueAddress', 'विवाहस्थळाचा पत्ता / Venue address', 240),
+    area('presenceMessage', 'उपस्थितीचा संदेश / Presence message', 240),
+    text('hostsLabel', 'निमंत्रक शीर्षक / Hosts label', 40),
+    area('familyDetails', 'निमंत्रक परिवार / Family details', 180),
+    text('contactText', 'संपर्क / Contact text', 100),
+    text('gateLabel', 'बंद दारावरील शीर्षक / Gate heading', 80),
+    text('tapLabel', 'उघडण्याची सूचना / Tap-to-open label', 80),
+    text('countdownHeading', 'उलटगणनेचे शीर्षक / Countdown heading', 100),
+    area('countdownDescription', 'उलटगणनेचा संदेश / Countdown description', 240),
+    text('locationHeading', 'नकाशाचे शीर्षक / Location heading', 80),
+    text('directionsLabel', 'दिशा बटण / Directions button', 60),
+    text('nextLabel', 'पुढील पान बटण / Next button', 80),
+    text('backLabel', 'मागील पान बटण / Back button', 80),
+    text('weddingDayMessage', 'विवाहदिनी संदेश / Wedding-day message', 120),
+    text('afterWeddingMessage', 'विवाहानंतरचा संदेश / After-wedding message', 140),
+    text('daysLabel', 'दिवसाचे एकक / Days label (optional)', 30),
+    text('hoursLabel', 'तासाचे एकक / Hours label (optional)', 30),
+    text('minutesLabel', 'मिनिटांचे एकक / Minutes label (optional)', 30),
+    text('secondsLabel', 'सेकंदांचे एकक / Seconds label (optional)', 30),
+    { id: 'weddingDate', type: 'date', label: 'Countdown date ONLY / उलटगणनेची तारीख', required: true, default: '2026-05-24', hint: 'Countdown uses Asia/Kolkata (India Standard Time). This does not change the printed date above. Original displayed sample is २४ मे २०२६, गुरुवार; update both displayed date/weekday and countdown date before publishing.' },
+    { id: 'weddingTime', type: 'text', label: 'Countdown time ONLY / उलटगणनेची वेळ (HH:mm)', required: true, maxLength: 5, default: '18:00', hint: 'Use 24-hour ASCII HH:mm, e.g. 18:00. Fixed timezone: Asia/Kolkata (UTC+05:30). This does not change the printed Marathi time.' },
+    { id: 'mapQuery', type: 'text', label: 'नकाशावरील ठिकाण / Google Maps pin', maxLength: 240, default: '', hint: 'Optional place name or latitude,longitude coordinates, NOT a URL. Leave blank to use the venue name and address. Check the pin before sharing.' },
+  ],
+  steps: [
+    { title: 'नावे व आमंत्रण', heading: 'The couple and invitation', intro: 'Keep Marathi text exactly as you want it; Unicode is preserved.', fields: ['prayer', 'introduction', 'groomName', 'joiner', 'brideName', 'weddingHeading'] },
+    { title: 'कार्डवरील तारीख व वेळ', heading: 'Displayed date and time — copy only', intro: 'These words are printed on the card, not used for the countdown. The original sample says 2026; update its year AND weekday to match your actual date.', fields: ['dateLabel', 'weekday', 'dayText', 'monthYearText', 'timeLabel', 'timePeriod', 'timeText', 'timeSuffix'] },
+    { title: 'स्थळ व परिवार', heading: 'Venue, hosts and blessings', fields: ['venueLabel', 'venueName', 'venueAddress', 'presenceMessage', 'hostsLabel', 'familyDetails', 'contactText', 'mapQuery'] },
+    { title: 'दार व नेव्हिगेशन', heading: 'Opening gate and navigation copy', fields: ['gateLabel', 'tapLabel', 'nextLabel', 'backLabel', 'locationHeading', 'directionsLabel'] },
+    { title: 'उलटगणनेची तारीख', heading: 'Countdown settings — Asia/Kolkata', intro: 'The live countdown uses these machine-readable settings only. Both defaults match 24 May 2026 at 18:00 IST. This sample date is past; choose your wedding date and update the printed copy.', fields: ['weddingDate', 'weddingTime', 'countdownHeading', 'countdownDescription', 'weddingDayMessage', 'afterWeddingMessage'] },
+    { title: 'उलटगणनेची एकके', heading: 'Countdown unit labels', intro: 'Optional overrides; blank values use the Marathi defaults.', fields: ['daysLabel', 'hoursLabel', 'minutesLabel', 'secondsLabel'] },
+  ],
+  create: {
+    eyebrow: 'Divya Vivah · मराठी विवाह आमंत्रण',
+    headline: 'A royal welcome. A Marathi invitation.',
+    intro: 'Tap the hand prompt to reveal your wedding invitation, then see the countdown and venue map. Personalise every visible line without transliteration.',
+    noun: 'wedding invitation',
+    designHeading: 'A divine Marathi celebration',
+    designIntro: 'Your names and invitation copy remain editable HTML above the decorative artwork.',
+    scenes: ['Tap to play the divine hands opening film', 'Read the Marathi wedding invitation', 'See the countdown and venue directions'],
+    previewCta: 'Open the invitation',
+    previewHelp: 'Tap to open, then use the next button to see the countdown and venue.',
+    resultLine: 'Share one Marathi wedding invitation link with your guests.',
+  },
+  demo: { ...copy, weddingDate: '2026-05-24', weddingTime: '18:00', mapQuery: '' },
+  sections: ['gate', 'invitation', 'details'],
+  theme: { bg: '#fff4df', ink: '#6e241d', accent: '#a8792d', soft: '#efdbb7', motif: 'royal', serifCase: 'title', layout: 'story' },
+};
+
+// Additive language copies. Original Marathi fields, values and field IDs above stay untouched.
+const translations = require('./translations');
+const settings = new Set(['weddingDate', 'weddingTime', 'mapQuery']);
+const originals = module.exports.fields.filter(f => !settings.has(f.id));
+const personal = new Set(['groomName', 'brideName', 'venueName', 'venueAddress', 'familyDetails', 'contactText', 'weekday', 'dayText', 'monthYearText', 'timePeriod', 'timeText', 'timeSuffix']);
+const keyFor = (lang, id) => lang + id[0].toUpperCase() + id.slice(1);
+module.exports.localeCopyFields = originals.map(f => f.id);
+module.exports.languages = ['mr', 'hi', 'en'];
+for (const lang of ['hi', 'en']) {
+ for (const field of originals) {
+  module.exports.fields.push({ ...field, id: keyFor(lang, field.id), required: false,
+   label: (lang === 'hi' ? 'Hindi' : 'English') + ' · ' + field.label.split(' / ').pop(),
+   default: personal.has(field.id) ? '' : translations[lang][field.id],
+   placeholder: translations[lang][field.id],
+   hint: personal.has(field.id) ? 'Independent '+lang+' copy. Enter this family’s translated/transliterated details. Blank inherits the corresponding Marathi details; it never substitutes sample names. Printed dates must still match the shared countdown settings.' : 'Editable '+lang+' translation; does not alter the original Marathi wording.',
+  });
+  // Demo translations are explicit; existing saved invitations are never migrated or overwritten.
+  module.exports.demo[keyFor(lang, field.id)] = translations[lang][field.id];
+ }
+}
+for (const step of module.exports.steps) {
+ step.fields = step.fields.flatMap(id => settings.has(id) ? [id] : [id, keyFor('hi', id), keyFor('en', id)]);
+ step.intro = (step.intro ? step.intro + ' ' : '') + 'Marathi, Hindi and English copy are edited independently. Language changes preserve the same wedding date, venue pin, artwork and video.';
+}
+module.exports.description = 'A tap-to-open wedding invitation in Marathi, Hindi and English, with independently editable copy, localized digits, countdown and venue directions.';

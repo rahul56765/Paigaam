@@ -144,6 +144,10 @@ for (const t of family.list) {
   test(`${S} · API: validation — shapes, lengths, newlines, control characters, required-on-publish`, async () => {
     const invalid = [['missing data', undefined], ['null data', null], ['array data', []], ['string data', 'x']];
     for (const f of t.fields) {
+      // All 70 localized fields use the same scalar validator and are exhaustively
+      // checked in divya-vivah-languages.test.js. Exercise representative fields
+      // here without flooding the real per-template HTTP abuse limiter.
+      if (S === 'divya-vivah' && /^(hi|en)[A-Z]/.test(f.id) && !['hiIntroduction', 'enIntroduction', 'hiGroomName', 'enGroomName'].includes(f.id)) continue;
       if (f.type === 'text' || f.type === 'textarea') {
         invalid.push([`${f.id} overlong`, { ...demo, [f.id]: 'x'.repeat(f.maxLength + 1) }]);
         invalid.push([`${f.id} control char`, { ...demo, [f.id]: 'a\u0007' }]);
@@ -187,6 +191,8 @@ for (const t of family.list) {
 
   test(`${S} · HTML: every piece of sender text is escaped — preview, live page, preview frame`, async () => {
     const hostile = { ...demo, ...hostileFor(t.fields) };
+    // Divya's machine-readable time is constrained, unlike free-form invitation copy.
+    if (S === 'divya-vivah') hostile.weddingTime = demo.weddingTime;
     const a = await draft(S, hostile);
     const pages = [(await request(a.previewUrl, { cookie: a.cookie })).text];
     const pub = await request(`/api/${S}/publish`, { method: 'POST', cookie: a.cookie, body: { id: a.id } });
