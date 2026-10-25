@@ -1,0 +1,26 @@
+{
+  "art/leaf.webp": "7a013e8ad08c38a9f4134485aa51234b29b46a06ebf583e20e86069055aa7a23",
+  "art/kalash.webp": "d369deb428af4fe58324235ffc7ad9a2bef3cfe2e93ddac5bdf9ca2798d0db91",
+  "art/mandap.webp": "bf794963e86181a41e8fa534e2bc9ca1d63521301247f973add31bf61a56cd1e",
+  "art/env-real.webp": "611aa6ecc12868c19b99c2ae1123339e99dbbdd57f9266f9c28b2fbc3fc2aa8d",
+  "art/kalash-real.webp": "79d0288be4da0be78a4ea364072124427a1994ef54f495a75b544958d91938dd",
+  "art/portrait-frame.webp": "c6fdc6ef79dabb8e0261f59acbaf5f9eb69230f162f5220dde4dacf3791b4b58",
+  "art/portrait-aperture.webp": "b1047210094cfc310e6cca347fb3cc42727ac6855256bcff3efb84d8e5d1ebd6",
+  "art/canopy-real.webp": "a6c845c788e26475b1627527641c3bda0254f5f7c9dac8db8add7107c24551b0",
+  "art/portal-real.webp": "44f8c3d38acaa6d57e7343de853a41b84afdf85159e63fefff8ef151ef2d67b3",
+  "opening.mp4": {
+    "sha256": "bf1549420225f65fe2f4b0f411b2244f78442d61ec11da71af634e7952644c18",
+    "parts": 10,
+    "bytes": 13249737
+  },
+  "opening-poster.jpg": {
+    "sha256": "38b2ea53d7870943688a1deabd22ad99c177cc274748e30bbe31b058ac0b4a01",
+    "parts": 1,
+    "bytes": 79151
+  },
+  "opening-end.jpg": {
+    "sha256": "dd67d47ceec0f2d7f9d1aa3b347ba1b2756977c851a1a27d6cb62be600e388fc",
+    "parts": 1,
+    "bytes": 21209
+  }
+}

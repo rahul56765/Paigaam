@@ -103,3 +103,7 @@ public/js/create.js     multi-step form + live preview + autosave
 - Set `BASE_URL=https://paigaam.in` in production so share links, OG tags and QR codes point at the real domain.
 
 *Some moments deserve more than a message.* 🕊
+
+## Kadali Vivah wedding website
+
+The third ceremonial wedding website, with the exact uploaded opening film, a real WebGL scroll-directed temple/mandap journey, simple organiser WhatsApp RSVP and the existing seven-step editor. See [docs/KADALI-VIVAH.md](docs/KADALI-VIVAH.md) for routes, asset packaging, editing/publishing behavior and tests. This is independent of the wedding-video feature and the Suvarna redesign.
