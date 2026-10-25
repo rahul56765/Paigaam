@@ -76,3 +76,13 @@ Known validation limits: the final opening film is not supplied; full real authe
 - 2026-10-25: Built original Chandni Royale artwork and independent guest renderer/runtime from inspected reel; native draft-only template/editor/API integration; scratch/calendar/photos/countdown/timeline/venue/WhatsApp features; fixed film slot awaiting owner asset. No production changes.
 
 - 2026-10-25 audit corrections: editor guest-preview frames now signal readiness in demo/guest mode as well as live mode, allowing the editor to send the creator's data. Draft/passcode share cards are private/no-store with Vary: Cookie; public live cards retain public caching. Customer main photos preserve their approved portrait/landscape aspect ratio instead of being recropped to the decorative illustration's 3:2 frame. Chandni style controls are restricted to the supported button accent and typography; fixed artwork remains fixed. Added regression coverage for each issue.
+
+## Dependency approval and native browser validation — 25 October 2026
+
+Registry access was approved. Installed the locked dependencies with npm ci --ignore-scripts (no dependency/version changes) and Chromium for Playwright, then generated MediaPipe's expected public assets with node scripts/prepare-magazine-face.js. The earlier environment limitation is superseded: the entire npm test command now completes successfully, including Ganapati and all fourteen magazine HTTP E2E groups.
+
+Added scripts/qa-chandni-royale-browser.js, run with npm run test:chandni-royale:browser. It creates a disposable local server and DATA_DIR and signs in only to its generated local test-admin account; it never connects to production. Seventeen browser assertions passed: native editor updates, actual guest-ready handshake, edited data after replay, real mouse scratching, downloaded ICS content, native portrait upload/crop/save/reload/remove, preserved4:5 framing, correct style controls, native guest viewports320/390/430, no initial A/V requests and no uncaught browser errors. Test screenshots/results are written under ignored test-output/chandni-royale.
+
+This native test found one additional server-only bug the self-contained artifact could not expose: the template handler intercepted its own invite.js and invite.css as missing invitation routes. Fixed only those exact GET/HEAD runtime paths to defer to the existing static handler; protected upload/media routes still stay in their ownership-checked handler. Added real-server HTTP status/MIME/body/HEAD regression assertions.
+
+The owner opening film is still absent; no final film playback, real WhatsApp send, payment or production deployment is claimed. The unchanged v4 visual review remains accurate.

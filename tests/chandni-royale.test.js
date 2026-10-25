@@ -227,6 +227,15 @@ test('real server seeds hidden draft, mounts native editor/demo and blocks gener
   const boot = JSON.parse(html.match(/<script id="cr-boot" type="application\/json">([\s\S]*?)<\/script>/)[1]);
   assert.equal(boot.openingVideo, false); // future opener is intentionally absent
   assert.equal((await J('/assets/chandni-royale/opener.mp4')).status, 404);
+  for (const [asset, type, marker] of [['invite.js', 'javascript', 'Chandni Royale'], ['invite.css', 'text/css', '.cr-shell']]) {
+    const assetResponse = await J('/chandni-royale/' + asset + '?v=2');
+    assert.equal(assetResponse.status, 200);
+    assert.ok(assetResponse.headers.get('content-type').includes(type));
+    assert.ok((await assetResponse.text()).includes(marker));
+    const head = await fetch(base + '/chandni-royale/' + asset, { method: 'HEAD' });
+    assert.equal(head.status, 200); assert.equal((await head.text()).length, 0);
+  }
+
   r = await fetch(base + '/admin/login', { method: 'POST', redirect: 'manual', headers: { 'content-type': 'application/x-www-form-urlencoded' }, body: 'email=test%40example.com&password=test-password' });
   const adminCookie = r.headers.get('set-cookie').split(';')[0];
   r = await J('/create/chandni-royale', undefined, adminCookie); assert.equal(r.status, 200);
