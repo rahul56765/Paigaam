@@ -8,9 +8,11 @@
   const C = window.SPCore, I = window.SPI18N, ART = window.SPArt;
   const boot = JSON.parse(document.getElementById('spe-boot').textContent);
   const ROOT = '/' + (boot.slug || 'shaadi-paigaam'), API = '/api' + ROOT, CREATE = '/create' + ROOT;
-  const STORE = boot.slug === 'suvarna-vivah' ? 'sv-ed' : 'sp-ed';
+  const STORE = boot.slug === 'kadali-vivah' ? 'kv-ed' : boot.slug === 'suvarna-vivah' ? 'sv-ed' : 'sp-ed';
+  const isKadali = boot.slug === 'kadali-vivah';
   const simpleWhatsAppRsvp = boot.slug !== 'suvarna-vivah';
-  const lazyMusic = boot.slug !== 'suvarna-vivah';
+  const lazyMusic = boot.slug === 'kadali-vivah' ? true : boot.slug !== 'suvarna-vivah';
+  const uploadOnlyMusic = boot.slug === 'shaadi-paigaam';
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -181,6 +183,19 @@
   const TITLES_F = [['mr', 'Mr.'], ['dr', 'Dr.'], ['late', 'Late'], ['none', 'No title']];
   const TITLES_M = [['mrs', 'Mrs.'], ['dr', 'Dr.'], ['late', 'Late'], ['none', 'No title']];
 
+  // Both Kadali steps use the same portrait field and secure crop/upload handlers.
+  // renderStep mounts only the active step, so cpInput/cpDel remain unique.
+  function kadaliPortraitCard(withGalleryLink) {
+    const photo = S.data.couplePhoto;
+    return card('Your main couple portrait', `<p class="sub" id="cpHelp">Upload your own couple photo to place it inside a floral frame in the 3D scene. Optional — no customer photo is added for you.</p>
+      <div class="row">${photo ? `<div class="ph" style="width:96px;aspect-ratio:4/5"><img src="${esc(photo.url)}" alt="Your main couple portrait"></div>` : ''}
+        <button type="button" class="btn" data-photo-input="cpInput" aria-describedby="cpHelp">${IC.upload} ${photo ? 'Replace couple portrait' : 'Upload couple portrait'}</button>
+        <input type="file" accept="image/jpeg,image/png,image/webp" hidden id="cpInput" aria-label="Upload main couple portrait">
+        ${photo ? `<button type="button" class="btn ghost small" id="cpDel" aria-label="Remove main couple portrait">${IC.trash} Remove portrait</button>` : ''}</div>
+      <p class="hint">JPG, PNG or WEBP. Choose a portrait crop before saving. Use only photos you have permission to share.</p>
+      ${withGalleryLink ? '<button type="button" class="link" id="kadaliGallery">Add more 3D gallery photos → Step 4</button>' : ''}`, { focus: 'welcome' });
+  }
+
   /* ---------------------------------------------------------- STEP 1 */
   function stepCouple() {
     const d = S.data;
@@ -195,6 +210,7 @@
       </div>`, { focus: 'hero' });
     const styles = Object.entries(I.WELCOME).map(([k, w]) => `<button type="button" class="chip" data-style="${k}" aria-pressed="${d.welcome.style === k}">${esc(w.label)}</button>`).join('');
     return `<h2 class="step-h" tabindex="-1">Couple &amp; families</h2><p class="step-p">Names exactly as you want guests to read them. Long names shrink to fit automatically.</p>
+      ${isKadali ? kadaliPortraitCard(true) : ''}
       ${card('Whose name comes first?', `<div class="seg" role="group" aria-label="Name order"><button type="button" data-order="groom" aria-pressed="${d.couple.order !== 'bride'}">Groom first</button><button type="button" data-order="bride" aria-pressed="${d.couple.order === 'bride'}">Bride first</button></div>`)}
       ${side('g', 'groom')}${side('b', 'bride')}
       ${card("Parents' names", `<label class="tg"><input type="checkbox" data-path="couple.showParents" ${d.couple.showParents ? 'checked' : ''}><span class="sw"></span><span>Show the parents' lines under each name</span></label>`, { sub: 'Switch off for a simpler invitation. Your family name then appears under each first name.' })}
@@ -311,22 +327,24 @@
   function stepMedia() {
     const d = S.data;
     const ph = d.photos.map((p, i) => `<div class="ph" data-ph="${i}" draggable="true"><img src="${esc(p.url)}" alt="${esc(p.alt || 'Photo ' + (i + 1))}">${/\/art\/demo-/.test(p.url) ? '<span class="tag">Sample</span>' : ''}
-      <div class="tools"><button type="button" data-phalt="${i}" aria-label="Describe photo ${i + 1}">${IC.edit}</button><button type="button" data-phleft="${i}" aria-label="Move photo ${i + 1} earlier" ${i ? '' : 'hidden'}>${IC.up}</button><button type="button" data-phdel="${i}" aria-label="Remove photo ${i + 1}">${IC.trash}</button></div></div>`).join('');
+      <div class="tools">${isKadali ? `<button type="button" data-phreplace="${i}" aria-label="Replace photo ${i + 1}">${IC.upload}</button>` : ''}<button type="button" data-phalt="${i}" aria-label="Describe photo ${i + 1}">${IC.edit}</button><button type="button" data-phleft="${i}" aria-label="Move photo ${i + 1} earlier" ${i ? '' : 'hidden'}>${IC.up}</button><button type="button" data-phdel="${i}" aria-label="Remove photo ${i + 1}">${IC.trash}</button></div></div>`).join('');
     const canAdd = d.photos.length < C.LIMITS.photos;
-    const tracks = lazyMusic ? '' : C.MUSIC.map(m => `<label class="track ${d.music.track === m.id ? 'on' : ''}"><input type="radio" name="track" value="${m.id}" ${d.music.track === m.id ? 'checked' : ''}><span class="t"><b>${esc(m.title)}</b><small>${esc(m.instrument)} · ${esc(m.category)}</small></span><button type="button" class="play" data-play="/shaadi-paigaam/music/${m.id}.mp3" aria-label="Preview ${esc(m.title)}">${IC.play}</button></label>`).join('');
+    const tracks = uploadOnlyMusic ? '' : C.MUSIC.map(m => `<label class="track ${d.music.track === m.id ? 'on' : ''}"><input type="radio" name="track" value="${m.id}" ${d.music.track === m.id ? 'checked' : ''}><span class="t"><b>${esc(m.title)}</b><small>${esc(m.instrument)} · ${esc(m.category)}</small></span><button type="button" class="play" data-play="/shaadi-paigaam/music/${m.id}.mp3" aria-label="Preview ${esc(m.title)}">${IC.play}</button></label>`).join('');
     return `<h2 class="step-h" tabindex="-1">Photos &amp; music</h2><p class="step-p">JPG, PNG or WEBP. We resize and compress for you, and you choose the crop so no face is ever cut off.</p>
-      ${card(`Photo carousel (${d.photos.length}/${C.LIMITS.photos})`, `<div class="ph-grid" id="phGrid">${ph}${canAdd ? `<label class="ph add" tabindex="0">${IC.upload}<span>Add photos</span><input type="file" accept="image/jpeg,image/png,image/webp" multiple hidden id="phInput"></label>` : ''}</div>
+      ${isKadali ? `<h3>3D portraits &amp; photo gallery</h3><p class="step-p">Your main portrait becomes a floral-framed photo inside the 3D scene. Extra gallery photos become physical picture frames too.</p>${kadaliPortraitCard(false)}` : ''}
+      ${card(`${isKadali ? '3D photo gallery' : 'Photo carousel'} (${d.photos.length}/${C.LIMITS.photos})`, `<div class="ph-grid" id="phGrid">${ph}${canAdd ? (isKadali ? `<button type="button" class="ph add" data-photo-input="phInput">${IC.upload}<span>Add gallery photos</span></button><input type="file" accept="image/jpeg,image/png,image/webp" multiple hidden id="phInput" aria-label="Add 3D gallery photos">` : `<label class="ph add" tabindex="0">${IC.upload}<span>Add photos</span><input type="file" accept="image/jpeg,image/png,image/webp" multiple hidden id="phInput"></label>`) : ''}</div>
+        ${isKadali ? '<input type="file" accept="image/jpeg,image/png,image/webp" hidden id="phReplaceInput" aria-label="Replace 3D gallery photo"><p class="hint">Add your own photos for physical picture frames in the 3D environment. Replace, remove, describe or reorder photos using their controls.</p>' : ''}
         <div class="f" data-p="photos"><div class="msg e" role="alert">${IC.alert}<span></span></div><div class="msg w">${IC.info}<span></span></div></div>
         ${d.photos.some(p => /\/art\/demo-/.test(p.url)) ? `<button type="button" class="link" id="clearSamples">Remove the sample photos</button>` : ''}`, { toggle: tgl('sections.photos', 'Show'), off: d.sections.photos === false, focus: 'photos' })}
-      ${card('Couple photo', `<div class="row">${d.couplePhoto ? `<div class="ph" style="width:96px;aspect-ratio:4/5"><img src="${esc(d.couplePhoto.url)}" alt="Couple photo"></div><button type="button" class="btn ghost small" id="cpDel">${IC.trash} Remove</button>` : ''}
+      ${isKadali ? '' : card('Couple photo', `<div class="row">${d.couplePhoto ? `<div class="ph" style="width:96px;aspect-ratio:4/5"><img src="${esc(d.couplePhoto.url)}" alt="Couple photo"></div><button type="button" class="btn ghost small" id="cpDel">${IC.trash} Remove</button>` : ''}
           <label class="btn ghost small" tabindex="0">${IC.upload} ${d.couplePhoto ? 'Replace' : 'Add a couple photo'}<input type="file" accept="image/jpeg,image/png,image/webp" hidden id="cpInput"></label></div>
         <p class="hint">Optional. Appears in an arched gold frame above your welcome message.</p>`, { focus: 'welcome' })}
-      ${card('Music', `${lazyMusic ? '' : `<div id="tracks">${tracks}</div>`}
+      ${card('Music', `${uploadOnlyMusic ? '' : `<div id="tracks">${tracks}</div>`}
         <label class="track ${d.music.track === 'upload' ? 'on' : ''}"><input type="radio" name="track" value="upload" ${d.music.track === 'upload' ? 'checked' : ''} ${d.music.url ? '' : 'disabled'}><span class="t"><b>${d.music.url ? esc(d.music.title || 'Your song') : 'Your own song'}</b><small>${d.music.url ? 'Uploaded' : 'MP3, M4A or AAC, up to 10 MB'}</small></span>
           ${d.music.url ? `<button type="button" class="play" data-play="${esc(d.music.url)}" aria-label="Preview your song">${IC.play}</button>` : ''}<label class="btn ghost small" tabindex="0">${IC.upload} ${d.music.url ? 'Replace' : 'Upload'}<input type="file" accept="audio/mpeg,audio/mp3,audio/mp4,audio/x-m4a,audio/aac,audio/ogg" hidden id="muInput"></label></label>
         ${d.music.track === 'upload' ? `<div class="f" data-p="music.rightsOk"><label class="check"><input type="checkbox" data-path="music.rightsOk" ${d.music.rightsOk ? 'checked' : ''}><span>I own this song or have permission to use it. Film songs and commercial music are usually copyrighted.</span></label><div class="msg e" role="alert">${IC.alert}<span></span></div></div>` : ''}
-        ${lazyMusic ? '<p class="hint">Optional: upload your own song. There is no built-in music. It never starts or downloads automatically; guests tap the music button to play it.</p>' : `<label class="check" style="margin-top:10px"><input type="checkbox" data-path="music.startMuted" ${d.music.startMuted ? 'checked' : ''}><span>Start muted (guests tap the speaker to play)</span></label>`}
-        ${lazyMusic ? '' : '<p class="hint">All ten library tracks are original compositions made for Paigaam, free to use.</p>'}`, { toggle: tgl('sections.music', 'Play music'), off: d.sections.music === false })}`;
+        ${uploadOnlyMusic ? '<p class="hint">Optional: upload your own song. There is no built-in music. It never starts or downloads automatically; guests tap the music button to play it.</p>' : lazyMusic ? '<p class="hint">Music never starts or downloads automatically. Guests must tap Play.</p>' : `<label class="check" style="margin-top:10px"><input type="checkbox" data-path="music.startMuted" ${d.music.startMuted ? 'checked' : ''}><span>Start muted (guests tap the speaker to play)</span></label>`}
+        ${uploadOnlyMusic ? '' : '<p class="hint">All ten library tracks are original compositions made for Paigaam, free to use.</p>'}`, { toggle: tgl('sections.music', 'Play music'), off: d.sections.music === false })}`;
   }
 
   /* ---------------------------------------------------------- STEP 5 */
@@ -956,6 +974,21 @@
     catch (e) { toast(UPLOAD_ERR[e] || 'The upload failed. Please try again.'); return null; }
   }
   function bindMedia(body) {
+    // Native buttons provide keyboard and screen-reader access to Kadali uploads.
+    $$('[data-photo-input]', body).forEach(b => b.onclick = () => $('#' + b.dataset.photoInput, body)?.click());
+    const gallery = $('#kadaliGallery', body); if (gallery) gallery.onclick = () => go(3, true);
+    const replace = $('#phReplaceInput', body);
+    $$('[data-phreplace]', body).forEach(b => b.onclick = () => { replace.dataset.index = b.dataset.phreplace; replace.click(); });
+    if (replace) replace.onchange = async () => {
+      const f = replace.files[0], i = Number(replace.dataset.index), original = S.data.photos[i];
+      if (!f || !original) return;
+      const url = await addPhoto(f, '4/3', 'Crop your gallery photo');
+      if (url && S.data.photos.includes(original)) {
+        willChange(); original.url = url; original.fx = 50; original.fy = 50;
+        changed({ noUndo: true, focus: 'photos' }); renderStep(true);
+      }
+      replace.value = '';
+    };
     const pi = $('#phInput', body);
     if (pi) pi.onchange = async () => {
       const files = Array.from(pi.files).slice(0, C.LIMITS.photos - S.data.photos.length);
@@ -965,7 +998,7 @@
         if (url) { willChange(); S.data.photos.push({ url, alt: '', fx: 50, fy: 50 }); changed({ noUndo: true, focus: 'photos' }); renderStep(true); }
       }
     };
-    $$('.ph.add', body).forEach(l => l.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); $('input', l).click(); } }));
+    $$('label.ph.add', body).forEach(l => l.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); $('input', l).click(); } }));
     $$('[data-phdel]', body).forEach(b => b.onclick = () => { willChange(); S.data.photos.splice(Number(b.dataset.phdel), 1); changed({ noUndo: true, focus: 'photos' }); renderStep(true); toast('Photo removed.', 'Undo', undo); });
     $$('[data-phleft]', body).forEach(b => b.onclick = () => { const i = Number(b.dataset.phleft); willChange(); const [p] = S.data.photos.splice(i, 1); S.data.photos.splice(i - 1, 0, p); changed({ noUndo: true, focus: 'photos' }); renderStep(true); });
     $$('[data-phalt]', body).forEach(b => b.onclick = () => {
@@ -1151,7 +1184,7 @@
       if (!S.data && boot.resume) {
         try { const r = await fetch(API + '/me?id=' + encodeURIComponent(boot.resume.id), { credentials: 'same-origin' }); if (r.ok) { location.replace(CREATE + '?id=' + encodeURIComponent(boot.resume.id)); return; } } catch {}
       }
-      if (!S.data) { const starter = clone(C.SAMPLE); if (boot.slug === 'suvarna-vivah') { starter.palette.id = 'emerald-gold'; starter.palette.custom = { primary: '#0F5440', accent: '#C2A057', bg: '#F6F3E9' }; starter.font = 'royal'; } S.data = C.validate(starter).data; }
+      if (!S.data) { const starter = clone(C.SAMPLE); if (boot.slug === 'suvarna-vivah') { starter.palette.id = 'emerald-gold'; starter.palette.custom = { primary: '#0F5440', accent: '#C2A057', bg: '#F6F3E9' }; starter.font = 'royal'; } if (boot.slug === 'kadali-vivah') { starter.photos = []; starter.couplePhoto = null; starter.i18n = {}; starter.welcome.text = 'A blessing becomes a promise. A promise becomes a lifetime. Together with our families, {groom} and {bride} invite you to witness the beginning of our forever.'; starter.transport = ''; starter.accommodation = {text:'',code:''}; starter.gifts = 'Your presence is our most treasured blessing.'; starter.palette.id = 'terracotta-cream'; starter.palette.custom = { primary: '#9C4E2B', accent: '#C1945A', bg: '#FBF3E8' }; starter.font = 'royal'; } S.data = C.validate(starter).data; }
     }
     try { const st = Number(localStorage.getItem(STORE + ':step:' + (S.id || 'new'))); if (st >= 0 && st < STEPS.length) S.step = st; } catch {}
     validateNow();
