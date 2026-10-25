@@ -6,11 +6,13 @@
  * preview and the server all validate with the very same rules.
  */
 const C = require('../public/shaadi-paigaam/core.js');
-const V = '6';
+const V = '6'; // Preserve existing template cache keys; Chandni uses its own revision below.
 const json = o => JSON.stringify(o).replace(/</g, '\\u003c').replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029');
 
 function shaadiPaigaamCreatePage(opts = {}) {
-  const title = opts.slug === 'suvarna-vivah' ? 'Create your Suvarna Vivah · Paigaam' : 'Create your wedding invitation · Paigaam';
+  const chandni = opts.slug === 'chandni-royale';
+  const revision = chandni ? '7-cr1' : V;
+  const title = chandni ? 'Create your Chandni Royale · Paigaam' : opts.slug === 'suvarna-vivah' ? 'Create your Suvarna Vivah · Paigaam' : 'Create your wedding invitation · Paigaam';
   const boot = { price: opts.price || 0, listPrice: opts.listPrice || 0, open: opts.open || null, resume: opts.resume || null, mapsProvider: opts.mapsProvider || 'osm', slug: opts.slug || 'shaadi-paigaam' };
   const fonts = 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Cormorant+Garamond:wght@500;600&family=Noto+Sans+Devanagari:wght@400;600&family=Noto+Sans+Gujarati:wght@400;600&family=Noto+Sans+Tamil:wght@400;600&family=Noto+Sans+Telugu:wght@400;600&family=Noto+Naskh+Arabic:wght@400;600&' + C.FONTS.map(f => 'family=' + f.google).join('&') + '&display=swap';
   return `<!doctype html>
@@ -25,7 +27,7 @@ function shaadiPaigaamCreatePage(opts = {}) {
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="${fonts}">
-<link rel="stylesheet" href="/shaadi-paigaam/editor.css?v=${V}">
+<link rel="stylesheet" href="/shaadi-paigaam/editor.css?v=${revision}">
 </head>
 <body>
 <div class="app" id="app"><div style="padding:40px;text-align:center;font:16px Georgia,serif;color:#6F6266">Opening your editor…</div></div>
@@ -33,11 +35,12 @@ function shaadiPaigaamCreatePage(opts = {}) {
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <noscript><p style="padding:24px;text-align:center">Please turn on JavaScript to create your invitation.</p></noscript>
 <script id="spe-boot" type="application/json">${json(boot)}</script>
-<script src="/shaadi-paigaam/i18n.js?v=${V}"></script>
-<script src="/shaadi-paigaam/core.js?v=${V}"></script>
-<script src="/shaadi-paigaam/art.js?v=${V}"></script>
+<script src="/shaadi-paigaam/i18n.js?v=${revision}"></script>
+<script src="/shaadi-paigaam/core.js?v=${revision}"></script>
+${chandni ? '<script src="/shaadi-paigaam/chandni-royale-core.js?v=1"></script>' : ''}
+<script src="/shaadi-paigaam/art.js?v=${revision}"></script>
 <script src="/js/paigaam-pay.js?v=1" defer></script>
-<script src="/shaadi-paigaam/editor.js?v=${V}"></script>
+<script src="/shaadi-paigaam/editor.js?v=${revision}"></script>
 </body>
 </html>`;
 }

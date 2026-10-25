@@ -387,6 +387,10 @@
    * opts.now (ms) for tests; opts.publish adds publish-only requirements.
    */
   function validate(input, opts = {}) {
+    // A route-scoped adapter may opt into its own upload namespace. Defaults stay unchanged.
+    const scopedMedia = opts.templateSlug === 'chandni-royale' ? /^\/chandni-royale\/media\/[a-f0-9]{48}\.(jpg|png|webp|mp3|m4a|ogg|aac|wav)$/ : MEDIA_RE;
+    const isImage = u => scopedMedia.test(u || '') && /\.(jpg|png|webp)$/.test(u);
+    const isAudio = u => scopedMedia.test(u || '') && /\.(mp3|m4a|ogg|aac|wav)$/.test(u);
     const now = opts.now || Date.now();
     const src = (input && typeof input === 'object') ? input : {};
     const E = [], W = [];

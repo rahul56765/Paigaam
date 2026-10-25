@@ -5,10 +5,12 @@
  * seconds, and can be undone. Publishing is impossible until the checklist is clear. */
 (function () {
   'use strict';
-  const C = window.SPCore, I = window.SPI18N, ART = window.SPArt;
+  const I = window.SPI18N, ART = window.SPArt;
   const boot = JSON.parse(document.getElementById('spe-boot').textContent);
+  const chandni = boot.slug === 'chandni-royale';
+  const C = chandni ? window.CRCore : window.SPCore;
   const ROOT = '/' + (boot.slug || 'shaadi-paigaam'), API = '/api' + ROOT, CREATE = '/create' + ROOT;
-  const STORE = boot.slug === 'suvarna-vivah' ? 'sv-ed' : 'sp-ed';
+  const STORE = chandni ? 'cr-ed' : boot.slug === 'suvarna-vivah' ? 'sv-ed' : 'sp-ed';
   const simpleWhatsAppRsvp = boot.slug !== 'suvarna-vivah';
   const lazyMusic = boot.slug !== 'suvarna-vivah';
   const $ = (s, r = document) => r.querySelector(s);
@@ -213,8 +215,8 @@
     const r = d.rsvp;
     const rsvpCard = simpleWhatsAppRsvp
       ? card('RSVP', `${fld({ p: 'rsvp.deadline', label: 'Reply by', type: 'date', optional: true, attrs: `min="${today()}" ${d.wedding.date ? `max="${d.wedding.date}"` : ''}` })}
-        ${fld({ p: 'rsvp.whatsapp', label: "Organiser's WhatsApp number", type: 'tel', req: d.sections.rsvp, optional: !d.sections.rsvp, max: 18, ph: '+91 98765 43210', attrs: 'inputmode="tel" autocomplete="tel"', hint: 'Choose the country code. Guests only choose attending or not attending; WhatsApp opens a prepared message and they tap Send.' })}
-        <p class="hint">New replies arrive in this WhatsApp chat; Paigaam does not store them. Older website replies, if any, remain in the reply history.</p>`, { toggle: tgl('sections.rsvp', 'Show RSVP'), off: d.sections.rsvp === false, focus: 'rsvp' })
+        ${fld({ p: 'rsvp.whatsapp', label: "Organiser's WhatsApp number", type: 'tel', req: chandni || d.sections.rsvp, optional: !chandni && !d.sections.rsvp, max: 18, ph: '+91 98765 43210', attrs: 'inputmode="tel" autocomplete="tel"', hint: 'Choose the country code. Guests only choose attending or not attending; WhatsApp opens a prepared message and they tap Send.' })}
+        <p class="hint">${chandni ? 'Guests choose Yes or No, then send the prepared draft in WhatsApp. Paigaam does not collect guest names or phone numbers, send the message, or store responses.' : 'New replies arrive in this WhatsApp chat; Paigaam does not store them. Older website replies, if any, remain in the reply history.'}</p>`, { toggle: tgl('sections.rsvp', 'Show RSVP'), off: d.sections.rsvp === false, focus: 'rsvp' })
       : card('RSVP', `<div class="grid2">
           ${fld({ p: 'rsvp.deadline', label: 'Reply by', type: 'date', optional: true, attrs: `min="${today()}" ${d.wedding.date ? `max="${d.wedding.date}"` : ''}` })}
           ${fld({ p: 'rsvp.maxGuests', label: 'Max guests per reply', type: 'select', options: Array.from({ length: 20 }, (_, i) => [i + 1, String(i + 1)]) })}
@@ -230,7 +232,7 @@
           ${fld({ p: 'wedding.time', label: 'Time', req: true, type: 'time', attrs: 'step="300"' })}
           ${fld({ p: 'wedding.tz', label: 'Time zone', type: 'select', options: TZ.some(([v]) => v === d.wedding.tz) ? TZ : TZ.concat([[d.wedding.tz, d.wedding.tz]]), cls: 'full', hint: 'Guests abroad see a correct countdown. Daylight-saving changes are handled for you.' })}
         </div>${days != null && days > 0 ? `<p class="hint" style="margin-top:10px">${IC.check} ${esc(C.fmtDate(d.wedding.date, 'en', 'full'))} at ${esc(C.fmtTime(d.wedding.time, 'en'))}, that's <b>${days} day${days === 1 ? '' : 's'}</b> away.</p>` : ''}`, { focus: 'countdown' })}
-      ${card('Events', `<p class="sub" style="margin-top:-6px">Events before the wedding day appear as Pre-Wedding Events cards; the rest form the Program Timeline, grouped by day and sorted by time. Drag to set the order of events that share a time.</p>
+      ${card(chandni ? 'Wedding functions' : 'Events', `<p class="sub" style="margin-top:-6px">${chandni ? 'Add up to 20 functions. Edit each name, date, time, venue, address, note and dress code. Drag or use the arrows to set your invitation order.' : 'Events before the wedding day appear as Pre-Wedding Events cards; the rest form the Program Timeline, grouped by day and sorted by time. Drag to set the order of events that share a time.'}</p>
         <div id="evList">${evs}</div>
         <div class="lab" style="margin-top:12px">Add an event</div><div class="chips">${quick}</div>`, { focus: 'timeline' })}
       ${rsvpCard}`;
@@ -320,10 +322,12 @@
         ${d.photos.some(p => /\/art\/demo-/.test(p.url)) ? `<button type="button" class="link" id="clearSamples">Remove the sample photos</button>` : ''}`, { toggle: tgl('sections.photos', 'Show'), off: d.sections.photos === false, focus: 'photos' })}
       ${card('Couple photo', `<div class="row">${d.couplePhoto ? `<div class="ph" style="width:96px;aspect-ratio:4/5"><img src="${esc(d.couplePhoto.url)}" alt="Couple photo"></div><button type="button" class="btn ghost small" id="cpDel">${IC.trash} Remove</button>` : ''}
           <label class="btn ghost small" tabindex="0">${IC.upload} ${d.couplePhoto ? 'Replace' : 'Add a couple photo'}<input type="file" accept="image/jpeg,image/png,image/webp" hidden id="cpInput"></label></div>
-        <p class="hint">Optional. Appears in an arched gold frame above your welcome message.</p>`, { focus: 'welcome' })}
+        <p class="hint">${chandni ? 'Optional. Replaces the palace illustration below your date reveal. Guests can open it full-screen.' : 'Optional. Appears in an arched gold frame above your welcome message.'}</p>`, { focus: 'welcome' })}
+      ${chandni ? card('Opening film', '<p class="hint">Awaiting the template film. The invitation is fully previewable now. The opener is a fixed template asset, not a creator upload.</p>') : ''}
       ${card('Music', `${lazyMusic ? '' : `<div id="tracks">${tracks}</div>`}
         <label class="track ${d.music.track === 'upload' ? 'on' : ''}"><input type="radio" name="track" value="upload" ${d.music.track === 'upload' ? 'checked' : ''} ${d.music.url ? '' : 'disabled'}><span class="t"><b>${d.music.url ? esc(d.music.title || 'Your song') : 'Your own song'}</b><small>${d.music.url ? 'Uploaded' : 'MP3, M4A or AAC, up to 10 MB'}</small></span>
           ${d.music.url ? `<button type="button" class="play" data-play="${esc(d.music.url)}" aria-label="Preview your song">${IC.play}</button>` : ''}<label class="btn ghost small" tabindex="0">${IC.upload} ${d.music.url ? 'Replace' : 'Upload'}<input type="file" accept="audio/mpeg,audio/mp3,audio/mp4,audio/x-m4a,audio/aac,audio/ogg" hidden id="muInput"></label></label>
+        ${chandni && d.music.url ? '<button type="button" class="btn ghost small" id="muDel">Remove song</button>' : ''}
         ${d.music.track === 'upload' ? `<div class="f" data-p="music.rightsOk"><label class="check"><input type="checkbox" data-path="music.rightsOk" ${d.music.rightsOk ? 'checked' : ''}><span>I own this song or have permission to use it. Film songs and commercial music are usually copyrighted.</span></label><div class="msg e" role="alert">${IC.alert}<span></span></div></div>` : ''}
         ${lazyMusic ? '<p class="hint">Optional: upload your own song. There is no built-in music. It never starts or downloads automatically; guests tap the music button to play it.</p>' : `<label class="check" style="margin-top:10px"><input type="checkbox" data-path="music.startMuted" ${d.music.startMuted ? 'checked' : ''}><span>Start muted (guests tap the speaker to play)</span></label>`}
         ${lazyMusic ? '' : '<p class="hint">All ten library tracks are original compositions made for Paigaam, free to use.</p>'}`, { toggle: tgl('sections.music', 'Play music'), off: d.sections.music === false })}`;
@@ -342,6 +346,9 @@
     const isCustom = d.palette.id === 'custom';
     const pk = (k, label, hint) => `<div class="f"><label for="pc-${k}">${esc(label)}</label><div class="picker"><input type="color" id="pc-${k}" value="${esc(cu[k])}" data-pc="${k}" aria-label="${esc(label)} colour picker"><input class="in" value="${esc(cu[k])}" data-hex="${k}" maxlength="7" aria-label="${esc(label)} hex code"></div><div class="hint">${esc(hint)}</div></div>`;
     const ct = (a, b, need, lab) => { const r = C.contrast(a, b); return `<span class="${r < need ? 'bad' : ''}">${esc(lab)} ${r.toFixed(1)}:1</span>`; };
+    if (chandni) return `<h2 class="step-h" tabindex="-1">Paper accents &amp; type</h2><p class="step-p">The palace, gold gates, ivory paper and rose-gold heart are fixed original artwork. Choose a button accent and type style without changing that design.</p>
+      ${card('Button accent', `${pk('primary', 'Accent colour', 'Used for paper-section buttons. Adjusted for readable contrast on the fixed ivory paper.')}<button type="button" class="btn ghost small" id="resetPal">Reset to burgundy</button>`, { focus: 'scratch' })}
+      ${card('Font style', `<div class="fonts">${C.FONTS.map(f => `<button type="button" class="font" data-font="${f.id}" aria-pressed="${d.font === f.id}"><span class="s" style="font-family:${f.script};${f.scriptStyle ? 'font-style:italic;' : ''}">${esc(C.txt(d, d.lang.base, 'couple.groom.first') || 'Aarav')}</span><small style="font-family:${f.serif}">${esc(f.name)}</small></button>`).join('')}</div>`, { focus: 'hero' })}`;
     return `<h2 class="step-h" tabindex="-1">Colours &amp; style</h2><p class="step-p">Every palette recolours the doors, curtains, flowers, scratch heart, confetti, buttons and icons instantly.</p>
       ${card('Ready-made palettes', `<div class="pals">${C.PALETTES.map(palCard).join('')}</div>`, { focus: 'hero' })}
       ${card('Make your own', `<label class="tg" style="margin-bottom:12px"><input type="checkbox" id="useCustom" ${isCustom ? 'checked' : ''}><span class="sw"></span><span>Use my own colours</span></label>
@@ -421,7 +428,7 @@
   function dashboard() {
     const url = location.origin + '/' + S.slug;
     const names = C.txt(S.data, S.data.lang.base, 'couple.groom.first') + ' & ' + C.txt(S.data, S.data.lang.base, 'couple.bride.first');
-    const tabs = [['edit', 'Edit invitation'], ['guests', simpleWhatsAppRsvp ? 'Website replies' : 'Guests (RSVP)'], ['share', 'Share'], ['versions', 'Versions']];
+    const tabs = [['edit', 'Edit invitation'], ...(chandni ? [] : [['guests', simpleWhatsAppRsvp ? 'Website replies' : 'Guests (RSVP)']]), ['share', 'Share'], ['versions', 'Versions']];
     return `<div class="tabs" role="tablist">${tabs.map(([k, l]) => `<button type="button" role="tab" data-tab="${k}" aria-selected="${S.tab === k}">${l}</button>`).join('')}</div>
       <div id="dash"></div>`;
   }
@@ -438,9 +445,10 @@
         <a class="btn ghost" href="${ROOT}/qr/${encodeURIComponent(S.id)}.png" download>${IC.qr} QR code</a><a class="btn ghost" href="${ROOT}/card/${encodeURIComponent(S.id)}.jpg?kind=story&download=1" download>${IC.image} Story image</a></div>
       <div class="og"><img src="${ROOT}/card/${encodeURIComponent(S.id)}.jpg?t=${Date.now()}" alt="The preview card guests see on WhatsApp" loading="lazy" onerror="this.parentNode.hidden=true"></div>
       <p class="hint">This is the preview card WhatsApp shows with your link.</p></div>
-      ${manage ? card('Your private manage link', `<p class="sub">Bookmark this. It opens your editor and guest list on any phone or computer. Don't share it.</p><div class="url row"><input class="in" readonly value="${esc(manage)}" style="flex:1" aria-label="Private manage link"><button type="button" class="btn ghost small" data-copy="${esc(manage)}">Copy</button></div>`) : ''}`;
+      ${manage ? card('Your private manage link', `<p class="sub">Bookmark this. It opens your editor${chandni ? '' : ' and guest list'} on any phone or computer. Don't share it.</p><div class="url row"><input class="in" readonly value="${esc(manage)}" style="flex:1" aria-label="Private manage link"><button type="button" class="btn ghost small" data-copy="${esc(manage)}">Copy</button></div>`) : ''}`;
   }
   async function guestsHtml(box) {
+    if (chandni) { box.innerHTML = '<div class="empty">RSVPs go directly to your WhatsApp chat. No guest responses are stored here.</div>'; return; }
     box.innerHTML = '<div class="empty">Loading replies…</div>';
     try {
       const r = await fetch(API + '/rsvps?id=' + encodeURIComponent(S.id), { credentials: 'same-origin' });
@@ -477,7 +485,7 @@
     $('#app').innerHTML = `
       <header class="top">
         <a class="logo" href="/templates" aria-label="Paigaam home"><img src="/brand/logo-full.png" srcset="/brand/logo-full@2x.png 2x" alt="Paigaam" width="60" height="30"></a>
-        <span class="title">Your wedding invitation</span><span class="sp"></span>
+        <span class="title">${chandni ? 'Chandni Royale' : 'Your wedding invitation'}</span><span class="sp"></span>
         <span class="save ok" id="saveState" role="status"><i></i><span>${S.synced ? 'Saved' : 'Saving…'}</span></span>
         <button type="button" class="iconbtn" id="undoBtn" aria-label="Undo" title="Undo (Ctrl+Z)">${IC.undo}</button>
         <button type="button" class="iconbtn" id="redoBtn" aria-label="Redo" title="Redo (Ctrl+Shift+Z)">${IC.redo}</button>
@@ -750,6 +758,7 @@
     });
     $$('[data-move]', list).forEach(b => b.onclick = () => moveEvent(b.dataset.id, Number(b.dataset.move)));
     $$('[data-dup]', list).forEach(b => b.onclick = () => {
+      if (chandni && S.data.events.length >= C.LIMITS.events) return toast('You can add up to 20 functions.');
       willChange(); const i = S.data.events.findIndex(e => e.id === b.dataset.dup); const c = clone(S.data.events[i]);
       c.id = 'ev-' + Math.random().toString(36).slice(2, 8); delete c.main; if (c.type === 'wedding') c.type = 'custom';
       c.name = (c.name || 'Event') + ' (copy)'; if (!c.date) c.date = S.data.wedding.date;
@@ -986,6 +995,8 @@
     const cd = $('#cpDel', body); if (cd) cd.onclick = () => { willChange(); S.data.couplePhoto = null; changed({ noUndo: true, focus: 'welcome' }); renderStep(true); };
     $$('input[name=track]', body).forEach(r => r.onchange = () => { willChange(); S.data.music.track = r.value; changed({ noUndo: true }); renderStep(true); });
     $$('[data-play]', body).forEach(b => b.onclick = e => { e.preventDefault(); e.stopPropagation(); playPreview(b); });
+    const md = $('#muDel', body);
+    if (md) md.onclick = () => { if (auditionEl) auditionEl.pause(); willChange(); S.data.music = { track: '', url: '', title: '', startMuted: true, rightsOk: false }; changed({ noUndo: true }); renderStep(true); toast('Song removed.', 'Undo', undo); };
     const mi = $('#muInput', body);
     if (mi) mi.onchange = async () => {
       const f = mi.files[0]; if (!f) return;
@@ -1141,7 +1152,7 @@
       S.id = boot.open.id; S.data = boot.open.data; S.live = boot.open.live; S.status = boot.open.status; S.slug = boot.open.slug || '';
       if (local && !local.synced && local.data && local.at > Date.now() - 14 * 864e5) { S.data = C.validate(local.data).data; S.synced = false; S.dirty = true; setTimeout(() => toast('We restored changes you had not saved yet.', 'Discard', () => { S.data = boot.open.data; changed({ noUndo: true }); renderStep(); }, 8000), 400); }
       try { S.manageUrl = localStorage.getItem(STORE + ':manage:' + S.id) || ''; } catch {}
-      if (S.live && new URLSearchParams(location.search).get('tab') === 'dashboard') S.tab = 'guests';
+      if (S.live && new URLSearchParams(location.search).get('tab') === 'dashboard') S.tab = chandni ? 'share' : 'guests';
     } else {
       const lastId = (() => { try { return localStorage.getItem(STORE + ':last'); } catch { return null; } })();
       if (local && local.data) { S.data = C.validate(local.data).data; S.synced = false; S.dirty = true; setTimeout(() => toast('Welcome back! We restored your draft.', 'Start over', async () => { if (await confirmBox('Start over?', 'This clears your draft on this device.', 'Start over', true)) { localStorage.removeItem(LS(null)); location.reload(); } }, 8000), 400); }
