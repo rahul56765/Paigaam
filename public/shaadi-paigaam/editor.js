@@ -5,10 +5,11 @@
  * seconds, and can be undone. Publishing is impossible until the checklist is clear. */
 (function () {
   'use strict';
-  const C = window.SPCore, I = window.SPI18N, ART = window.SPArt;
   const boot = JSON.parse(document.getElementById('spe-boot').textContent);
+  const C = boot.slug === 'ivory-jasmine' ? window.IJCore : window.SPCore, I = window.SPI18N, ART = window.SPArt;
   const ROOT = '/' + (boot.slug || 'shaadi-paigaam'), API = '/api' + ROOT, CREATE = '/create' + ROOT;
-  const STORE = boot.slug === 'suvarna-vivah' ? 'sv-ed' : 'sp-ed';
+  const ivoryJasmine = boot.slug === 'ivory-jasmine';
+  const STORE = boot.slug === 'ivory-jasmine' ? 'ij-ed' : boot.slug === 'suvarna-vivah' ? 'sv-ed' : 'sp-ed';
   const simpleWhatsAppRsvp = boot.slug !== 'suvarna-vivah';
   const lazyMusic = boot.slug !== 'suvarna-vivah';
   const $ = (s, r = document) => r.querySelector(s);
@@ -342,10 +343,10 @@
     const isCustom = d.palette.id === 'custom';
     const pk = (k, label, hint) => `<div class="f"><label for="pc-${k}">${esc(label)}</label><div class="picker"><input type="color" id="pc-${k}" value="${esc(cu[k])}" data-pc="${k}" aria-label="${esc(label)} colour picker"><input class="in" value="${esc(cu[k])}" data-hex="${k}" maxlength="7" aria-label="${esc(label)} hex code"></div><div class="hint">${esc(hint)}</div></div>`;
     const ct = (a, b, need, lab) => { const r = C.contrast(a, b); return `<span class="${r < need ? 'bad' : ''}">${esc(lab)} ${r.toFixed(1)}:1</span>`; };
-    return `<h2 class="step-h" tabindex="-1">Colours &amp; style</h2><p class="step-p">Every palette recolours the doors, curtains, flowers, scratch heart, confetti, buttons and icons instantly.</p>
+    return `<h2 class="step-h" tabindex="-1">Colours &amp; style</h2><p class="step-p">${ivoryJasmine ? 'Choose the ink, accent lines and surrounding canvas colour for your floral stationery. The white jasmine artwork stays beautifully natural.' : 'Every palette recolours the doors, curtains, flowers, scratch heart, confetti, buttons and icons instantly.'}</p>
       ${card('Ready-made palettes', `<div class="pals">${C.PALETTES.map(palCard).join('')}</div>`, { focus: 'hero' })}
       ${card('Make your own', `<label class="tg" style="margin-bottom:12px"><input type="checkbox" id="useCustom" ${isCustom ? 'checked' : ''}><span class="sw"></span><span>Use my own colours</span></label>
-        <div ${isCustom ? '' : 'hidden'}><div class="grid3">${pk('primary', 'Main colour', 'Doors, buttons, heart')}${pk('accent', 'Accent', 'Gold lines & medallion')}${pk('bg', 'Background', 'Page colour')}</div>
+        <div ${isCustom ? '' : 'hidden'}><div class="grid3">${pk('primary', 'Main colour', ivoryJasmine ? 'Botanical ink & buttons' : 'Doors, buttons, heart')}${pk('accent', 'Accent', ivoryJasmine ? 'Fine lines & details' : 'Gold lines & medallion')}${pk('bg', 'Background', 'Page colour')}</div>
         <p class="hint">We create every other shade (shadows, text, cards, lines) for you, so it always looks harmonious.</p>
         <div class="f" data-p="palette"><div class="msg e" role="alert">${IC.alert}<span></span></div><div class="msg w">${IC.info}<span></span></div></div>
         <div class="contrast" aria-label="Readability checks">${ct(built.palette.heading, built.palette.bg, 4.5, 'Headings')}${ct(built.palette.body, built.palette.bg, 4.5, 'Text')}${ct(built.palette.buttonText, built.palette.button, 4.5, 'Buttons')}</div></div>`, { focus: 'scratch' })}
@@ -1020,7 +1021,7 @@
     const setC = (k, v) => { if (!/^#[0-9a-f]{6}$/i.test(v)) return false; willChange(); S.data.palette.custom[k] = v.toUpperCase(); S.data.palette.id = 'custom'; changed({ noUndo: true, focus: 'scratch' }); paintContrast(); return true; };
     $$('[data-pc]', body).forEach(i => i.addEventListener('input', () => { setC(i.dataset.pc, i.value); const h = $(`[data-hex="${i.dataset.pc}"]`); if (h) h.value = i.value.toUpperCase(); }));
     $$('[data-hex]', body).forEach(i => i.addEventListener('input', () => { let v = i.value.trim(); if (v && v[0] !== '#') v = '#' + v; if (setC(i.dataset.hex, v)) { const p = $(`[data-pc="${i.dataset.hex}"]`); if (p) p.value = v; } }));
-    const rp = $('#resetPal', body); if (rp) rp.onclick = () => { willChange(); S.data.palette = clone(C.SAMPLE.palette); changed({ noUndo: true, focus: 'hero' }); renderStep(true); toast('Back to Royal Maroon.', 'Undo', undo); };
+    const rp = $('#resetPal', body); if (rp) rp.onclick = () => { willChange(); S.data.palette = clone(C.SAMPLE.palette); changed({ noUndo: true, focus: 'hero' }); renderStep(true); toast(ivoryJasmine ? 'Back to Ivory Jasmine.' : 'Back to Royal Maroon.', 'Undo', undo); };
     $$('[data-font]', body).forEach(b => b.onclick = () => { willChange(); S.data.font = b.dataset.font; changed({ noUndo: true, focus: 'hero' }); renderStep(true); });
   }
   function paintContrast() {
@@ -1151,7 +1152,7 @@
       if (!S.data && boot.resume) {
         try { const r = await fetch(API + '/me?id=' + encodeURIComponent(boot.resume.id), { credentials: 'same-origin' }); if (r.ok) { location.replace(CREATE + '?id=' + encodeURIComponent(boot.resume.id)); return; } } catch {}
       }
-      if (!S.data) { const starter = clone(C.SAMPLE); if (boot.slug === 'suvarna-vivah') { starter.palette.id = 'emerald-gold'; starter.palette.custom = { primary: '#0F5440', accent: '#C2A057', bg: '#F6F3E9' }; starter.font = 'royal'; } S.data = C.validate(starter).data; }
+      if (!S.data) { const starter = clone(C.SAMPLE); if (boot.slug === 'suvarna-vivah') { starter.palette.id = 'emerald-gold'; starter.palette.custom = { primary: '#0F5440', accent: '#C2A057', bg: '#F6F3E9' }; starter.font = 'royal'; } if (boot.slug === 'ivory-jasmine') { starter.palette.id = 'custom'; starter.palette.custom = { primary: '#58634B', accent: '#A78B59', bg: '#FFFCF5' }; starter.font = 'royal'; } S.data = C.validate(starter).data; }
     }
     try { const st = Number(localStorage.getItem(STORE + ':step:' + (S.id || 'new'))); if (st >= 0 && st < STEPS.length) S.step = st; } catch {}
     validateNow();
