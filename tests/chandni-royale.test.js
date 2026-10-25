@@ -97,6 +97,23 @@ test('isolated draft, editor, publish, upload, removal, restore and access route
   let j = await r.json();
   assert.equal(r.status, 200); assert.ok(j.id); assert.equal(j.errors.length, 0);
   const id = j.id, token = j.manageToken;
+  // Pre-seed the card cache so its privacy policy is testable without Sharp.
+  function seedShareCard(d) {
+    const h = crypto.createHash('sha256').update(JSON.stringify([d.couple, d.wedding, d.venue.name, d.venue.city, d.palette, d.couplePhoto, d.photos[0], d.lang.base, 'og', d.access.passcode ? 1 : 0])).digest('hex').slice(0, 16);
+    fs.writeFileSync(path.join(dir, 'chandni-royale-cards', id + '-og-' + h + '.jpg'), Buffer.from('test-card-fixture'));
+  }
+  const draftCardData = (await (await J('/api/chandni-royale/me?id=' + id, undefined, cookie)).json()).data;
+  seedShareCard(draftCardData);
+  const draftCard = await J('/chandni-royale/card/' + id + '.jpg', undefined, cookie);
+  assert.equal(draftCard.status, 200);
+  assert.equal(draftCard.headers.get('cache-control'), 'private, no-store');
+  assert.equal(draftCard.headers.get('vary'), 'Cookie');
+  assert.equal((await J('/chandni-royale/card/' + id + '.jpg')).status, 404);
+  const guestFrame = await J('/chandni-royale/frame?guest=1');
+  const guestHtml = await guestFrame.text();
+  const guestBoot = JSON.parse(guestHtml.match(/<script id="cr-boot" type="application\/json">([\s\S]*?)<\/script>/)[1]);
+  assert.equal(guestBoot.mode, 'demo'); assert.equal(guestBoot.editorFrame, true);
+  assert.equal(guestFrame.headers.get('cache-control'), 'private, no-store');
   assert.equal((await J('/api/chandni-royale/me?id=' + id)).status, 404);
   assert.equal((await J('/api/chandni-royale/draft', { id, data: sample() })).status, 403);
   assert.equal((await J('/api/chandni-royale/me?id=' + oldPg.id, undefined, cookie)).status, 404);
@@ -145,6 +162,10 @@ test('isolated draft, editor, publish, upload, removal, restore and access route
   await J('/api/chandni-royale/draft', { id, data: d }, cookie);
   r = await J('/api/chandni-royale/publish', { id, confirmed: true, slug: 'our-chandni' }, cookie);
   assert.equal(r.status, 200); assert.equal((await r.json()).url, base + '/our-chandni');
+  seedShareCard(C.validate(q.paigaamById(id).customer_data).data);
+  const publicCard = await J('/chandni-royale/card/' + id + '.jpg');
+  assert.equal(publicCard.status, 200);
+  assert.equal(publicCard.headers.get('cache-control'), 'public, max-age=3600');
   assert.equal((await J(photo)).status, 200);
   assert.equal((await fetch(base + song, { headers: { range: 'bytes=0-15' } })).status, 206);
   assert.equal((await J('/api/chandni-royale/rsvp/' + id, { name: 'No store', attending: 'yes' })).status, 404);
@@ -166,6 +187,12 @@ test('isolated draft, editor, publish, upload, removal, restore and access route
   const locked = sample(); locked.photos = [{ url: photo }]; locked.access.passcode = 'family';
   await J('/api/chandni-royale/draft', { id, data: locked }, cookie);
   await J('/api/chandni-royale/publish', { id, confirmed: true }, cookie);
+  seedShareCard(C.validate(q.paigaamById(id).customer_data).data);
+  const privateCard = await J('/chandni-royale/card/' + id + '.jpg', undefined, cookie);
+  assert.equal(privateCard.status, 200);
+  assert.equal(privateCard.headers.get('cache-control'), 'private, no-store');
+  assert.equal(privateCard.headers.get('vary'), 'Cookie');
+  assert.equal((await J('/chandni-royale/card/' + id + '.jpg')).status, 404);
   assert.equal((await J(photo, undefined, 'cr_pass_' + id + '=bogus')).status, 404);
   r = await fetch(base + '/chandni-royale/unlock/' + id, { method: 'POST', redirect: 'manual', headers: { 'content-type': 'application/x-www-form-urlencoded' }, body: 'passcode=family' });
   assert.equal(r.status, 303);
