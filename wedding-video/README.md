@@ -158,6 +158,8 @@ node scripts/stills.mjs 9 17 26                      # quick visual checks
 
 ## Changelog
 
+- **2026-10-25** Added the separate Divya Vivah interactive Marathi web invitation (`templates/divya-vivah`, `/create/divya-vivah`) to the shared template family. It uses a fixed supplied tap-to-open film and editable HTML, countdown and Maps; it does not use or alter this Remotion renderer, routes, jobs or existing invitation data. Its asset preparation is appended to the root build/postinstall scripts. See `templates/divya-vivah/README.md` for fidelity and testing limits.
+
 - **2026-10-11** The Paigaam admin panel adds mobile-friendly navigation to the video editor; the existing `/wedding-video` route and video-generation behavior are unchanged.
 - **2026-10-10** Deployed to production (PR #19). Story scenes replace per-customer generation. The
   Railway build script and Nix packages were added (PRs #20, #21, #22). First production render verified

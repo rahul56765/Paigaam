@@ -187,6 +187,8 @@ for (const t of family.list) {
 
   test(`${S} · HTML: every piece of sender text is escaped — preview, live page, preview frame`, async () => {
     const hostile = { ...demo, ...hostileFor(t.fields) };
+    // Divya's machine-readable time is constrained, unlike free-form invitation copy.
+    if (S === 'divya-vivah') hostile.weddingTime = demo.weddingTime;
     const a = await draft(S, hostile);
     const pages = [(await request(a.previewUrl, { cookie: a.cookie })).text];
     const pub = await request(`/api/${S}/publish`, { method: 'POST', cookie: a.cookie, body: { id: a.id } });

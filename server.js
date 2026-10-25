@@ -91,7 +91,7 @@ const send = (res, code, body, type = 'text/html; charset=utf-8', headers = {}) 
 const redirect = (res, to, headers = {}) => { res.writeHead(303, { Location: to, ...headers }); res.end(); };
 const json = (res, code, obj) => send(res, code, JSON.stringify(obj), 'application/json; charset=utf-8');
 
-const MIME = { '.mp4':'video/mp4', '.mp3':'audio/mpeg', '.css':'text/css; charset=utf-8', '.js':'text/javascript; charset=utf-8', '.mjs':'text/javascript', '.svg':'image/svg+xml', '.png':'image/png', '.jpg':'image/jpeg', '.jpeg':'image/jpeg', '.webp':'image/webp', '.gif':'image/gif', '.ico':'image/x-icon', '.woff':'font/woff', '.woff2':'font/woff2', '.txt':'text/plain', '.json':'application/json', '.html':'text/html; charset=utf-8', '.map':'application/json' };
+const MIME = { '.mp4':'video/mp4', '.mp3':'audio/mpeg', '.css':'text/css; charset=utf-8', '.js':'text/javascript; charset=utf-8', '.mjs':'text/javascript', '.svg':'image/svg+xml', '.png':'image/png', '.jpg':'image/jpeg', '.jpeg':'image/jpeg', '.webp':'image/webp', '.gif':'image/gif', '.ico':'image/x-icon', '.woff':'font/woff', '.woff2':'font/woff2', '.ttf':'font/ttf', '.txt':'text/plain', '.json':'application/json', '.html':'text/html; charset=utf-8', '.map':'application/json' };
 function serveStatic(req, res, urlPath) {
   let rel; try { rel = decodeURIComponent(urlPath).replace(/^\/+/, ''); } catch { return false; }
   if (rel.includes('\0') || rel.includes('\\')) return false;
