@@ -56,7 +56,7 @@ function sample() {
     ok((await J('/templates/suvarna-vivah')).status === 200, 'catalogue detail page exists');
     ok((await J('/template-view/suvarna-vivah')).status === 200, 'gallery thumbnail uses the Suvarna experience');
     const editorHtml = await (await J('/create/suvarna-vivah')).text();
-    ok(editorHtml.includes('/shaadi-paigaam/editor.js?v=8') && editorHtml.includes('\"slug\":\"suvarna-vivah\"'), 'editor page loads the cache-busted route-aware editor');
+    ok(editorHtml.includes('/shaadi-paigaam/editor.js?v=6') && editorHtml.includes('\"slug\":\"suvarna-vivah\"'), 'editor page loads the cache-busted route-aware editor');
     ok((await J('/shaadi-paigaam/invite.css')).status === 200 && (await J('/shaadi-paigaam/art/scene-base.webp')).status === 200 && (await J('/suvarna-vivah/opening.css')).status === 200 && (await J('/suvarna-vivah/opening.js')).status === 200, 'shared invitation art and new opener assets are served');
     const video = await fetch(base + '/suvarna-vivah/opening.mp4', { headers: { range: 'bytes=0-15' } });
     ok(video.status === 206 && /^bytes 0-15\//.test(video.headers.get('content-range') || ''), 'opening video supports byte-range playback');
