@@ -28,8 +28,8 @@ function eventTarget() {
 }
 
 function boot({ now = '2026-05-25T00:00:00Z', customer = {}, reduced = false,
-  observer = true, play = () => Promise.resolve(), preview = false, search = '' } = {}) {
-  const html = renderer.renderDivya({ customer_data: { ...config.demo, ...customer } }, { isPreview: preview });
+  observer = true, play = () => Promise.resolve(), preview = false, search = '', language = 'mr', demo = true } = {}) {
+  const html = renderer.renderDivya({ customer_data: { ...(demo ? config.demo : {}), ...customer } }, { isPreview: preview });
   let clock = Date.parse(now), nextId = 0;
   const origin = clock, timers = new Map(), frames = new Map(), observations = [];
   const elements = [];
@@ -43,7 +43,11 @@ function boot({ now = '2026-05-25T00:00:00Z', customer = {}, reduced = false,
     }
     const classes = new Set((attrs.class || '').split(/\s+/).filter(Boolean));
     const element = Object.assign(eventTarget(), {
-      tagName: match[1].toUpperCase(), attrs, style: {}, textContent: '',
+      tagName: match[1].toUpperCase(), attrs, style: {},
+      textContent: unescape(html.slice(match.index + match[0].length, html.indexOf('</' + match[1], match.index + match[0].length)).replace(/<[^>]*>/g, '')),
+      open: Object.hasOwn(attrs, 'open'), showModalCalls: 0, closeCalls: 0,
+      showModal() { this.open = true; this.attrs.open = ''; this.showModalCalls++; },
+      close() { this.open = false; delete this.attrs.open; this.closeCalls++; },
       hidden: Object.hasOwn(attrs, 'hidden'), inert: Object.hasOwn(attrs, 'inert'),
       disabled: Object.hasOwn(attrs, 'disabled'), dataset: {},
       clientWidth: 300, scrollWidth: 200, clientHeight: 100, scrollHeight: 50,
@@ -60,6 +64,7 @@ function boot({ now = '2026-05-25T00:00:00Z', customer = {}, reduced = false,
     let src = attrs.src || '';
     element.srcWrites = [];
     Object.defineProperty(element, 'src', { get: () => src, set(value) { src = String(value); this.srcWrites.push(src); } });
+    Object.defineProperty(element, 'lang', { get: () => attrs.lang || '', set: value => { attrs.lang = String(value); } });
     elements.push(element);
   }
   function matches(element, selector) {
@@ -117,6 +122,8 @@ function boot({ now = '2026-05-25T00:00:00Z', customer = {}, reduced = false,
     ...(observer ? { IntersectionObserver: window.IntersectionObserver } : {}),
   };
   vm.runInNewContext(source, sandbox, { filename: 'public/divya-vivah/invite.js', timeout: 1000 });
+  // Let the real shipped script present its chooser before selecting a language.
+  if (language !== null) $('[data-language="' + language + '"]').emit('click');
   function raf() {
     const pending = [...frames.values()]; frames.clear();
     for (const fn of pending) fn(clock - origin);
@@ -134,7 +141,17 @@ function boot({ now = '2026-05-25T00:00:00Z', customer = {}, reduced = false,
   }
   const units = () => Object.fromEntries(document.querySelectorAll('[data-unit]').map(el => [el.dataset.unit, el.textContent]));
   return { $, html, document, window, video, observations, advance, raf, units,
-    click: selector => $(selector).emit('click'), key: key => document.emit('keydown', { key }) };
+    click: selector => $(selector).emit('click'),
+    async key(key) {
+      const event = { key, defaultPrevented: false, preventDefault() { this.defaultPrevented = true; } };
+      await document.emit('keydown', event); return event;
+    },
+    async cancelLanguage() {
+      const event = { defaultPrevented: false, preventDefault() { this.defaultPrevented = true; } };
+      await $('#dv-language').emit('cancel', event);
+      if (!event.defaultPrevented) $('#dv-language').close();
+      return event;
+    } };
 }
 
 function assertOpened(h) {
@@ -151,7 +168,7 @@ function assertOpened(h) {
 
 // Export only for subprocess probes: separate processes give genuine visitor TZs.
 module.exports = { boot };
-if (process.env.DIVYA_RUNTIME_PROBE !== '1') {
+if (require.main === module && process.env.DIVYA_RUNTIME_PROBE !== '1') {
   test('initial render stays gated, without autoplay, playback, or a map request', () => {
     const h = boot();
     assert.equal(h.video.getAttribute('autoplay'), null);
@@ -296,7 +313,7 @@ if (process.env.DIVYA_RUNTIME_PROBE !== '1') {
     assert.equal(h.$('#dv-count-status').textContent, config.demo.afterWeddingMessage);
     h.advance(10000);
     assert.deepEqual(h.units(), { days: '००', hours: '००', minutes: '००', seconds: '००' });
-    assert.match(h.$('.dv-target').textContent, /IST$/);
+    assert.match(h.$('.dv-target').textContent, /भारतीय प्रमाणवेळ \(UTC\+०५:३०\)$/);
   });
 
   test('test-only future date ticks in Devanagari and transitions through wedding day to after-day', () => {

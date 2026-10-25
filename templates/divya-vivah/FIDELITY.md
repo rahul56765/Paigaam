@@ -18,3 +18,6 @@
 - Source asset reuse was raised with the user; they replied “Go ahead”. No independent artwork ownership/license provenance was supplied.
 - Marathi source was visually transcribed; no native-speaker proofreading was available. Customer/owner should approve wording, names, real date and venue pin before selling/sharing.
 - This is an interactive webpage invitation, not an exported three-slide MP4. Countdown and Maps require the webpage.
+
+## Language-only revision
+The Marathi copy/defaults, illustration, film, poster, original Devanagari fonts and original card geometry are preserved. Hindi and English add editable translations, language controls, localized numerals and English typefaces without replacing the approved assets. Regression tests pin the original media hashes, Marathi source snapshot and CSS prefix. Proper names and addresses in each language are independent creator-editable strings, not automatic transliterations.

@@ -1,6 +1,30 @@
 # Divya Vivah — Marathi tap-to-open invitation
 
-Added 2026-10-25. New isolated, editable Wedding template (`divya-vivah`) using Paigaam's existing template-family engine. No changes to existing invitations or live production data. The only shared static-server change adds the standard font/ttf MIME type for locally hosted Devanagari fonts.
+Added 2026-10-25. New isolated, editable Wedding template (`divya-vivah`) with Marathi, Hindi and English using Paigaam's existing template-family engine. No changes to existing invitations or live production data. The only shared static-server change adds the standard font/ttf MIME type for locally hosted Devanagari fonts.
+
+
+## Language-only revision — 2026-10-25
+
+Guests now choose **मराठी / हिन्दी / English** in a keyboard-accessible native dialog before the existing tap-to-open screen. Initial selection cannot be dismissed to bypass the choice. A small language button allows later switching; it does not restart the film, reset the countdown, navigate/reload the page or change the venue pin. No saved language preference skips the initial question on a new visit.
+
+All **35 original Marathi copy fields and defaults remain unchanged**. Seventy additive fields (`hiPrayer`, `enPrayer`, etc.) provide independently editable Hindi and English wording for every corresponding invitation, date/time label, name, family/contact detail, navigation label, countdown heading/message/unit and venue/address. The existing six editor steps now group the three language variants together. Machine-readable wedding date/time and canonical Maps pin remain shared.
+
+Translations are curated defaults, not an automatic translation API. Creators should enter each language's personal spelling and address. Blank personalized translations inherit the actual Marathi details (never a different sample family). If Marathi remains the untouched sample, its translated sample defaults are used. Customers can freely override either translated copy without altering Marathi or the other language. Translation fields are optional for compatibility with earlier draft data; existing records are not migrated or overwritten.
+
+Display numerals are normalized across card text, phones, postal codes, target date and countdown: Devanagari for Marathi/Hindi, ASCII for English. Stored Marathi source text is never rewritten. Computed Marathi/Hindi target times use localized 24-hour numerals to avoid English AM/PM tokens. The countdown instant remains explicit IST. Printed date/time copy is still independently editable in each language; align all three with the shared countdown settings.
+
+Both Devanagari languages retain the approved Tiro Devanagari Marathi and Amita fonts. English uses locally hosted OFL Cormorant Garamond (body) and Great Vibes (names). Their licenses are included. Asset decoding now verifies 7 binary assets instead of 5. The Cormorant font is the upstream variable font, pinned to weight 400 in CSS.
+
+The approved illustration, video, poster and original font bytes have identical SHA-256 hashes. Original card geometry, palette and video timing remain unchanged; the original 8,441-byte stylesheet prefix is regression-tested byte-for-byte. Additive styles cover only the language controls, English faces and safe long-copy wrapping/fitting. No image/video was regenerated for this revision.
+
+The Maps query is canonical, not rebuilt from translated venue names. Its language hint changes so Google can localize its interface; geographic labels inside Google's third-party map remain Google's content. The editable address, heading and directions button are localized by Paigaam itself.
+
+### Language validation
+
+- 45 template-specific schema/render/runtime/language tests pass, including the approved Marathi snapshot, all 70 translation fields, hostile text, digit conversion, mandatory initial choice, state-preserving switching, maps and multi-timezone countdowns.
+- Full family/API suite: 356 passing tests plus all-template restart persistence. The API suite covers representative localized fields; exhaustive invalid-type/control/newline/length checks for all 70 fields run directly against the exact shared schema so tests do not flood the real HTTP abuse limiter. Production rate limits are unchanged.
+- Browser: selected English, played the original film, switched to Hindi and Marathi, inspected all three cards and the English countdown/location view. No horizontal overflow at 320/375/390/736-pixel card widths for each language; all four local fonts loaded. Final preview render check passed with no failed requests or console errors.
+- Clean dependency installation and full root-suite limitations below remain unchanged. No deployment/merge performed by this revision.
 
 ## Experience
 

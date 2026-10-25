@@ -119,3 +119,29 @@ module.exports = {
   sections: ['gate', 'invitation', 'details'],
   theme: { bg: '#fff4df', ink: '#6e241d', accent: '#a8792d', soft: '#efdbb7', motif: 'royal', serifCase: 'title', layout: 'story' },
 };
+
+// Additive language copies. Original Marathi fields, values and field IDs above stay untouched.
+const translations = require('./translations');
+const settings = new Set(['weddingDate', 'weddingTime', 'mapQuery']);
+const originals = module.exports.fields.filter(f => !settings.has(f.id));
+const personal = new Set(['groomName', 'brideName', 'venueName', 'venueAddress', 'familyDetails', 'contactText', 'weekday', 'dayText', 'monthYearText', 'timePeriod', 'timeText', 'timeSuffix']);
+const keyFor = (lang, id) => lang + id[0].toUpperCase() + id.slice(1);
+module.exports.localeCopyFields = originals.map(f => f.id);
+module.exports.languages = ['mr', 'hi', 'en'];
+for (const lang of ['hi', 'en']) {
+ for (const field of originals) {
+  module.exports.fields.push({ ...field, id: keyFor(lang, field.id), required: false,
+   label: (lang === 'hi' ? 'Hindi' : 'English') + ' · ' + field.label.split(' / ').pop(),
+   default: personal.has(field.id) ? '' : translations[lang][field.id],
+   placeholder: translations[lang][field.id],
+   hint: personal.has(field.id) ? 'Independent '+lang+' copy. Enter this family’s translated/transliterated details. Blank inherits the corresponding Marathi details; it never substitutes sample names. Printed dates must still match the shared countdown settings.' : 'Editable '+lang+' translation; does not alter the original Marathi wording.',
+  });
+  // Demo translations are explicit; existing saved invitations are never migrated or overwritten.
+  module.exports.demo[keyFor(lang, field.id)] = translations[lang][field.id];
+ }
+}
+for (const step of module.exports.steps) {
+ step.fields = step.fields.flatMap(id => settings.has(id) ? [id] : [id, keyFor('hi', id), keyFor('en', id)]);
+ step.intro = (step.intro ? step.intro + ' ' : '') + 'Marathi, Hindi and English copy are edited independently. Language changes preserve the same wedding date, venue pin, artwork and video.';
+}
+module.exports.description = 'A tap-to-open wedding invitation in Marathi, Hindi and English, with independently editable copy, localized digits, countdown and venue directions.';
