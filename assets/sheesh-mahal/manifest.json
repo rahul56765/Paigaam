@@ -1,0 +1,30 @@
+{
+  "sunset.webp": {
+    "sha256": "f4e99a6200c8acda45a657bc7b28ed8f473df1ff5858c591953f61a67df39807",
+    "bytes": 393000
+  },
+  "night.webp": {
+    "sha256": "87a7922e72c5d36a3666d4bb00e679df015fff880c981af9fc0db31c32fac604",
+    "bytes": 267926
+  },
+  "marble.webp": {
+    "sha256": "a495a044714bbf78e42afd65aa3dc87f4501ef437c87602beaaa80986c228a7b",
+    "bytes": 148576
+  },
+  "stone.webp": {
+    "sha256": "e335b33fe8d51dec27c2f5b28e1382655d7556e6c6f42213def345f07dc3c9aa",
+    "bytes": 312198
+  },
+  "car.webp": {
+    "sha256": "9f2fc318035a63faf58186416542c6d3356d5b6aad6117e9eb8e6f3013df2caa",
+    "bytes": 86888
+  },
+  "arch.webp": {
+    "sha256": "52b4b493c890bae9b5487a4213485d4b8098d1f143336b442b91cb4bf827e98c",
+    "bytes": 129346
+  },
+  "flowers.webp": {
+    "sha256": "7b331bc786de744ec2aa76ed0eeb017e76e282b886bd7e77f559e5330138585f",
+    "bytes": 188898
+  }
+}
