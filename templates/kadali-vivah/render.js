@@ -8,7 +8,7 @@
 const C = require('../../public/shaadi-paigaam/core.js');
 const I = require('../../public/shaadi-paigaam/i18n.js');
 
-const ASSET_V = '2';
+const ASSET_V = '3';
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const jsonSafe = obj => JSON.stringify(obj).replace(/</g, '\\u003c').replace(/>/g, '\\u003e').replace(/&/g, '\\u0026').replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029');
 
@@ -59,7 +59,7 @@ function renderInvitation(data, o = {}) {
 <noscript><div style="padding:40px 24px;text-align:center;font-family:Georgia,serif"><h1>${esc(names(data))}</h1><p>${esc(C.fmtDate(data.wedding.date, 'en', 'full'))} · ${esc(C.fmtTime(data.wedding.time, 'en'))}</p><p>${esc([data.venue.name, data.venue.address, data.venue.city].filter(Boolean).join(', '))}</p><p>Please enable JavaScript to open the invitation.</p></div></noscript>
 <script id="sp-boot" type="application/json">${jsonSafe(boot)}</script>
 <script src="/shaadi-paigaam/i18n.js?v=${ASSET_V}"></script>
-<script src="/shaadi-paigaam/core.js?v=7"></script>
+<script src="/shaadi-paigaam/core.js?v=8"></script>
 <script src="/kadali-vivah/vendor/three-0.160.0.min.js"></script>
 <script src="/kadali-vivah/stage.js?v=${ASSET_V}"></script>
 <script src="/kadali-vivah/invite.js?v=${ASSET_V}"></script>

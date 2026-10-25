@@ -19,7 +19,7 @@
   const couple = () => pair().map(s => X('couple.'+s+'.first')).join(' & ');
   const ornament = '<svg class="sigil" viewBox="0 0 120 40" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width=".8"><path d="M4 20H39Q49 20 60 6Q71 20 81 20H116M37 20Q51 20 60 34Q69 20 83 20M60 6Q42 19 60 34Q78 19 60 6Z"/><circle cx="60" cy="20" r="4"/><path d="M8 20q8-17 18-5q-10 13-18 5m104 0q-8-17-18-5q10 13 18 5"/></g></svg>';
   const icon = name => ({arrow:'↗',close:'×',play:'▶',pause:'Ⅱ',replay:'↺',down:'↓',calendar:'＋',music:'♪',sound:'♫',pin:'⌖'}[name] || '✧');
-  const mediaURL = p => window.KVPreviewMedia && window.KVPreviewMedia[p] || p;
+  const mediaURL = p => window.KVPreviewMedia?.[p] || window.KVPreviewAssets?.[p] || p;
 
   function theme() {
     const palette = C.buildPalette(data.palette), root = document.documentElement;
@@ -96,6 +96,7 @@
     try {
       stage=window.KadaliStage.create($('#stage'),{reduced:reduced||thumb,palette:C.buildPalette(data.palette).palette,onReady:()=>$('#sceneWrap')?.classList.add('gl-ready')});
       stage.setProgress(pendingProgress);
+      stage.setPhotos({couplePhoto:data.couplePhoto,photos:data.photos,showPhotos:data.sections.photos});
     } catch { $('#sceneWrap').classList.add('scene-fallback'); }
   }
 
@@ -110,7 +111,7 @@
   }
   function welcomeMarkup() {
     const text=C.fillNames(X('welcome.text'),data,lang);
-    return plate('s-welcome',2,T('withLove'),`${data.couplePhoto?`<div class="portrait-portal"><img src="${esc(mediaURL(data.couplePhoto.url))}" alt="${esc(couple())}" style="object-position:${data.couplePhoto.fx}% ${data.couplePhoto.fy}%"></div>`:''}<h2>A promise,<br><em>with blessings.</em></h2><p class="ceremony-copy">${esc(text)}</p>${ornament}`,{side:'right',extra:'family-chapter'});
+    return plate('s-welcome',2,T('withLove'),`${data.couplePhoto?`<div class="portrait-portal photographic-portrait"><img class="portrait-photo" src="${esc(mediaURL(data.couplePhoto.url))}" alt="${esc(couple())}" style="object-position:${data.couplePhoto.fx}% ${data.couplePhoto.fy}%"><img class="portrait-flowers" src="${esc(mediaURL('/kadali-vivah/art/portrait-frame.webp'))}" alt=""></div>`:''}<h2>A promise,<br><em>with blessings.</em></h2><p class="ceremony-copy">${esc(text)}</p>${ornament}`,{side:'right',extra:'family-chapter'});
   }
   function dateMarkup() {
     return plate('s-scratch',3,T('saveOurDate'),`<div class="date-orbit"><span class="orbit-ring r1" aria-hidden="true"></span><span class="orbit-ring r2" aria-hidden="true"></span><div class="date-seal"><span>${esc(C.fmtDate(data.wedding.date,lang,'weekday'))}</span><strong>${esc(C.fmtDate(data.wedding.date,lang,'daymonth'))}</strong><span>${esc(C.fmtTime(data.wedding.time,lang))}</span></div></div><h2>${esc(T('countdownTitle'))}</h2><div class="countdown" id="cd" role="timer">${['days','hours','minutes','seconds'].map(k=>`<div><strong data-k="${k}">00</strong><span>${esc(T(k))}</span></div>`).join('')}</div><button class="action outline" type="button" id="calendarBtn">${esc(T('saveTheDate'))} ${icon('calendar')}</button>`,{extra:'date-chapter'});
@@ -160,7 +161,7 @@
     const date=$('#s-scratch');if(date)date.dataset.alias='countdown';
     setupLanguage();setupMusic();bindCalendar();bindGallery();bindCountdown();bindReveals();
     fitNames();measure();scrollTo(0,y);updateScroll();
-    if(stage)stage.setPalette(palette);
+    if(stage){stage.setPalette(palette);stage.setPhotos({couplePhoto:data.couplePhoto,photos:data.photos,showPhotos:data.sections.photos});}
   }
   function setupLanguage() {
     const select=$('#langSelect');select.innerHTML=data.lang.enabled.map(l=>`<option value="${l}" ${l===lang?'selected':''}>${esc(I.LANGS[l].native)}</option>`).join('');
@@ -245,7 +246,7 @@
     else if(m.type==='sp:scroll')scrollTo(0,m.y||0);
     else if(m.type==='sp:revealAll')$$('.ritual-ticket').forEach(el=>el.classList.add('entered'));
   });
-  window.SPInvite={open:()=>$('#openBtn')?.click(),replay,setLang,go,reveal:()=>go('scratch'),stage:()=>stage?.stats()||null,progress:()=>pendingProgress};
+  window.SPInvite={open:()=>$('#openBtn')?.click(),replay,setLang,go,reveal:()=>go('scratch'),stage:()=>stage?.stats()||null,progress:()=>pendingProgress,previewPhotos:payload=>{if(cfg.mode!=='demo'||!window.KVPreviewMedia)return;data=C.validate({...data,couplePhoto:payload.couplePhoto||null,photos:payload.photos||[]},{allowPast:true}).data;render();}};
   theme();shell();render();
   if(parent!==window)parent.postMessage({type:'sp:ready'},location.origin);
 })();

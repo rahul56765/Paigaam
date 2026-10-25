@@ -33,7 +33,7 @@ async function frameHarness(p,guest,data){await p.route('**/__kadali_test',r=>r.
     ok(film.rate===1&&!film.muted&&film.src.endsWith('/kadali-vivah/opening.mp4'),'original speed and audio retained');
     ok(await p.locator('video').evaluate(v=>getComputedStyle(v).objectFit==='contain'),'full video frame uncropped');
     await p.locator('#intro').waitFor({state:'detached',timeout:30000});ok(true,'actual ended event reveals invitation after full original film');
-    const state=await gl(p);ok(state.webgl&&state.drawCalls>0&&state.triangles>50000,'real 3D scene follows video');
+    await p.waitForFunction(()=>SPInvite.stage()?.assetLayersLoaded===5);const state=await gl(p);ok(state.webgl&&state.drawCalls>0&&state.photographic&&state.assetLayersFailed===0,'depth-separated photographic 3D scene follows video');
     await p.screenshot({timeout:60000,path:path.join(out,'after-original-film.png')});
    }finally{await p.context().close();}
   });

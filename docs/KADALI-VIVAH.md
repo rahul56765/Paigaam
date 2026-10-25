@@ -22,16 +22,18 @@ Ten checksummed base64 parts transport the original clip through the repository 
 
 No Shaadi/Suvarna invitation renderer, visual markup, stylesheet or art/icon library is loaded. Only the shared editor, data schema, validators, localization utilities and secure backend mechanics are reused.
 
-The reference's gold/ivory ending opens into a procedural Three.js world with actual meshes and perspective:
+The reference's gold/ivory ending now opens into a hybrid photographic 3D art set, replacing the visibly synthetic procedural ornaments from the previous review. Five original generated assets supply the realism: a temple/mandap environment, carved portal, hanging marigold/jasmine canopy, copper kalash arrangement and floral portrait frame. The portal, canopy, kalash and frame have actual RGBA transparency; a separate lossless aperture mask clips customer photographs exactly inside the floral frame. The blue compositing backgrounds were removed and edge spill cleaned before WebP packaging.
 
-- Raised ivory-stone courtyard, jointed floor and geometric inlays.
-- Lathed carved columns, fluted shafts, gilded bands, scalloped entrance arches and repeated colonnades.
-- Curved, textured banana leaves, marigold torans, hanging brass bells and standing oil lamps.
-- Copper kalash groups with coconut and leaves; a layered lotus pool.
-- Stepped mandap, sculpted silk canopy, decorative crown, lattice screen and ceremonial altar.
-- A continuous scroll-directed camera path progresses from entrance through courtyard/lotus to the mandap and closing scene. The path stays clear of roof beams so architecture does not block the scene.
+The assets are placed on separate WebGL surfaces at different world-space depths. Camera travel, perspective, occlusion and frame movement remain spatial; the decorative architecture is photographic art rather than a fully modelled temple. This is deliberately a hybrid 2.5D/3D approach, not a claim that a single flat image is a complete 3D model. Small gilt hardware and hanging cords add physical frame edges. The layered set is dramatically lighter than the previous procedural scene while improving material realism.
 
-Foreground invitation chapters are original layered gilt plaques with embossed relief edges, real CSS perspective, raised ritual tickets, orbital date layers and a 3D photo stack for customer uploads. The camera and surfaces respond throughout scrolling; this is not merely a single animated intro or a flat photo page.
+Customer photos are now first-class scene content:
+
+- The Couple step opens with a prominent main-portrait upload/replace/remove card, plus a direct link to the gallery step.
+- Step 4 explicitly presents “3D portraits & photo gallery”, secure upload/crop and per-photo replacement/removal/reordering.
+- The main portrait appears in a realistic floral frame in the actual WebGL environment, as well as the welcome section. Up to four gallery photos are also placed in depth-separated scene frames; the normal gallery retains all supported photos.
+- Photos are composited into the generated frame's exact alpha aperture, not pasted over a solid rectangular backdrop. The saved picture is fitted without a second face-cropping step; soft image-colored bands fill any aspect-ratio gap.
+- Replacement/removal rebuilds and disposes old GPU textures. The existing owner checks and media validation remain unchanged.
+- No generated or borrowed customer faces are supplied by default. Empty photo frames are labelled as placeholders. A standalone review-only “Try your photos” panel accepts local files without uploading/saving them; use the real editor for persistent invitations.
 
 ### Inspiration reviewed
 
@@ -49,7 +51,7 @@ Tapping a choice opens WhatsApp to the organiser. **The guest still taps Send in
 
 ## Editing and technical architecture
 
-The seven-step editor remains Couple, Events, Venue, Photos, Style, Languages and Publish. Edits feed the same renderer used by guest/demo pages. Local draft prefix is `kv-ed`; shared editor is cache-busted to v7. The live iframe omits the film; guest preview includes it and receives personalized data via same-origin `sp:ready` / `sp:data` handshake.
+The seven-step editor remains Couple, Events, Venue, Photos, Style, Languages and Publish. Edits feed the same renderer used by guest/demo pages. Local draft prefix is `kv-ed`; shared editor is cache-busted to v8. The live iframe omits the film; guest preview includes it and receives personalized data via same-origin `sp:ready` / `sp:data` handshake.
 
 - Template: `templates/kadali-vivah/config.js`
 - HTML/SEO/privacy gate: `templates/kadali-vivah/render.js`
@@ -61,7 +63,9 @@ The seven-step editor remains Couple, Events, Venue, Photos, Style, Languages an
 - Original film/art pack: `assets/kadali-vivah/`
 - Restore/repack: `lib/kadaliVivahMedia.js`, `scripts/pack-kadali-media.js`
 
-Runtime reuses geometry/materials and instancing (roughly 36–41 draw calls and 182k–188k visible triangles in tested views). DPR is capped at 1.5; shadow maps are 512 on phones / 1024 on larger screens and computed once for the static scene. Rendering is requested by scroll, resize or palette changes rather than an endless idle loop. Scene buffers, textures, listeners and WebGL contexts are disposed on teardown. Reduced-motion disables surface motion and autonomous motion. Devices without WebGL retain the complete readable invitation over an original rendered-art fallback; the video never traps a guest waiting for WebGL.
+The photographic scene uses roughly 26 draw calls, two reusable geometries and fewer than 100 base triangles in tested empty-photo views. Texture count is bounded, portraits are downscaled to 768-pixel-wide composites and secondary frames to 512 pixels, and scene gallery frames are capped at four. DPR remains capped at 1.5. Rendering is event-driven on scroll, asset readiness, resize and photo changes rather than an endless idle loop. Generated backdrop/art total roughly 1.3 MB WebP before source packaging. Devices without WebGL retain the full readable invitation over the photographic environment fallback. Original film hash, audio, framing and lazy playback are unchanged.
+
+Latest main's Shaadi upload-only music release (PR #55) is preserved. Its shared editor and renderer behavior were retained when reconciling this branch. Kadali retains its existing optional library/upload controls with explicit tap-to-play; Suvarna is unchanged.
 
 Optional music remains available, including user upload, but is only requested/played after an explicit music-control tap. The original video's audio is separate and unchanged. No new credentials, DB migrations or environment variables are required. Existing ownership, cross-template upload isolation, privacy/passcode, expiry, versions, payments, short links and persistent-storage requirements remain.
 
@@ -77,20 +81,24 @@ Optional music remains available, including user upload, but is only requested/p
 
 ## Verification
 
-- Revised Kadali API/asset/guest-DOM/WebGL suite: 141/141 checks.
-- Revised browser suite: 55 assertions, zero failures, covering actual full original film playback, original dimensions/speed/audio, no pre-tap media transfer, real 3D geometry and scroll progress, 320/390/768/1440 layouts, eight languages and long names, two-choice WhatsApp handoff, personalized guest iframe, actual editor save/reload and WebGL-unavailable fallback.
-- Existing Shaadi regression: 61 checks. Existing Suvarna: 64 checks.
-- Earlier focused admin/collection and premium-UX suites passed; no production invitations were modified by any test.
-- Full repo-wide aggregate suite was not run for this revision.
+- Updated API/asset/integrity/guest-DOM/WebGL suite: 165/165 checks.
+- Main browser suite: 55 assertions, zero failures (including original film playback, camera progress, layouts, languages and WhatsApp RSVP).
+- New realism/photo scene suite: 14 assertions passed (actual alpha channels, both photo textures in WebGL, save/load bridge, replacement/removal, texture cleanup and mobile layout).
+- New photo editor suite passed real synthetic-color image upload/crop/replace/save/reload/remove and keyboard access; no customer faces or production invitations were used.
+- Existing Shaadi: 61 checks; existing Suvarna: 64 checks.
+- Standalone local-only preview upload tested for primary/gallery addition, real scene rendering and removal.
+- Full repo aggregate suite was not run.
 
 ```sh
 npm run test:kadali-vivah
 npm run test:kadali-browser
+npm run test:kadali-realism
+npm run test:kadali-photo-editor
 npm run test:shaadi-paigaam
 npm run test:suvarna-vivah
 ```
 
-Chromium is required for the browser and integrated guest-DOM checks: `npx playwright install chromium`.
+Chromium is required for browser checks (`npx playwright install chromium`). All tests use disposable data directories.
 
 ## Changelog
 
@@ -100,3 +108,11 @@ Chromium is required for the browser and integrated guest-DOM checks: `npx playw
 - Rebuilt the entire guest experience from scratch as a procedural WebGL wedding world and original 3D scroll composition, without Paigaam invitation visuals.
 - Replaced the guest RSVP form with two direct organiser-WhatsApp choices and required organiser configuration at publish time.
 - Preserved only the established editor/backend mechanics; updated original film packaging, license, documentation and regression tests.
+
+### 2026-10-25 — photographic realism and customer portraits
+
+- Generated coordinated realistic temple, portal, floral canopy, kalash and portrait-frame assets; prepared real transparent WebP layers and a precise portrait aperture mask.
+- Replaced simplified procedural foreground ornaments with a depth-separated photographic WebGL set, retaining scroll-directed camera travel.
+- Added in-environment primary and gallery photo frames, bounded texture loading and cleanup, and clearer first-step/fourth-step photo editing.
+- Added local-only photo testing to the standalone review preview; original video and minimal WhatsApp RSVP unchanged.
+- Reconciled latest main's PR #55 Shaadi music changes without reverting them; v8 shared editor and v3 Kadali guest assets.

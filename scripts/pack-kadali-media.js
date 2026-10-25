@@ -4,7 +4,7 @@ const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypt
 const root=path.join(__dirname,'..'),src=path.join(root,'public/kadali-vivah'),out=path.join(root,'assets/kadali-vivah');
 fs.mkdirSync(out,{recursive:true});const manifest={};
 const hash=b=>crypto.createHash('sha256').update(b).digest('hex');
-for(const name of ['leaf','kalash','mandap']){
+for(const name of ['leaf','kalash','mandap','env-real','kalash-real','portrait-frame','portrait-aperture','canopy-real','portal-real']){
  const key='art/'+name+'.webp',bytes=fs.readFileSync(path.join(src,key));
  manifest[key]=hash(bytes);fs.writeFileSync(path.join(out,key.replace('/','__')+'.b64'),bytes.toString('base64')+'\n');
 }

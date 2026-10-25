@@ -31,7 +31,9 @@
     "test:wedding-video": "node --test wedding-video/tests/timeline.test.js && node --test tests/wedding-video.test.js",
     "wedding-video:setup": "npm --prefix wedding-video ci && npm --prefix wedding-video run build:editor && cd wedding-video && npx remotion browser ensure",
     "test:kadali-vivah": "node scripts/test-kadali-vivah.js",
-    "test:kadali-browser": "node scripts/test-kadali-browser.js"
+    "test:kadali-browser": "node scripts/test-kadali-browser.js",
+    "test:kadali-realism": "node scripts/test-kadali-realism.js",
+    "test:kadali-photo-editor": "node scripts/test-kadali-photo-editor.js"
   },
   "engines": {
     "node": ">=22.5.0 <25"

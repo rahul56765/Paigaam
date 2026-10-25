@@ -558,6 +558,7 @@ ${cfg.mode === 'preview' ? `<div class="badge">${esc(T('previewBadge'))}</div>` 
   function musicSrc() {
     if (!data.sections.music) return '';
     if (data.music.track === 'upload' && data.music.url) return data.music.url;
+    if (cfg.lazyMusic) return '';   // Shaadi Paigaam: only the creator's own uploaded song; no built-in tracks
     return '/shaadi-paigaam/music/' + data.music.track + '.mp3';
   }
   function createAudio() {
