@@ -33,4 +33,5 @@ module.exports = [
   'chamak',
   'daawat',
   'wedding-post',
+  'birthday-atelier',
 ];
