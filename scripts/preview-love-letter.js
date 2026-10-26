@@ -1,0 +1,6 @@
+'use strict';
+const fs=require('node:fs'),path=require('node:path');
+const root=path.join(__dirname,'..');const {render}=require('../templates/love-letter/render');
+let html=render({}, {isPreview:true});
+html=html.replace('<link rel="stylesheet" href="/love-letter/experience.css">',()=>'<style>'+fs.readFileSync(path.join(root,'public/love-letter/experience.css'),'utf8')+'</style>').replace('<script src="/love-letter/music.js" defer></script>','').replace('<script src="/love-letter/experience.js" defer></script>','').replace('<link rel="icon" href="/brand/favicon-512.png" type="image/png">','').replace('href="/" target="_blank"','href="https://paigaam.cc" target="_blank"').replace('</body>',()=>'<script>'+fs.readFileSync(path.join(root,'public/love-letter/music.js'),'utf8')+'</script><script>'+fs.readFileSync(path.join(root,'public/love-letter/experience.js'),'utf8')+'</script><script>'+fs.readFileSync(path.join(root,'public/love-letter/crop.js'),'utf8')+'</script><script>'+fs.readFileSync(path.join(root,'public/love-letter/preview-tools.js'),'utf8')+'</script></body>');
+const target=process.argv[2]||'/agent/workspace/love-letter-preview.html';fs.writeFileSync(target,html);console.log(target);
