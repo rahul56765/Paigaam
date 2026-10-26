@@ -434,7 +434,7 @@
     }
     controls[f.id] = {
       get: function () { return f.type === 'select' ? input.value : input.value.trim(); },
-      set: function (v) { input.value = String(v == null ? '' : v); },
+      set: function (v) { input.value = String(v == null ? '' : v); if (f.slider && rangeValue) rangeValue.textContent = input.value + (f.unit || ''); },
       focus: function () { input.focus(); },
     };
   });
