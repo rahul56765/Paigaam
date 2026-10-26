@@ -1,0 +1,51 @@
+/* Birthday Atelier: local-only interactions. No microphone recording or transmission. */
+(() => {
+ 'use strict';
+ const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+ const data=JSON.parse($('#atelier-data').textContent), scenes=$$('[data-scene]');
+ const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
+ let current='opening',busy=false,lit=false,track=0,request=0,stream=null,micContext=null,micFrame=0,micTimer=0,micActive=false;
+ const audio=new Audio();audio.preload='metadata';let demoURL='',sounding=false;
+ const initialCandleHint=$('#candle-hint').textContent;
+ const wait=ms=>new Promise(r=>setTimeout(r,reduced?0:ms));
+ function stopMic(){request++;micActive=false;cancelAnimationFrame(micFrame);clearTimeout(micTimer);if(stream){stream.getTracks().forEach(t=>t.stop());stream=null;}if(micContext){micContext.close().catch(()=>{});micContext=null;}$('#blow').disabled=false;}
+ function focusScene(){const h=$(`#title-${current}`);h.setAttribute('tabindex','-1');h.focus({preventScroll:true});window.scrollTo({top:0,behavior:'instant'});}
+ async function go(target){if(busy||!$(`#scene-${target}`)||target===current)return;busy=true;stopMic();$('#mic-status').textContent='';const old=$(`#scene-${current}`);old.classList.add('exiting');await wait(250);old.hidden=true;old.inert=true;old.classList.remove('exiting','entering');current=target;const next=$(`#scene-${target}`);next.hidden=false;next.inert=false;next.classList.add('entering');$('#progress').textContent=String(scenes.indexOf(next)+1).padStart(2,'0')+' / '+scenes.length;focusScene();await wait(650);busy=false;}
+ $$('[data-go]').forEach(b=>b.addEventListener('click',()=>go(b.dataset.go)));
+ $$('.answer').forEach(b=>b.addEventListener('click',()=>{if(busy)return;const scene=b.closest('.scene');scene.querySelectorAll('.answer').forEach(x=>x.disabled=true);scene.querySelector('.question-reply').textContent=b.dataset.reply || 'A little magic is on its way.';const next=scene.querySelector('.question-next');next.hidden=false;next.focus({preventScroll:true});}));
+ $$('[data-envelope]').forEach(b=>b.addEventListener('click',async()=>{if(busy)return;busy=true;b.classList.add('opening-envelope');b.setAttribute('aria-expanded','true');await wait(1050);b.classList.add('visited');b.classList.remove('opening-envelope');b.setAttribute('aria-expanded','false');busy=false;go(b.dataset.envelope);}));
+ function burst(){if(reduced)return;for(let i=0;i<18;i++){const h=document.createElement('span');h.className='burst';h.setAttribute('aria-hidden','true');h.textContent=i%3?'♡':'✦';h.style.setProperty('--x',(Math.cos(i*2.4)*(100+i*9))+'px');h.style.setProperty('--y',(Math.sin(i*2.4)*(80+i*7)-50)+'px');h.style.setProperty('--r',(i*30)+'deg');h.style.color=i%2?'#bc628b':'#d9a66b';document.body.appendChild(h);setTimeout(()=>h.remove(),1900);}}
+ function light(){if(lit)return;lit=true;stopMic();$('#light-candle').classList.add('lit');$('#light-candle').setAttribute('aria-label','Your birthday candle is glowing');$('#light-candle').setAttribute('aria-pressed','true');$('#birthday-surprise').hidden=false;$('#candle-hint').textContent='Your little wish is glowing. ♡';$('#blow').hidden=true;$('#mic-status').textContent='';burst();}
+ $('#light-candle').addEventListener('click',light);
+ $('#blow').addEventListener('click',async()=>{
+  if(lit||micActive)return;if(!navigator.mediaDevices?.getUserMedia){$('#mic-status').textContent='Microphone is unavailable here. Tap the candle instead.';return;}
+  stopMic();const token=request;micActive=true;$('#blow').disabled=true;$('#mic-status').textContent='Allow the microphone to listen for your blow. Nothing is recorded or sent.';
+  try{const acquired=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:false,autoGainControl:false}});if(token!==request||current!=='candle'||lit){acquired.getTracks().forEach(t=>t.stop());return;}stream=acquired;const C=window.AudioContext||window.webkitAudioContext;if(!C)throw Error('unsupported');micContext=new C();await micContext.resume();if(token!==request)return;const source=micContext.createMediaStreamSource(stream),analyser=micContext.createAnalyser();analyser.fftSize=1024;source.connect(analyser);const samples=new Uint8Array(analyser.fftSize);let loud=0;
+  $('#mic-status').textContent='Listening for up to 12 seconds… blow gently, or tap the candle.';
+  const listen=()=>{if(token!==request||!micActive)return;analyser.getByteTimeDomainData(samples);let sum=0;for(const x of samples)sum+=((x-128)/128)**2;const rms=Math.sqrt(sum/samples.length);loud=rms>.11?loud+1:0;if(loud>=7){light();return;}micFrame=requestAnimationFrame(listen);};listen();micTimer=setTimeout(()=>{stopMic();$('#mic-status').textContent='Couldn’t catch that little wish. Tap the candle to light it.';},12000);
+  }catch{if(token!==request)return;stopMic();$('#mic-status').textContent='Microphone wasn’t available. No worries—tap the candle instead.';}
+ });
+ // Original 24-second music-box score. Generated locally, never a stand-in for a commercial recording.
+ function demoMelody(){if(demoURL)return demoURL;const rate=22050,beat=.45,notes=[72,76,79,76,74,71,67,71,69,72,76,79,77,74,72,0,76,79,84,79,77,74,71,74,72,76,79,76,74,71,72,0,69,72,76,72,67,71,74,71,65,69,72,76,74,71,72,0],length=Math.ceil((notes.length*beat+2)*rate),pcm=new Float32Array(length);
+  notes.forEach((n,i)=>{if(!n)return;const f=440*2**((n-69)/12),start=Math.floor(i*beat*rate),dur=Math.floor(rate*1.8);for(let j=0;j<dur&&start+j<length;j++){const t=j/rate,env=(1-Math.exp(-t*90))*Math.exp(-t*4);pcm[start+j]+=(Math.sin(2*Math.PI*f*t)+.23*Math.sin(2*Math.PI*f*2*t)+.07*Math.sin(2*Math.PI*f*3*t))*env*.19;}});
+  const bytes=new ArrayBuffer(44+length*2),v=new DataView(bytes);const s=(at,str)=>[...str].forEach((c,i)=>v.setUint8(at+i,c.charCodeAt(0)));s(0,'RIFF');v.setUint32(4,36+length*2,true);s(8,'WAVEfmt ');v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,1,true);v.setUint32(24,rate,true);v.setUint32(28,rate*2,true);v.setUint16(32,2,true);v.setUint16(34,16,true);s(36,'data');v.setUint32(40,length*2,true);for(let i=0;i<length;i++)v.setInt16(44+i*2,Math.max(-1,Math.min(1,pcm[i]))*32767,true);demoURL=URL.createObjectURL(new Blob([bytes],{type:'audio/wav'}));return demoURL;
+ }
+ const format=t=>Number.isFinite(t)?Math.floor(t/60)+':'+String(Math.floor(t%60)).padStart(2,'0'):'0:00';
+ function status(text){$$('.audio-status').forEach(x=>x.textContent=text);}
+ function sync(){const playing=!audio.paused&&!audio.ended;document.body.classList.toggle('playing',playing&&sounding);$$('.play').forEach(b=>{b.textContent=playing?'Ⅱ':'▶';b.setAttribute('aria-label',playing?'Pause music':'Play music');b.setAttribute('aria-pressed',String(playing));});$$('.seek').forEach(s=>{s.value=audio.duration?audio.currentTime/audio.duration*100:0;});$$('.elapsed').forEach(x=>x.textContent=format(audio.currentTime));$$('.duration').forEach(x=>x.textContent=format(audio.duration));}
+ let playRequest=0;
+ function loadTrack(i){playRequest++;audio.pause();track=(i+data.songs.length)%data.songs.length;const song=data.songs[track];audio.src=song.audio||demoMelody();$$('.now-title').forEach(x=>x.textContent=song.title);$$('.now-artist').forEach(x=>x.textContent=song.artist||'');$$('[data-track]').forEach(b=>b.setAttribute('aria-pressed',String(Number(b.dataset.track)===track)));status(song.audio?'Tap play to listen.':'Original Paigaam demo melody · add an audio link for this song.');sync();}
+ async function play(){const token=++playRequest;const bgm=$('#bgm');if(bgm?.classList.contains('on'))$('#bgmBtn')?.click();try{await audio.play();if(token!==playRequest)return;status(data.songs[track].audio?'Playing your audio.':'Playing the original Paigaam music-box melody.');}catch(err){if(token!==playRequest||err.name==='AbortError')return;status('This audio couldn’t play. Check its direct audio link, or open your Spotify playlist.');}sync();}
+ $$('.play').forEach(b=>b.addEventListener('click',()=>{if(audio.paused)play();else{playRequest++;audio.pause();}}));
+ $$('.next').forEach(b=>b.addEventListener('click',()=>{loadTrack(track+1);play();}));$$('.previous').forEach(b=>b.addEventListener('click',()=>{loadTrack(track-1);play();}));$$('[data-track]').forEach(b=>b.addEventListener('click',()=>{loadTrack(Number(b.dataset.track));play();}));
+ $$('.seek').forEach(s=>s.addEventListener('input',()=>{if(Number.isFinite(audio.duration)&&audio.duration>0)audio.currentTime=Number(s.value)/100*audio.duration;}));
+ ['play','pause','ended','timeupdate','loadedmetadata','emptied','waiting','playing'].forEach(event=>audio.addEventListener(event,()=>{if(event==='playing')sounding=true;if(['pause','ended','emptied','waiting'].includes(event))sounding=false;sync();if(event==='ended')status('A little song, kept just for you. Tap play to hear it again.');}));
+ audio.addEventListener('error',()=>{sounding=false;sync();status('This audio link is unavailable. Please use a direct playable audio link or your Spotify playlist.');});
+ // Starting optional background music pauses the record, preventing overlapping soundtracks.
+ $('#bgmBtn')?.addEventListener('click',()=>{setTimeout(()=>{if($('#bgm')?.classList.contains('on'))audio.pause();},0);});
+ $('#restart').addEventListener('click',()=>{if(busy)return;stopMic();loadTrack(0);lit=false;$('#light-candle').classList.remove('lit');$('#light-candle').setAttribute('aria-label','Light the birthday candle');$('#light-candle').setAttribute('aria-pressed','false');$('#birthday-surprise').hidden=true;$('#blow').hidden=false;$('#candle-hint').textContent=initialCandleHint;$$('.envelope-card').forEach(b=>b.classList.remove('visited'));$$('.answer').forEach(b=>b.disabled=false);$$('.question-reply').forEach(x=>x.textContent='');$$('.question-next').forEach(x=>x.hidden=true);go('opening');});
+ document.addEventListener('visibilitychange',()=>{if(document.hidden){stopMic();audio.pause();}});window.addEventListener('pagehide',()=>{stopMic();audio.pause();if(demoURL)URL.revokeObjectURL(demoURL);demoURL='';});
+ // Escape is an accessible way back from a keepsake; it never skips the intro questions.
+ document.addEventListener('keydown',event=>{if(event.key==='Escape'&&['letter','coupons','playlist','listen'].includes(current))go('menu');});
+ loadTrack(0);
+})();

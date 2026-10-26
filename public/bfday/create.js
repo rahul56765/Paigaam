@@ -62,6 +62,8 @@
   }
 
   var MESSAGES = {
+    atelier_audio_url: 'Each song’s audio link must use HTTPS without a username or password. Use a direct MP3, WAV or OGG link, or leave it blank.',
+    atelier_spotify_url: 'Use an HTTPS playlist link from open.spotify.com, or leave the Spotify field blank.',
     validation: 'Something in there is a little too long or not quite right — check it and try again.',
     limit: 'That is a lot for one day. Try again a bit later.',
     storage_unavailable: 'Publishing is paused right now. Your draft is safe — try again shortly.',
