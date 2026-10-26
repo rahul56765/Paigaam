@@ -35,4 +35,5 @@ module.exports = [
   'daawat',
   'wedding-post',
   'birthday-atelier',
+  'love-letter',
 ];
