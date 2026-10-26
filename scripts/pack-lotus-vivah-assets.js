@@ -1,10 +1,10 @@
 'use strict';
-// Run after editing the five public botanical/share assets. Runtime restores these text-packed bytes.
+// Run after editing the public botanical/share assets. Runtime restores these text-packed bytes.
 const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const root = path.join(__dirname, '..');
-const files = ['blossom.webp', 'stems.webp', 'garden.webp', 'petal.webp', 'thumbnail.webp'];
+const files = ['blossom.webp', 'stems.webp', 'garden.webp', 'petal.webp', 'thumbnail.webp', 'cover-lotus.webp'];
 const target = path.join(root, 'assets', 'lotus-vivah');
 fs.mkdirSync(target, { recursive: true });
 const manifest = {};

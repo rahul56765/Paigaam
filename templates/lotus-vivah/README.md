@@ -8,15 +8,15 @@ Cover → Save the Date → Wedding Ceremony → Haldi → Mehndi → Sangeet �
 
 All authored text is editable: names, joining word, seal initials, opening hint, headings, invitation and host lines, dates, times, address lead, addresses and thank-you message. Calendar month, weekday and year derive from the chosen date. Panel colours accept validated six-digit hex values, including per-event overrides. Decorative references are not customer-editable artworks.
 
-Optional transparent logo on the white cover seal and optional photo in a reserved Save-the-Date area each expose zoom/crop and X/Y position sliders. At 100% the logo is fully contained; increasing zoom intentionally crops within its frame, without cropping the invitation itself. Removing optional images restores the reference-led layout.
+Optional transparent logo/monogram and optional photo in reserved Save-the-Date areas each expose zoom/crop and X/Y position sliders. At 100% the logo is fully contained; increasing zoom intentionally crops within its frame, without cropping the invitation itself. Removing optional images restores the reference-led layout.
 
 ## Screen and interaction
 
 The entire 9:16 card is contained within the available viewport, with reserved safe-area space for navigation and a small tilt margin. Narrow, short and landscape viewports show the complete card rather than a stretched/cropped fill. Wider screens use surrounding space. Text uses relative type and shrinks inside dedicated safe zones. Input lengths are bounded; excessive content reduces type size rather than drawing over illustrations. Arbitrarily long text on arbitrarily small screens cannot remain both large and fully visible.
 
-A first tap lifts the white seal and unfolds layered lotus petals over 2.8 seconds. Previous/next buttons, dots, keyboard arrows and horizontal swipe navigate slow fade/slide transitions; repeated input is bounded by a transition lock and timer fallback. Current page is announced and inactive cards are inert. Reduced motion disables tilt, decorative animation and opening delays. A no-JavaScript fallback reveals the cards for scrolling.
+A first tap lifts the plain white seal and unfolds painted lotus petal layers in a slow 4.2-second sequence. Two complete, naturally cupped lotus flowers replace the earlier detached cover shapes. No initials, text or uploaded logo can appear on the cover seal. Existing logo crop controls remain available on Save the Date; explicit optional monogram text also appears there, with no automatically generated initials. Previous/next buttons, dots, keyboard arrows and horizontal swipe navigate slow fade/slide transitions; repeated input is bounded by a transition lock and timer fallback. Current page is announced and inactive cards are inert. Reduced motion disables tilt, decorative animation and opening delays. A no-JavaScript fallback reveals the cards for scrolling.
 
-Five faint CSS petals drift slowly, flowers sway by less than a degree, divider rules shimmer, and a very low-opacity shine crosses the card. Pointer tilt is capped at 1.2 degrees. Device-orientation tilt is progressive enhancement; iOS permission is explicitly optional and does not interrupt opening. Decorative animations pause when the tab is hidden.
+Five faint CSS petals drift slowly, unchanged from the first version. Flowers sway by less than a degree. Thin gold/pink strokes follow alpha-traced flower silhouettes and selected cover-petal seams, with a softly pulsing halo and a short moving highlight. Gold paths follow the exact existing panel silhouettes. Divider rules shimmer, and a very low-opacity shine crosses the card. Raised paper shadows and flower shadows add depth. Flower parallax is bounded to 1.68 px and moves more than the panel layer; the background stays still. Pointer tilt is capped at 1.2 degrees. Device-orientation tilt is progressive enhancement; iOS permission is explicitly optional and does not interrupt opening. Decorative animations pause when the tab is hidden.
 
 ## Music
 
@@ -28,7 +28,7 @@ Links accept HTTPS direct MP3/M4A/OGG/WAV files or supported YouTube URLs. Nativ
 
 - templates/lotus-vivah: config, schema and escaped server renderer.
 - public/lotus-vivah: scoped stylesheet, interaction script and vector paisley.
-- assets/lotus-vivah: checksummed base64 botanical assets, restored at startup by lib/bfday/assets-lotus-vivah.js.
+- assets/lotus-vivah: checksummed base64 botanical assets including the full cover lotus, restored at startup by lib/bfday/assets-lotus-vivah.js.
 - /lotus-vivah/demo, /create/lotus-vivah, /lotus-vivah/preview-frame, /api/lotus-vivah/draft, /api/lotus-vivah/publish and /p/published-slug use the shared family routes.
 
 No wedding-video feature code, deployment settings or other invitation designs are changed.
@@ -36,3 +36,5 @@ No wedding-video feature code, deployment settings or other invitation designs a
 ## Changelog
 
 - 2026-10-26 — Added Lotus Vivah, contained 9:16 card composition, customisable copy/colours/events, optional logo/photo crop controls, lotus opening, paper-depth effects, restrained motion, and opt-in secure background audio uploads with direct-audio/YouTube link support.
+
+- 2026-10-26 — Targeted visual revision: natural full cover blooms with sequential masked petal opening, plain seal, richer Save-the-Date corners, larger type centred on exact event-panel centres, silhouette-following flower/panel light, deeper paper shadows and bounded foreground parallax. Page flow, palette, editable field IDs, event controls, music and falling-petal settings retained.

@@ -33,7 +33,7 @@
   }
   function openCover(target){
     if(locked)return;locked=true;startMusic();pages[0].classList.add('is-opening');open.disabled=true;
-    clearTimeout(timer);timer=setTimeout(function(){opened=true;locked=false;index=target||1;sync();locked=true;timer=setTimeout(function(){locked=false;},reduce.matches?0:1100);},reduce.matches?0:2800);
+    clearTimeout(timer);timer=setTimeout(function(){opened=true;locked=false;index=target||1;sync();locked=true;timer=setTimeout(function(){locked=false;},reduce.matches?0:1100);},reduce.matches?0:4200);
     // A phone's orientation permission is optional; never interrupt the seal opening with a prompt.
     if(window.DeviceOrientationEvent&&typeof window.DeviceOrientationEvent.requestPermission==='function'&&!reduce.matches){app.querySelector('[data-lv-motion]').hidden=false;}
   }
@@ -45,14 +45,14 @@
   stage.addEventListener('pointerup',function(e){if(!touch||e.pointerId!==touch.id)return;var dx=e.clientX-touch.x,dy=e.clientY-touch.y;touch=null;if(Math.abs(dx)>45&&Math.abs(dx)>Math.abs(dy)*1.3)move(index+(dx<0?1:-1));resetTilt();});
   stage.addEventListener('pointercancel',function(){touch=null;resetTilt();});
   var raf=0,pendingX=0,pendingY=0;
-  function tilt(x,y){if(reduce.matches)return;pendingX=Math.max(-1.2,Math.min(1.2,x));pendingY=Math.max(-1.2,Math.min(1.2,y));if(raf)return;raf=requestAnimationFrame(function(){card.style.setProperty('--tilt-x',pendingX+'deg');card.style.setProperty('--tilt-y',pendingY+'deg');raf=0;});}
+  function tilt(x,y){if(reduce.matches)return;pendingX=Math.max(-1.2,Math.min(1.2,x));pendingY=Math.max(-1.2,Math.min(1.2,y));if(raf)return;raf=requestAnimationFrame(function(){card.style.setProperty('--tilt-x',pendingX+'deg');card.style.setProperty('--tilt-y',pendingY+'deg');card.style.setProperty('--parallax-x',(pendingY*1.4)+'px');card.style.setProperty('--parallax-y',(-pendingX*1.4)+'px');raf=0;});}
   function resetTilt(){tilt(0,0);}
   stage.addEventListener('pointermove',function(e){if(e.pointerType==='touch'&&!touch)return;var r=card.getBoundingClientRect();tilt(-(e.clientY-r.top-r.height/2)/r.height*2,(e.clientX-r.left-r.width/2)/r.width*2);});
   stage.addEventListener('pointerleave',resetTilt);
   function orientation(e){if(document.hidden)return;if(e.beta==null||e.gamma==null)return;tilt((e.beta-40)/35,e.gamma/25);}
   if(window.DeviceOrientationEvent&&typeof window.DeviceOrientationEvent.requestPermission!=='function')window.addEventListener('deviceorientation',orientation,{passive:true});
   app.querySelector('[data-lv-motion]').addEventListener('click',function(){var button=this;window.DeviceOrientationEvent.requestPermission().then(function(s){if(s==='granted')window.addEventListener('deviceorientation',orientation,{passive:true});button.hidden=true;}).catch(function(){button.hidden=true;});});
-  reduce.addEventListener('change',function(){card.style.setProperty('--tilt-x','0deg');card.style.setProperty('--tilt-y','0deg');});
+  reduce.addEventListener('change',function(){card.style.setProperty('--tilt-x','0deg');card.style.setProperty('--tilt-y','0deg');card.style.setProperty('--parallax-x','0px');card.style.setProperty('--parallax-y','0px');});
   // Uploads and direct media URLs use native audio, synchronously played in the cover gesture.
   // YouTube is an explicitly supported fallback; provider restrictions may require a retry.
   var music=app.querySelector('[data-lv-music]'),audio=document.getElementById('lvAudio'),playing=false,frame=null,musicStarted=false;

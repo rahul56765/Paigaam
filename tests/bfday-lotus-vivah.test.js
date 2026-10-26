@@ -153,8 +153,12 @@ test('Lotus Vivah: logo and optional portrait retain distinct crop frames and re
   contains(html, 'class="lv-logo" style="--crop-zoom:1.75;--crop-x:31%;--crop-y:62%"');
   contains(html, 'class="lv-photo" style="--crop-zoom:2.2;--crop-x:0%;--crop-y:100%"');
   contains(html, 'lv-copy--save has-photo'); excludes(html, 'class="lv-initials"');
+  const customText = htmlFor({ ...data, monogramLogo: '', couplePhoto: '', sealText: 'PS' });
+  contains(customText, 'class="lv-initials">PS</span>');
+  const coverOnly = customText.split('data-kind="cover"')[1].split('</section>')[0];
+  excludes(coverOnly, 'lv-initials'); excludes(coverOnly, 'Couple monogram');
   const fallback = htmlFor({ ...data, monogramLogo: '', couplePhoto: '' });
-  contains(fallback, 'class="lv-initials"'); excludes(fallback, 'class="lv-logo"'); excludes(fallback, 'class="lv-photo"'); excludes(fallback, 'lv-copy--save has-photo');
+  excludes(fallback, 'class="lv-initials"'); excludes(fallback, 'class="lv-logo"'); excludes(fallback, 'class="lv-photo"'); excludes(fallback, 'lv-copy--save has-photo');
   for (const [key, value] of [['logoZoom',99],['photoZoom',221],['logoX',-1],['photoY',101]]) assert.throws(() => schema.validate({ ...data, [key]: value }));
   const logo = schema.FIELDS.find(f => f.id === 'monogramLogo');
   assert.equal(logo.preserveTransparency, true); assert.equal(logo.tapToPick, true);
@@ -235,7 +239,7 @@ test('Lotus Vivah: portrait layout is contained in wide, narrow and short availa
 test('Lotus Vivah: navigation locks opening, updates dots/inert/current, and respects boundaries', () => {
   const c = client(); assert.equal(c.prev.disabled,true); assert.equal(c.counter.textContent,'1');
   c.next.fire('click'); c.next.fire('click'); assert.equal(c.counter.textContent,'1');
-  assert.equal([...c.timers.values()][0].ms,2800); c.tick();
+  assert.equal([...c.timers.values()][0].ms,4200); c.tick();
   assert.equal(c.counter.textContent,'2'); assert.equal(c.pages[0].inert,true); assert.equal(c.pages[1].inert,false);
   assert.equal(c.dots[1].attrs['aria-current'],'page');
   c.tick(); c.dots[7].fire('click'); assert.equal(c.counter.textContent,'8'); assert.equal(c.next.disabled,true);
@@ -322,4 +326,49 @@ test('Lotus Vivah: isolated HTTP draft/save/image+audio upload/private preview/p
   const again = await post(prefix+'/publish',cookie,{id:draft.id}); assert.equal(again.status,200); assert.equal((await again.json()).slug,pub.slug);
   assert.equal((await post(prefix+'/draft',cookie,{id:draft.id,customer_data:data})).status,403);
   assert.equal((await post(prefix+'/upload-audio?id='+draft.id,cookie,wav(),'audio/wav')).status,403);
+});
+
+
+test('Lotus revision: two complete flowers, eight masked petal layers and an always-plain seal', () => {
+  const html = htmlFor({ ...demo(), monogramLogo: upload('png'), sealText: 'PS' });
+  const cover = html.split('data-kind="cover"')[1].split('</section>')[0];
+  assert.equal((cover.match(/class="lv-cover-bloom /g)||[]).length,2);
+  assert.equal((cover.match(/class="lv-cover-layer /g)||[]).length,8);
+  contains(cover,'cover-lotus.webp'); contains(cover,'lv-cover-glow');
+  excludes(cover,'lv-cover-petal--'); excludes(cover,'lv-initials'); excludes(cover,'Couple monogram');
+  assert.ok(/class="lv-seal"[^>]*><span class="lv-seal-shine" aria-hidden="true"><\/span><\/button>/.test(cover));
+  const save = html.split('data-kind="save"')[1].split('</section>')[0];
+  contains(save,'Couple monogram'); contains(save,'lv-save-mark');
+  for(const name of ['lv-save-upper','lv-save-garden','lv-save-stems','lv-save-bottom']) contains(save,name);
+});
+
+test('Lotus revision: real silhouettes drive flower and panel light; parallax is bounded and motion-safe', () => {
+  const html = htmlFor(); const css = fs.readFileSync(path.join(root,'public/lotus-vivah/lotus.css'),'utf8');
+  const js = fs.readFileSync(path.join(root,'public/lotus-vivah/lotus.js'),'utf8');
+  contains(html,'lv-petal-glint'); contains(html,'lv-panel-glint'); contains(html,'pathLength="1000"');
+  contains(css,'stroke-dasharray:38 962'); contains(css,'lv-edge-travel'); contains(css,'lv-edge-breathe');
+  contains(css,'--parallax-x'); contains(css,'prefers-reduced-motion:reduce');
+  contains(js,"pendingY*1.4"); contains(js,"pendingX*1.4");
+  const outlines = require('../templates/lotus-vivah/botanical-outlines.json');
+  for(const a of Object.values(outlines)){assert.ok(a.width>0&&a.height>0);assert.ok(a.outline.startsWith('M'));assert.ok(a.outline.endsWith('Z'));assert.equal(/NaN|Infinity/.test(a.outline),false);}
+});
+
+test('Lotus revision: every event copy zone shares its original panel centre with larger default type', () => {
+  const css = fs.readFileSync(path.join(root,'public/lotus-vivah/lotus.css'),'utf8');
+  const rules = new Map();
+  for(const m of css.replace(/\/\*[\s\S]*?\*\//g,'').matchAll(/(?:(?<=})|^)\s*([^@{}]+)\{([^{}]*)\}/g)) {
+    for(const selector of m[1].split(',').map(s=>s.trim())) {
+      const values = rules.get(selector)||{};
+      for(const prop of m[2].split(';')){const colon=prop.indexOf(':');if(colon>0)values[prop.slice(0,colon).trim()]=prop.slice(colon+1).trim();}
+      rules.set(selector,values);
+    }
+  }
+  const pct = (r,k) => Number.parseFloat(r[k]);
+  for(const [kind,shape] of [['wedding','wedding'],['haldi','haldi'],['mehndi','mehndi'],['sangeet','white'],['reception','white']]) {
+    const panel=rules.get('.lv-shape--'+shape),copy=rules.get('.lv-copy--'+kind);
+    assert.ok(panel&&copy,kind);
+    assert.ok(Math.abs(pct(panel,'left')+pct(panel,'width')/2-pct(copy,'left')-pct(copy,'width')/2)<.001,kind+' horizontal centre');
+    assert.ok(Math.abs(pct(panel,'top')+pct(panel,'height')/2-pct(copy,'top')-pct(copy,'height')/2)<.001,kind+' vertical centre');
+    assert.ok(pct(copy,'font-size')>=3.9,kind+' larger default type');
+  }
 });
