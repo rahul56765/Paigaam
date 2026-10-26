@@ -842,7 +842,7 @@ function buildTemplateFromForm(form) {
       // Mirror lib/bfday/fields.js TYPES + the classic types the seeded
       // registry ships (list/select/url included) so editing any stock
       // template in the admin UI never trips on its own schema.
-      if (!['text', 'textarea', 'date', 'time', 'number', 'image', 'list', 'select', 'url', 'bgm'].includes(f.type)) throw new Error(`Unknown field type "${f.type}".`);
+      if (!['text', 'textarea', 'date', 'time', 'number', 'image', 'list', 'select', 'url', 'bgm', 'audio'].includes(f.type)) throw new Error(`Unknown field type "${f.type}".`);
       if (!f.group) f.group = 'people';
     }
   } catch (e) {
