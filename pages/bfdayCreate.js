@@ -70,7 +70,9 @@ function scalarField(f) {
   if (f.type === 'text' || f.type === 'bgm') control = `<input type="text" ${common} maxlength="${f.maxLength}"${ph} autocomplete="off">`;
   else if (f.type === 'url') control = `<input type="url" ${common} maxlength="${f.maxLength}"${ph} inputmode="url" autocomplete="off">`;
   else if (f.type === 'date') control = `<input type="date" ${common} min="1900-01-01" max="2200-12-31">`;
-  else if (f.type === 'number') control = `<input type="number" ${common} min="${f.min}" max="${f.max}" step="1" inputmode="numeric"${ph}>`;
+  else if (f.type === 'number') control = f.slider
+    ? `<div class="bf-range-control"><input type="range" ${common} min="${f.min}" max="${f.max}" step="1"><output data-range-value-for="${escape(f.id)}">${escape(f.default == null ? f.min : f.default)}${escape(f.unit || '')}</output></div>`
+    : `<input type="number" ${common} min="${f.min}" max="${f.max}" step="1" inputmode="numeric"${ph}>`;
   else if (f.type === 'textarea') control = `<textarea ${common} maxlength="${f.maxLength}" rows="${f.rows}"${ph}></textarea>`;
   else if (f.type === 'select') {
     control = `<select ${common}>${f.default === undefined ? '<option value="">Choose…</option>' : ''}${f.options.map(o => `<option value="${escape(o.value)}"${o.value === f.default ? ' selected' : ''}>${escape(o.label)}</option>`).join('')}</select>`;

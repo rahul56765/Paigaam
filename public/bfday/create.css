@@ -147,10 +147,16 @@ body {
   background: var(--soft); border: 1px dashed var(--line);
 }
 .bf-photo__thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.bf-photo__thumb--alpha img { object-fit: contain; padding: 8px; }
+.bf-photo__thumb--pickable { cursor: pointer; }
+.bf-photo__thumb--pickable:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 .bf-photo__empty { padding: 8px; font-size: 0.68rem; line-height: 1.35; color: var(--muted); text-align: center; }
 .bf-photo__tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .bf-photo__note { grid-column: 1 / -1; margin: 0; }
 .bf-photo__note:empty { display: none; }
+.bf-range-control { display: grid; grid-template-columns: minmax(0, 1fr) 3.8rem; align-items: center; gap: 12px; }
+.bf-range-control input[type="range"] { width: 100%; accent-color: var(--accent); }
+.bf-range-control output { color: var(--muted); font: 600 0.72rem/1.2 var(--sans); text-align: right; font-variant-numeric: tabular-nums; }
 
 .button {
   display: inline-flex; align-items: center; gap: 8px; padding: 12px 24px;
