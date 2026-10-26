@@ -68,7 +68,7 @@ test('monogram keeps editable initials by default and accepts a transparent uplo
 test('logo editor preserves PNG alpha, adds accessible tap-to-pick and live crop sliders', () => {
   const { bfdayCreatePage } = require('../pages/bfdayCreate');
   const createPage = bfdayCreatePage(family.bySlug('aangan-vivah'), { price: 0, listPrice: 0 });
-  assert.match(createPage, /type="range" id="f-monogramZoom"/);
+  assert.match(createPage, /type="range" id="f-monogramZoom"[^>]*value="100"/);
   assert.match(createPage, /data-range-value-for="monogramPositionX"/);
   const script = require('node:fs').readFileSync(require('node:path').join(__dirname, '../public/bfday/create.js'), 'utf8');
   assert.match(script, /prepareImage\(picked, f\.preserveTransparency\)/);
