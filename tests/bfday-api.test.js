@@ -9,7 +9,7 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const family = require('../lib/bfday/family');
 const { resolve, maxImages } = require('../lib/bfday/fields');
-const { request, draft, hostileFor, png, firstText } = require('./bfday-helpers');
+const { request, draft, hostileFor, png, firstText, HOSTILE } = require('./bfday-helpers');
 
 assert.ok(family.list.length, 'no family members loaded');
 
@@ -187,6 +187,16 @@ for (const t of family.list) {
 
   test(`${S} · HTML: every piece of sender text is escaped — preview, live page, preview frame`, async () => {
     const hostile = { ...demo, ...hostileFor(t.fields) };
+    // Aangan has stricter event semantics than the generic list generator:
+    // keep unique types and required dates/venues while making its copy hostile.
+    if (S === 'aangan-vivah') {
+      hostile.events = demo.events.map(event => ({
+        ...event,
+        pageTitle: HOSTILE.slice(0, 48), themeLine: HOSTILE.slice(0, 110),
+        time: HOSTILE.slice(0, 50), baraatTime: HOSTILE.slice(0, 45), pheraTime: HOSTILE.slice(0, 45),
+        venue: HOSTILE.slice(0, 110), dressCode: HOSTILE.slice(0, 70),
+      }));
+    }
     const a = await draft(S, hostile);
     const pages = [(await request(a.previewUrl, { cookie: a.cookie })).text];
     const pub = await request(`/api/${S}/publish`, { method: 'POST', cookie: a.cookie, body: { id: a.id } });
