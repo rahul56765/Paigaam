@@ -239,7 +239,7 @@ test('Lotus Vivah: portrait layout is contained in wide, narrow and short availa
 test('Lotus Vivah: navigation locks opening, updates dots/inert/current, and respects boundaries', () => {
   const c = client(); assert.equal(c.prev.disabled,true); assert.equal(c.counter.textContent,'1');
   c.next.fire('click'); c.next.fire('click'); assert.equal(c.counter.textContent,'1');
-  assert.equal([...c.timers.values()][0].ms,4200); c.tick();
+  assert.equal([...c.timers.values()][0].ms,1300); c.tick();
   assert.equal(c.counter.textContent,'2'); assert.equal(c.pages[0].inert,true); assert.equal(c.pages[1].inert,false);
   assert.equal(c.dots[1].attrs['aria-current'],'page');
   c.tick(); c.dots[7].fire('click'); assert.equal(c.counter.textContent,'8'); assert.equal(c.next.disabled,true);
@@ -348,7 +348,7 @@ test('Lotus revision: real silhouettes drive flower and panel light; parallax is
   contains(html,'lv-petal-glint'); contains(html,'lv-panel-glint'); contains(html,'pathLength="1000"');
   contains(css,'stroke-dasharray:38 962'); contains(css,'lv-edge-travel'); contains(css,'lv-edge-breathe');
   contains(css,'--parallax-x'); contains(css,'prefers-reduced-motion:reduce');
-  contains(js,"pendingY*1.4"); contains(js,"pendingX*1.4");
+  contains(js,"pendingY*1.7"); contains(js,"pendingX*1.7");
   const outlines = require('../templates/lotus-vivah/botanical-outlines.json');
   for(const a of Object.values(outlines)){assert.ok(a.width>0&&a.height>0);assert.ok(a.outline.startsWith('M'));assert.ok(a.outline.endsWith('Z'));assert.equal(/NaN|Infinity/.test(a.outline),false);}
 });
@@ -371,4 +371,34 @@ test('Lotus revision: every event copy zone shares its original panel centre wit
     assert.ok(Math.abs(pct(panel,'top')+pct(panel,'height')/2-pct(copy,'top')-pct(copy,'height')/2)<.001,kind+' vertical centre');
     assert.ok(pct(copy,'font-size')>=3.9,kind+' larger default type');
   }
+});
+
+test('Lotus refinement: the approved closed cover is byte-identical and no tilt-enable control is required', () => {
+  const html=htmlFor(); const cover=html.split('data-kind="cover"')[1].split('</section>')[0];
+  assert.equal(crypto.createHash('sha256').update(cover).digest('hex'),'d75946be97d2849938f290c4f21e081468c221434d18e7bc85cd03d914d6f7f6');
+  contains(html,'class="lv-card-frame"'); excludes(html,'Enable tilt'); excludes(html,'data-lv-motion');
+  const js=fs.readFileSync(path.join(root,'public/lotus-vivah/lotus.js'),'utf8');
+  excludes(js,'.requestPermission(');
+});
+
+test('Lotus refinement: decorated side cards and balanced Mehndi keep their designs; Thank You has no ribbon', () => {
+  const html=htmlFor();
+  for(const kind of ['sangeet','reception']){
+    const card=html.split('data-kind="'+kind+'"')[1].split('</section>')[0];
+    for(const needle of ['border-spray.webp','lv-party-corner','lv-party-bottom','lv-shape--white'])contains(card,needle);
+  }
+  const mehndi=html.split('data-kind="mehndi"')[1].split('</section>')[0];contains(mehndi,'lv-shape--mehndi');contains(mehndi,'lv-mehndi-upper');
+  const thanks=html.split('data-kind="thanks"')[1].split('</section>')[0];
+  for(const cls of ['lv-thanks-right','lv-thanks-left','lv-thanks-bottom'])contains(thanks,cls);
+  excludes(html,'lv-ribbon');assert.equal(config.demo.greenColor,'#8AB440');
+});
+
+test('Lotus refinement: persistent ambient motion/light and bounded two-second opening have reduced-motion fallback', () => {
+  const css=fs.readFileSync(path.join(root,'public/lotus-vivah/lotus.css'),'utf8');
+  for(const needle of ['lv-paper-float 13s ease-in-out infinite','lv-flower-float 8s ease-in-out infinite','lv-glow-always 4.8s ease-in-out infinite alternate','lv-edge-travel 9s linear infinite','lv-edge-travel 10s linear infinite','lv-card-shine 6.8s ease-in-out infinite'])contains(css,needle);
+  contains(css,'@keyframes lv-glow-always{from{opacity:.62}to{opacity:.88}}');
+  contains(css,'.lv-card-frame{animation:none!important;transform:none!important}');
+  const c=client();c.open.fire('click');assert.equal(c.app.classList.contains('lv-opening'),true);
+  assert.equal([...c.timers.values()][0].ms,1300);c.tick();assert.equal(c.counter.textContent,'2');
+  assert.equal([...c.timers.values()][0].ms,700);c.tick();assert.equal(c.app.classList.contains('lv-opening'),false);
 });
