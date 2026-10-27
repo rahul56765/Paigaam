@@ -35,8 +35,11 @@ async function draft(slug, data, cookie) {
 function hostileFor(fields) {
   const str = f => HOSTILE.slice(0, f.maxLength || HOSTILE.length) || '<';
   const scalar = f => {
+    if (f.id === 'spotifyUrl') return 'https://open.spotify.com/track/11dFghVXANMlKmJXsNCbNl?si=hostile';
+    if (f.id === 'songUrl') return 'https://x.example/song.mp3?a=1&b=%3Cscript%3E'; // Music fields accept URLs only, even when uploads require a text control.
     if (f.type === 'text' || f.type === 'textarea') return str(f);
     if (f.type === 'number') return f.max;
+    if (f.type === 'url' && f.id === 'playlistUrl') return 'https://open.spotify.com/playlist/example?a=1&b=%3Cscript%3E'.slice(0, f.maxLength); // playlist fields may restrict their provider
     if (f.type === 'url') return 'https://x.example/?a=1&b=%3Cscript%3E'.slice(0, f.maxLength); // quotes/<> are rejected outright
     if (f.type === 'select') return f.options[f.options.length - 1].value;
     if (f.type === 'date') return '2026-10-03';   // the only valid shape; hostility lives in the text fields

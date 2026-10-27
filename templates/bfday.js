@@ -25,6 +25,7 @@ module.exports = [
   'vivah',
   'shubh-vivah',
   'royal-vivah',
+  'aangan-vivah',
   'inaam',
   'purana-seekho',
   'jashn',
@@ -33,4 +34,6 @@ module.exports = [
   'chamak',
   'daawat',
   'wedding-post',
+  'birthday-atelier',
+  'love-letter',
 ];

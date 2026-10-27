@@ -83,7 +83,13 @@ const { png } = require('../tests/bfday-helpers');
       if (photo) {
         assert.ok(text.includes(photo), `${t.slug}: photo still referenced`);
         assert.equal((await fetch(base + photo)).status, 200, `${t.slug}: photo still served`);
-        assert.ok(text.includes(base + photo), `${t.slug}: og:image is the photo`);
+        if (t.slug === 'aangan-vivah') {
+          // Its optional image is a monogram overlay, not a share-card portrait;
+          // keep the designed courtyard card as og:image while serving the logo in-page.
+          assert.ok(text.includes(photo), `${t.slug}: uploaded logo remains in the monogram page`);
+        } else {
+          assert.ok(text.includes(base + photo), `${t.slug}: og:image is the photo`);
+        }
       }
       const own = await fetch(base + pending.previewUrl, { headers: { cookie } });
       assert.equal(own.status, 200, `${t.slug}: draft ownership survives restart`);

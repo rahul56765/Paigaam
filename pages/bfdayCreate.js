@@ -70,7 +70,9 @@ function scalarField(f) {
   if (f.type === 'text' || f.type === 'bgm') control = `<input type="text" ${common} maxlength="${f.maxLength}"${ph} autocomplete="off">`;
   else if (f.type === 'url') control = `<input type="url" ${common} maxlength="${f.maxLength}"${ph} inputmode="url" autocomplete="off">`;
   else if (f.type === 'date') control = `<input type="date" ${common} min="1900-01-01" max="2200-12-31">`;
-  else if (f.type === 'number') control = `<input type="number" ${common} min="${f.min}" max="${f.max}" step="1" inputmode="numeric"${ph}>`;
+  else if (f.type === 'number') control = f.slider
+    ? `<div class="bf-range-control"><input type="range" ${common} min="${f.min}" max="${f.max}" step="1" value="${f.default == null ? f.min : f.default}"><output data-range-value-for="${escape(f.id)}">${escape(f.default == null ? f.min : f.default)}${escape(f.unit || '')}</output></div>`
+    : `<input type="number" ${common} min="${f.min}" max="${f.max}" step="1" inputmode="numeric"${ph}>`;
   else if (f.type === 'textarea') control = `<textarea ${common} maxlength="${f.maxLength}" rows="${f.rows}"${ph}></textarea>`;
   else if (f.type === 'select') {
     control = `<select ${common}>${f.default === undefined ? '<option value="">Choose…</option>' : ''}${f.options.map(o => `<option value="${escape(o.value)}"${o.value === f.default ? ' selected' : ''}>${escape(o.label)}</option>`).join('')}</select>`;
@@ -143,7 +145,7 @@ function bfdayCreatePage(t, opts = {}) {
 ${jsonPayload('bfSpec', spec)}
 <link rel="stylesheet" href="/bfday/create.css?v=3">
 <style>:root { --bg: ${escape(theme.bg)}; --ink: ${escape(theme.ink)}; --accent: ${escape(theme.accent)}; --soft: ${escape(theme.soft)}; }${darkThemeOverride(theme)}</style>
-<script src="/bfday/create.js?v=3" defer></script>
+${t.slug === 'love-letter' ? '<script src="/love-letter/crop.js" defer></script><script src="/love-letter/editor.js" defer></script>' : '<script src="/bfday/create.js?v=3" defer></script>'}
 <script src="/js/paigaam-pay.js?v=1" defer></script>
 <script src="/js/qr-card.js?v=1" defer></script>
 ${opts.resumeDraft ? `<script src="/js/resume.js?v=1" defer></script>

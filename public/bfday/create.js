@@ -62,6 +62,8 @@
   }
 
   var MESSAGES = {
+    atelier_audio_url: 'Each song’s audio link must use HTTPS without a username or password. Use a direct MP3, WAV or OGG link, or leave it blank.',
+    atelier_spotify_url: 'Use an HTTPS playlist link from open.spotify.com, or leave the Spotify field blank.',
     validation: 'Something in there is a little too long or not quite right — check it and try again.',
     limit: 'That is a lot for one day. Try again a bit later.',
     storage_unavailable: 'Publishing is paused right now. Your draft is safe — try again shortly.',
@@ -111,8 +113,8 @@
     return draftPending;
   }
 
-  /** Client-side re-encode: long edge ≤1600px, JPEG q0.82, canvas-flattened. */
-  function prepareImage(file) {
+  /** Client-side re-encode: long edge ≤1600px. Preserve alpha only for opted-in logo fields. */
+  function prepareImage(file, preserveTransparency) {
     if (!file || ['image/jpeg', 'image/png', 'image/webp'].indexOf(file.type) < 0) return Promise.reject({ code: 'invalid_image' });
     if (file.size > 15 * 1024 * 1024) return Promise.reject({ code: 'too_large' });
     var source = URL.createObjectURL(file);
@@ -127,15 +129,19 @@
           canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
           var ctx = canvas.getContext('2d');
           if (!ctx) throw { code: 'invalid_image' };
-          ctx.fillStyle = '#fff';
-          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          if (!preserveTransparency) {
+            ctx.fillStyle = '#fff';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+          }
           ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
-          canvas.toBlob(function (blob) {
+          var done = function (blob) {
             canvas.width = canvas.height = 1;
             if (!blob) return reject({ code: 'invalid_image' });
             if (blob.size > 2 * 1024 * 1024) return reject({ code: 'too_large' });
             resolve(blob);
-          }, 'image/jpeg', 0.82);
+          };
+          if (preserveTransparency) canvas.toBlob(done, 'image/png');
+          else canvas.toBlob(done, 'image/jpeg', 0.82);
         } catch (err) { reject(err && err.code ? err : { code: 'invalid_image' }); }
       };
       image.onerror = function () { reject({ code: 'invalid_image' }); };
@@ -147,7 +153,7 @@
   function uploadBlob(blob) {
     return ensureDraft().then(function (id) {
       return fetch('/api/' + SLUG + '/upload?id=' + encodeURIComponent(id), {
-        method: 'POST', headers: { 'Content-Type': 'image/jpeg' }, body: blob, credentials: 'same-origin',
+        method: 'POST', headers: { 'Content-Type': blob.type || 'image/jpeg' }, body: blob, credentials: 'same-origin',
       });
     }).then(function (response) {
       return response.json().catch(function () { return {}; }).then(function (body) {
@@ -165,10 +171,13 @@
     var thumb = make('div', 'bf-photo__thumb');
     var img = make('img');
     img.alt = '';
-    var empty = make('span', 'bf-photo__empty', 'No photo yet — the design’s own illustration plays.');
+    var mediaName = f.preserveTransparency ? 'logo' : 'photo';
+    var emptyText = f.preserveTransparency ? 'No logo yet — your editable initials will appear.' : 'No photo yet — the design’s own illustration plays.';
+    var empty = make('span', 'bf-photo__empty', emptyText);
     thumb.appendChild(img); thumb.appendChild(empty);
+    if (f.preserveTransparency) thumb.classList.add('bf-photo__thumb--alpha');
     var tools = make('div', 'bf-photo__tools');
-    var choose = make('button', 'button secondary', 'Choose a photo');
+    var choose = make('button', 'button secondary', 'Choose a ' + mediaName);
     choose.type = 'button';
     var remove = make('button', 'button text-button', 'Remove');
     remove.type = 'button';
@@ -185,12 +194,23 @@
     function paint(src) {
       img.hidden = !src; empty.hidden = !!src;
       if (src) img.src = src; else img.removeAttribute('src');
-      choose.textContent = value || src ? 'Replace photo' : 'Choose a photo';
+      choose.textContent = value || src ? 'Replace ' + mediaName : 'Choose a ' + mediaName;
       remove.hidden = !value;
     }
     paint('');
 
-    choose.addEventListener('click', function () { file.click(); });
+    function pickFile() { if (!choose.disabled) file.click(); }
+    choose.addEventListener('click', pickFile);
+    if (f.tapToPick) {
+      thumb.classList.add('bf-photo__thumb--pickable');
+      thumb.setAttribute('role', 'button');
+      thumb.setAttribute('tabindex', '0');
+      thumb.setAttribute('aria-label', 'Tap the logo preview to choose or replace it');
+      thumb.addEventListener('click', pickFile);
+      thumb.addEventListener('keydown', function (event) {
+        if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); pickFile(); }
+      });
+    }
     remove.addEventListener('click', function () { value = ''; paint(''); note.textContent = ''; changed(); });
     file.addEventListener('change', function () {
       var picked = file.files && file.files[0];
@@ -198,9 +218,9 @@
       if (!picked) return;
       setError('');
       choose.disabled = true;
-      note.textContent = 'Preparing your photo…';
+      note.textContent = 'Preparing your ' + mediaName + '…';
       var local = null;
-      prepareImage(picked).then(function (blob) {
+      prepareImage(picked, f.preserveTransparency).then(function (blob) {
         local = URL.createObjectURL(blob);
         paint(local);
         note.textContent = 'Uploading…';
@@ -381,6 +401,15 @@
     if (!input) return;
     input.addEventListener('input', changed);
     input.addEventListener('change', changed);
+    if (f.slider) {
+      var rangeValue = form.querySelector('[data-range-value-for="' + f.id + '"]');
+      if (rangeValue) {
+        var updateRangeValue = function () { rangeValue.textContent = input.value + (f.unit || ''); };
+        input.addEventListener('input', updateRangeValue);
+        input.addEventListener('change', updateRangeValue);
+        updateRangeValue();
+      }
+    }
     if (f.id === 'bgmSong') {
       // The shared background-song field: the "no song" checkbox wins over
       // whatever is typed, and unchecking restores the input.
@@ -405,7 +434,7 @@
     }
     controls[f.id] = {
       get: function () { return f.type === 'select' ? input.value : input.value.trim(); },
-      set: function (v) { input.value = String(v == null ? '' : v); },
+      set: function (v) { input.value = String(v == null ? '' : v); if (f.slider && rangeValue) rangeValue.textContent = input.value + (f.unit || ''); },
       focus: function () { input.focus(); },
     };
   });

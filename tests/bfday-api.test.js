@@ -9,7 +9,7 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const family = require('../lib/bfday/family');
 const { resolve, maxImages } = require('../lib/bfday/fields');
-const { request, draft, hostileFor, png, firstText } = require('./bfday-helpers');
+const { request, draft, hostileFor, png, firstText, HOSTILE } = require('./bfday-helpers');
 
 assert.ok(family.list.length, 'no family members loaded');
 
@@ -157,7 +157,13 @@ for (const t of family.list) {
         if (f.item && (f.item.type === 'text' || f.item.type === 'textarea')) invalid.push([`${f.id} overlong item`, { ...demo, [f.id]: ['x'.repeat(f.item.maxLength + 1)] }]);
       }
     }
-    for (const [label, customer_data] of invalid) {
+    // Large editable scrapbooks exceed the fixed 240-write abuse budget when
+    // every scalar is probed four times. Validate every case directly, then
+    // exercise a representative HTTP subset without weakening production limits.
+    if (invalid.length > 150) {
+      for (const [label, value] of invalid) assert.throws(() => t.schema.validate(value, {mode:'draft'}), undefined, label);
+    }
+    for (const [label, customer_data] of (invalid.length > 150 ? invalid.filter((_, i) => i % 2 === 0) : invalid)) {
       const r = await request(`/api/${S}/draft`, { method: 'POST', body: customer_data === undefined ? {} : { customer_data } });
       assert.equal(r.status, 400, label);
       assert.equal(r.json.error, 'validation', label);
@@ -187,6 +193,16 @@ for (const t of family.list) {
 
   test(`${S} · HTML: every piece of sender text is escaped — preview, live page, preview frame`, async () => {
     const hostile = { ...demo, ...hostileFor(t.fields) };
+    // Aangan has stricter event semantics than the generic list generator:
+    // keep unique types and required dates/venues while making its copy hostile.
+    if (S === 'aangan-vivah') {
+      hostile.events = demo.events.map(event => ({
+        ...event,
+        pageTitle: HOSTILE.slice(0, 48), themeLine: HOSTILE.slice(0, 110),
+        time: HOSTILE.slice(0, 50), baraatTime: HOSTILE.slice(0, 45), pheraTime: HOSTILE.slice(0, 45),
+        venue: HOSTILE.slice(0, 110), dressCode: HOSTILE.slice(0, 70),
+      }));
+    }
     const a = await draft(S, hostile);
     const pages = [(await request(a.previewUrl, { cookie: a.cookie })).text];
     const pub = await request(`/api/${S}/publish`, { method: 'POST', cookie: a.cookie, body: { id: a.id } });
