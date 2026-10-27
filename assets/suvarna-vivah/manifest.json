@@ -10,5 +10,25 @@
   "continuity-ending.webp": {
     "sha256": "2a1893af707d94a6ec6c60ea3b04e76a99955163f08f1234f1008583c1fb1700",
     "parts": 1
+  },
+  "sanctum.webp": {
+    "sha256": "922fe745b428b341bfff2b82d7bdc99e245d69595530b96f388496d498191cd0",
+    "parts": 1
+  },
+  "banana-leaves.webp": {
+    "sha256": "c14a6aeb4a8d258969fcfa252c288d083fbe86ba6384b7a385edfb6a7dcd7f49",
+    "parts": 1
+  },
+  "toran.webp": {
+    "sha256": "8e23d2d0d7865bc994b54a56ac0c14b65493804f389b169d79f18b613100e328",
+    "parts": 1
+  },
+  "mandap.webp": {
+    "sha256": "3a87ad79d06b406c91688621b770af3879bc166715a50ff995522c5158e6e5d7",
+    "parts": 1
+  },
+  "film-end.webp": {
+    "sha256": "5bb3c312dccc0a9315d2c2650552433bc581c4e694268c0e8917d6d073b376c8",
+    "parts": 1
   }
 }

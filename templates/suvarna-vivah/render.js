@@ -5,7 +5,7 @@
  */
 const C = require('../../public/shaadi-paigaam/core.js');
 const I = C.I18N;
-const ASSET_V = '4';
+const ASSET_V = '7';
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const jsonSafe = x => JSON.stringify(x).replace(/</g, '\\u003c').replace(/>/g, '\\u003e').replace(/&/g, '\\u0026').replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029');
 function names(d, lang) {
@@ -37,10 +37,10 @@ ${o.url ? `<meta property="og:url" content="${esc(o.url)}"><link rel="canonical"
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link id="sv-fonts" rel="stylesheet" href="${esc(C.googleFontsHref(data.font, data.lang.enabled))}">
-<link rel="preload" as="image" href="/suvarna-vivah/continuity-ending.webp">
+<link id="sv-fonts" rel="stylesheet" href="${esc(C.googleFontsHref(data.font, data.lang.enabled)+'&family=Inter:wght@400;500;600')}">
+<link rel="preload" as="image" href="/suvarna-vivah/sanctum.webp">
 <link rel="stylesheet" href="/suvarna-vivah/site.css?v=${ASSET_V}">
-${o.openingVideo ? `<link rel="stylesheet" href="/suvarna-vivah/opening.css?v=3"><script src="/suvarna-vivah/opening.js?v=3" defer></script>` : ''}
+${o.openingVideo ? `<link rel="stylesheet" href="/suvarna-vivah/opening.css?v=7"><script src="/suvarna-vivah/opening.js?v=7" defer></script>` : ''}
 </head>`;
 }
 function renderInvitation(data, o = {}) {
