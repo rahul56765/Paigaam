@@ -9,7 +9,7 @@
   const boot = JSON.parse(document.getElementById('spe-boot').textContent);
   const ROOT = '/' + (boot.slug || 'shaadi-paigaam'), API = '/api' + ROOT, CREATE = '/create' + ROOT;
   const STORE = boot.slug === 'suvarna-vivah' ? 'sv-ed' : 'sp-ed';
-  const simpleWhatsAppRsvp = boot.slug !== 'suvarna-vivah';
+  const simpleWhatsAppRsvp = true;
   const lazyMusic = boot.slug !== 'suvarna-vivah';
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));

@@ -23,3 +23,6 @@
 .sv-site.has-film .sv-film-bridge{position:fixed;inset:0;width:100%;height:100svh}
 
 .sv-hero__names:focus{outline:none}
+
+/* Minimal RSVP: no guest name, phone, email or meal form. */
+.sv-rsvp__compact{max-width:540px;margin:auto;padding:30px;border:1px solid var(--sv-line);background:#fff8e3aa;border-radius:35px 35px 4px 4px}.sv-rsvp-actions{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:25px 0 10px}.sv-rsvp-actions .sv-button{width:100%;letter-spacing:0}.sv-button--outline{background:transparent;color:var(--sv-primary)}.sv-button--outline:hover{background:#efe0b9;color:#46391f}.sv-rsvp-actions button:disabled{opacity:.55;cursor:default;box-shadow:none}.sv-rsvp__compact .sv-rsvp__hint{margin:10px 0}@media(max-width:480px){.sv-rsvp__compact{padding:25px 20px}.sv-rsvp-actions{grid-template-columns:1fr;gap:12px}}

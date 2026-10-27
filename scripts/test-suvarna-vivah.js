@@ -18,7 +18,7 @@ function future(days) { const d = new Date(Date.now() + days * 864e5); return d.
 function sample() {
   const d = JSON.parse(JSON.stringify(C.SAMPLE));
   const w = future(90);
-  d.wedding.date = w; d.rsvp.deadline = future(80);
+  d.wedding.date = w; d.rsvp.deadline = future(80); d.rsvp.whatsapp = '+919876543210';
   const shift = { 'ev-mehendi': -2, 'ev-haldi': -1, 'ev-arrival': 0, 'ev-wedding': 0, 'ev-reception': 1 };
   for (const e of d.events) e.date = future(90 + shift[e.id]);
   return d;
@@ -56,7 +56,7 @@ function sample() {
     ok((await J('/templates/suvarna-vivah')).status === 200, 'catalogue detail page exists');
     ok((await J('/template-view/suvarna-vivah')).status === 200, 'gallery thumbnail uses the Suvarna experience');
     const editorHtml = await (await J('/create/suvarna-vivah')).text();
-    ok(editorHtml.includes('/shaadi-paigaam/editor.js?v=6') && editorHtml.includes('\"slug\":\"suvarna-vivah\"'), 'editor page loads the cache-busted route-aware editor');
+    ok(editorHtml.includes('/shaadi-paigaam/editor.js?v=7') && editorHtml.includes('\"slug\":\"suvarna-vivah\"'), 'editor page loads the cache-busted route-aware editor');
     ok((await J('/shaadi-paigaam/invite.css')).status === 200 && (await J('/shaadi-paigaam/art/scene-base.webp')).status === 200 && (await J('/suvarna-vivah/opening.css')).status === 200 && (await J('/suvarna-vivah/opening.js')).status === 200, 'shared invitation art and new opener assets are served');
     const video = await fetch(base + '/suvarna-vivah/opening.mp4', { headers: { range: 'bytes=0-15' } });
     ok(video.status === 206 && /^bytes 0-15\//.test(video.headers.get('content-range') || ''), 'opening video supports byte-range playback');
@@ -76,7 +76,7 @@ function sample() {
     const siteScript = await (await J('/suvarna-vivah/site.js')).text();
     ok(siteScript.includes('sv-hero__art') && siteScript.includes('sv-date-reveal') && siteScript.includes('sv-scratch') && !siteScript.includes('intro-inner') && !html.includes('/shaadi-paigaam/invite.js'), 'invitation uses its bespoke ceremonial layout, not Shaadi doors/courtyard');
     ok(siteScript.includes('window.parent !== window') && siteScript.includes('sp:ready'), 'guest preview is ready for the editor to send its current data');
-    ok(siteScript.includes('website:form.elements.website.value') && siteScript.includes('Date.now()-pageOpened') && !siteScript.includes('Math.max(3000'), 'RSVP preserves the server honeypot and minimum-time anti-bot checks');
+    ok(siteScript.includes('C.whatsappRsvpLink(data,true,lang)') && siteScript.includes('C.whatsappRsvpLink(data,false,lang)') && !siteScript.includes('sv-rsvp-form') && !siteScript.includes('fetch(boot.rsvpUrl'), 'Suvarna RSVP directly hands yes/no to organiser WhatsApp without a guest form or submission');
     ok(['en','hi','mr','gu','ta','te','ur','ar'].every(l => ['suvarnaLetterTitle','suvarnaGalleryTitle','suvarnaDetailsTitle','suvarnaArtAlt','suvarnaPreviewRsvp','suvarnaBackToTop','skipIntro'].every(k => C.I18N.t(l,k) !== k)), 'Suvarna editorial and opener copy is localized in all eight supported languages');
     ok((await J('/shaadi-paigaam/music/shehnai-dawn.mp3')).status === 200, 'music library is served');
 
@@ -127,6 +127,13 @@ function sample() {
     d.photos.unshift({ url: photoUrl, alt: 'Us', fx: 50, fy: 50 });
     await J('/api/suvarna-vivah/draft', { id, data: d }, cookie);
 
+    // A creator must supply the destination; never invent a fallback organiser number.
+    d.rsvp.whatsapp = ''; await J('/api/suvarna-vivah/draft', { id, data: d }, cookie);
+    r = await J('/api/suvarna-vivah/publish', { id, slug: 'aarav-ananya', confirmed: true }, cookie);
+    j = await r.json();
+    ok(r.status === 422 && JSON.stringify(j).includes('rsvp.whatsapp'), 'publishing requires the organiser WhatsApp number when RSVP is enabled');
+    d.rsvp.whatsapp = '+919876543210'; await J('/api/suvarna-vivah/draft', { id, data: d }, cookie);
+
     // --- publish: confirmation, payment, then free
     r = await J('/api/suvarna-vivah/publish', { id, slug: 'aarav-ananya' }, cookie);
     ok(r.status === 422, 'publishing needs the "I have checked" confirmation');
@@ -155,7 +162,7 @@ function sample() {
     r = await J('/api/suvarna-vivah/publish', { id: id2, slug: 'aarav-ananya', confirmed: true }, cookie2);
     ok(r.status === 409, 'publishing onto a taken link is refused');
 
-    // --- RSVP
+    // --- Legacy RSVP endpoint remains compatible; new guest UI never calls it.
     const rs = (b, c) => J('/api/suvarna-vivah/rsvp/' + id, Object.assign({ t: 6000, lang: 'en' }, b), c);
     r = await rs({ name: 'Bot', email: 'bot@x.com', attending: 'yes', website: 'http://spam' }); ok(r.status === 200, 'honeypot gets a silent OK');
     r = await rs({ name: 'Fast', email: 'fast@x.com', attending: 'yes', t: 300 }); ok(r.status === 200, 'too-fast bot gets a silent OK');

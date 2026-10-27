@@ -21,7 +21,6 @@
     ar:{suvarnaVenueArt:'رسم احتفالي · ليس صورة للمكان',suvarnaHeroLine:'بداية مباركة. ورفقة العمر.',suvarnaLetterHeading:'مع بركات عائلتينا',suvarnaCeremonyHeading:'حيث يصبح العالمان واحداً',replay:'شاهدوا الافتتاحية مجدداً',close:'إغلاق',previous:'الصورة السابقة',next:'الصورة التالية'}
   };
   const T = k => labels[lang]?.[k] || labels.en[k] || I.t(lang, k);
-  const pageOpened = Date.now();
   const X = p => C.txt(data, lang, p);
   const fmtDate = (v, style = 'long') => C.fmtDate(v, lang, style);
   const fmtTime = v => C.fmtTime(v, lang);
@@ -78,22 +77,13 @@
     return `<section class="sv-section sv-details" id="sv-details"><div class="sv-section__inner">${headline('',T('suvarnaDetailsTitle'))}<div class="sv-details__grid">${cards.map(([title,text])=>`<details class="sv-detail"><summary>${esc(title)}</summary><p>${esc(text)}</p></details>`).join('')}</div></div></section>`;
   }
   function rsvp() {
-    if (data.sections.rsvp === false) return '';
-    const deadline = data.rsvp.deadline ? T('rsvpBy').replace('{date}', fmtDate(data.rsvp.deadline, 'full')) : '';
-    const meals = data.rsvp.meal && data.rsvp.mealOptions.length ? `<div class="sv-field"><label for="sv-meal">${esc(T('meal'))}</label><select id="sv-meal"><option value="">${esc(T('select'))}</option>${data.rsvp.mealOptions.map(v => `<option value="${esc(v)}">${esc(v)}</option>`).join('')}</select></div>` : '';
-    return `<section class="sv-section sv-rsvp" id="sv-rsvp"><div class="sv-section__inner sv-rsvp__wrap"><div class="sv-rsvp__intro"><span class="sv-kicker">${esc(T('withLove'))}</span><h2 class="sv-section__title">${esc(T('rsvpTitle'))}</h2>${deadline ? `<p>${esc(deadline)}</p>` : ''}</div><form class="sv-rsvp__form" id="sv-rsvp-form" novalidate>
-      <div class="sv-field"><label for="sv-name">${esc(T('yourName'))}</label><input id="sv-name" name="name" autocomplete="name" maxlength="60" required placeholder="${esc(T('yourNamePh'))}"></div>
-      <div class="sv-field"><label for="sv-email">${esc(T('email'))}</label><input id="sv-email" name="email" type="email" autocomplete="email" maxlength="120" placeholder="${esc(T('emailPh'))}"></div>
-      <div class="sv-field"><label for="sv-phone">${esc(T('phone'))}</label><input id="sv-phone" name="phone" type="tel" autocomplete="tel" maxlength="24" placeholder="${esc(T('phonePh'))}"></div>
-      <div class="sv-field"><span class="sv-label">${esc(T('attending'))}</span><div class="sv-choice"><label><input type="radio" name="attending" value="yes" required> ${esc(T('accept'))}</label><label><input type="radio" name="attending" value="no"> ${esc(T('decline'))}</label></div></div>
-      <div class="sv-field"><label for="sv-guests">${esc(T('guests'))}</label><select id="sv-guests" name="guests">${Array.from({length:Math.max(1,Math.min(8,data.rsvp.maxGuests||4))},(_,i)=>`<option value="${i+1}">${i+1}</option>`).join('')}</select></div>
-      ${meals}
-      <div class="sv-field sv-field--full"><label for="sv-message">${esc(T('message'))}</label><textarea id="sv-message" name="message" maxlength="500" placeholder="${esc(T('messagePh'))}"></textarea></div>
-      <input name="website" class="sv-sr" tabindex="-1" autocomplete="off" aria-hidden="true">
-      <button class="sv-button" type="submit">${esc(T('send'))}</button>
-      <p id="sv-rsvp-status" class="sv-rsvp__status" role="status" aria-live="polite"></p>
-      ${boot.mode === 'demo' || boot.mode === 'thumb' || !boot.rsvpUrl ? `<p class="sv-rsvp__hint">${esc(T('suvarnaPreviewRsvp'))}</p>` : ''}
-    </form></div></section>`;
+    if(data.sections.rsvp===false)return '';
+    const deadline=data.rsvp.deadline?T('rsvpBy').replace('{date}',fmtDate(data.rsvp.deadline,'full')):'';
+    const closed=data.rsvp.deadline&&Date.now()>C.zonedToUtc(data.rsvp.deadline,'23:59',data.wedding.tz)+60000;
+    const preview=['demo','thumb','live','preview'].includes(boot.mode);
+    const yes=C.whatsappRsvpLink(data,true,lang),no=C.whatsappRsvpLink(data,false,lang);
+    const choices=(closed&&!preview)?`<p class="sv-rsvp__hint">${esc(T('rsvpClosed'))}</p>`:`<p class="sv-rsvp__hint">${esc(T('rsvpWhatsappHint'))}</p><div class="sv-rsvp-actions">${yes&&no?`<a class="sv-button" href="${esc(yes)}" target="_blank" rel="noopener noreferrer">${esc(T('accept'))} ↗</a><a class="sv-button sv-button--outline" href="${esc(no)}" target="_blank" rel="noopener noreferrer">${esc(T('decline'))} ↗</a>`:`<button class="sv-button" type="button" disabled>${esc(T('accept'))}</button><button class="sv-button sv-button--outline" type="button" disabled>${esc(T('decline'))}</button>`}</div>${!yes||!no?`<p class="sv-rsvp__hint">${esc(T('contactFamily'))}</p>`:''}`;
+    return `<section class="sv-section sv-rsvp" id="sv-rsvp"><div class="sv-section__inner sv-rsvp__wrap"><div class="sv-rsvp__intro"><p class="sv-kicker">${esc(T('withLove'))}</p><h2 class="sv-section__title">${esc(T('rsvpTitle'))}</h2>${deadline?`<p>${esc(deadline)}</p>`:''}</div><div class="sv-rsvp__compact">${choices}</div></div></section>`;
   }
   function pageMarkup() {
     const pair=coupleNames(),v=data.venue||{},venueName=v.name||'',venueText=[v.address,v.city,v.state,v.pin].filter(Boolean).join(', ');
@@ -122,7 +112,7 @@
     const font = C.FONT_BY_ID[data.font] || C.FONTS[0]; const native=C.scriptFontFor(lang); document.documentElement.style.setProperty('--f-script',native?.family||font.script); document.documentElement.style.setProperty('--f-serif',native?.family||font.serif); document.documentElement.classList.toggle('sv-native-script',!!native);
     const themeMeta = document.querySelector('meta[name=theme-color]'); if (themeMeta) themeMeta.content = built.palette.deep;
     const fontLink = document.getElementById('sv-fonts'); if (fontLink) fontLink.href = C.googleFontsHref(data.font, data.lang.enabled)+'&family=Inter:wght@400;500;600';
-    bindScratch(); bindCalendar(); bindRsvp(); bindMusic(); startCountdown(); bindLanguage(); bindScenes(); bindPhotos(); fitNames();
+    bindScratch(); bindCalendar(); bindMusic(); startCountdown(); bindLanguage(); bindScenes(); bindPhotos(); fitNames();
     const replayButton=document.getElementById('sv-replay'); if(replayButton)replayButton.onclick=replay;
     if (!boot.openingVideo || filmOpen) reveal();
     if (!readySent && window.parent !== window) { readySent=true; window.parent.postMessage({ type: 'sp:ready' }, location.origin); }
@@ -173,26 +163,7 @@
     const b = document.getElementById('sv-calendar'); if (!b) return;
     b.onclick = e => { e.preventDefault(); const href = URL.createObjectURL(new Blob([C.icsFor(data,lang,boot.url)], {type:'text/calendar;charset=utf-8'})); const a=document.createElement('a'); a.href=href; a.download=`${C.slugify(coupleNames().join('-'))||'wedding'}.ics`; a.click(); setTimeout(()=>URL.revokeObjectURL(href),1200); };
   }
-  function bindLanguage() { const s=document.getElementById('sv-language'); if(s) s.onchange=()=>{const form=document.getElementById('sv-rsvp-form');const saved=form?Array.from(new FormData(form).entries()):[];const dateOpen=document.getElementById('sv-date-reveal')?.classList.contains('is-revealed');lang=s.value;render();const next=document.getElementById('sv-rsvp-form');for(const [key,value]of saved){const field=next?.elements.namedItem(key);if(field instanceof RadioNodeList){if(field.value!==undefined)field.value=value;}else if(field)field.value=value;}if(dateOpen)document.getElementById('sv-reveal-date')?.click();document.getElementById('sv-language')?.focus({preventScroll:true});}; }
-  function bindRsvp() {
-    const form=document.getElementById('sv-rsvp-form'); if(!form)return;
-    const status=document.getElementById('sv-rsvp-status');
-    form.addEventListener('submit',async e=>{
-      e.preventDefault();
-      if(!form.reportValidity())return;
-      if(!boot.rsvpUrl){status.textContent=boot.mode==='demo'||boot.mode==='thumb'?T('suvarnaPreviewRsvp'):T('errGeneric');return;}
-      const b=e.submitter; if(b){b.disabled=true;b.textContent=T('sending');}
-      const attending=new FormData(form).get('attending');
-      const payload={name:form.elements.name.value,email:form.elements.email.value,phone:form.elements.phone.value,attending,guests:Number(form.elements.guests.value)||1,meal:document.getElementById('sv-meal')?.value||'',message:document.getElementById('sv-message')?.value||'',website:form.elements.website.value,lang,t:Date.now()-pageOpened};
-      try{
-        let r=await fetch(boot.rsvpUrl,{method:'POST',headers:{'content-type':'application/json'},credentials:'same-origin',body:JSON.stringify(payload)});
-        let j=await r.json().catch(()=>({}));
-        if(r.status===409){if(window.confirm(T('duplicate'))){payload.confirmUpdate=true;r=await fetch(boot.rsvpUrl,{method:'POST',headers:{'content-type':'application/json'},credentials:'same-origin',body:JSON.stringify(payload)});j=await r.json().catch(()=>({}));}else{status.textContent=T('duplicate');if(b){b.disabled=false;b.textContent=T('send');}return;}}
-        if(!r.ok||!j.ok)throw new Error(j.error||'error');
-        form.innerHTML=`<div class="sv-rsvp__status" role="status">${esc(T(attending==='yes'?'thanksYes':'thanksNo'))}</div>`;
-      }catch{status.textContent=T('errGeneric');if(b){b.disabled=false;b.textContent=T('send');}}
-    });
-  }
+  function bindLanguage() { const s=document.getElementById('sv-language'); if(s) s.onchange=()=>{const dateOpen=document.getElementById('sv-date-reveal')?.classList.contains('is-revealed');lang=s.value;render();if(dateOpen)document.getElementById('sv-reveal-date')?.click();document.getElementById('sv-language')?.focus({preventScroll:true});}; }
   function bindMusic(){
     const b=document.getElementById('sv-music');if(!b)return;
     const src=data.music.track==='upload'&&data.music.url?data.music.url:`/shaadi-paigaam/music/${encodeURIComponent(data.music.track||'shehnai-dawn')}.mp3`;

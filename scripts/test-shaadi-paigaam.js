@@ -51,7 +51,7 @@ function sample() {
     ok(r.status === 200 && html.includes('Aarav') && html.includes('sp-boot'), 'demo renders the sample couple');
     const editorResponse = await J('/create/shaadi-paigaam'), editorHtml = await editorResponse.text();
     const editorRuntime = fs.readFileSync(path.join(root, 'public/shaadi-paigaam/editor.js'), 'utf8');
-    ok(editorResponse.status === 200 && editorHtml.includes('editor.js?v=6') && editorRuntime.includes("Organiser's WhatsApp number") && editorRuntime.includes("card('Music',") && editorRuntime.includes('audio/aac') && editorRuntime.includes("const tracks = lazyMusic ? ''"), 'editor requires the organiser number and removes the Shaadi music card');
+    ok(editorResponse.status === 200 && editorHtml.includes('editor.js?v=7') && editorRuntime.includes("Organiser's WhatsApp number") && editorRuntime.includes("card('Music',") && editorRuntime.includes('audio/aac') && editorRuntime.includes("const tracks = lazyMusic ? ''"), 'editor requires the organiser number and removes the Shaadi music card');
     const demoLinks = C.whatsappRsvpLink(sample(), true, 'en');
     ok(demoLinks.startsWith('https://wa.me/919999999999?text=') && decodeURIComponent(demoLinks).includes('Aarav & Ananya'), 'RSVP link targets organiser WhatsApp with couple context');
     const missingWa = sample(); missingWa.rsvp.whatsapp = '';

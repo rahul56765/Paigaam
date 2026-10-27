@@ -5,7 +5,7 @@
  */
 const C = require('../../public/shaadi-paigaam/core.js');
 const I = C.I18N;
-const ASSET_V = '7';
+const ASSET_V = '8';
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const jsonSafe = x => JSON.stringify(x).replace(/</g, '\\u003c').replace(/>/g, '\\u003e').replace(/&/g, '\\u0026').replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029');
 function names(d, lang) {
