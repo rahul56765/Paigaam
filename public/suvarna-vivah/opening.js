@@ -1,74 +1,44 @@
-/* User-initiated opening film; revealing the wedding invitation is always one click away. */
+/* Film first. Its final gold frame dissolves into the botanical invitation. */
 (() => {
   'use strict';
-  const bootEl = document.getElementById('sp-boot');
-  if (!bootEl || document.getElementById('sv-opener')) return;
-  let boot;
-  try { boot = JSON.parse(bootEl.textContent || '{}'); } catch { return; }
-  const d = boot.data || {}, couple = d.couple || {};
-  const names = [couple.groom && couple.groom.first, couple.bride && couple.bride.first].filter(Boolean).join(' & ');
-  const root = document.createElement('section');
-  root.className = 'sv-opener'; root.id = 'sv-opener'; root.setAttribute('role','dialog');
-  root.setAttribute('aria-modal','true'); root.setAttribute('aria-label','Suvarna Vivah opening film');
-  root.innerHTML = `
-    <video class="sv-opener__video" id="svOpeningVideo" preload="metadata" playsinline webkit-playsinline poster="/suvarna-vivah/opening-poster.jpg" aria-label="Ceremonial kalash opening film">
-      <source src="/suvarna-vivah/opening.mp4" type="video/mp4">
-    </video>
-    <div class="sv-opener__veil" aria-hidden="true"></div>
-    <div class="sv-opener__frame" aria-hidden="true">
-      <svg class="sv-opener__corner sv-opener__corner--tl" viewBox="0 0 48 48" fill="none"><path d="M3 45V17C3 9 9 3 17 3h28M3 30c14 0 27-13 27-27M10 38c11-2 20-11 22-22" stroke="currentColor" stroke-width="1"/><circle cx="17" cy="17" r="2" fill="currentColor"/></svg>
-      <svg class="sv-opener__corner sv-opener__corner--tr" viewBox="0 0 48 48" fill="none"><path d="M3 45V17C3 9 9 3 17 3h28M3 30c14 0 27-13 27-27M10 38c11-2 20-11 22-22" stroke="currentColor" stroke-width="1"/><circle cx="17" cy="17" r="2" fill="currentColor"/></svg>
-      <svg class="sv-opener__corner sv-opener__corner--bl" viewBox="0 0 48 48" fill="none"><path d="M3 45V17C3 9 9 3 17 3h28M3 30c14 0 27-13 27-27M10 38c11-2 20-11 22-22" stroke="currentColor" stroke-width="1"/><circle cx="17" cy="17" r="2" fill="currentColor"/></svg>
-      <svg class="sv-opener__corner sv-opener__corner--br" viewBox="0 0 48 48" fill="none"><path d="M3 45V17C3 9 9 3 17 3h28M3 30c14 0 27-13 27-27M10 38c11-2 20-11 22-22" stroke="currentColor" stroke-width="1"/><circle cx="17" cy="17" r="2" fill="currentColor"/></svg>
-    </div>
-    <div class="sv-opener__copy">
-      <svg class="sv-opener__lotus" viewBox="0 0 72 72" fill="none" aria-hidden="true"><circle cx="36" cy="36" r="29" stroke="currentColor" stroke-opacity=".65"/><circle cx="36" cy="36" r="24" stroke="currentColor" stroke-opacity=".35" stroke-dasharray="1.4 3.5"/><path d="M36 51c-1-8-8-12-8-18 4 2 7 5 8 9 1-7 5-12 11-15-1 8-1 14-7 20M36 51c-4-7-12-9-17-7 4 5 9 8 17 7Zm0 0c4-7 12-9 17-7-4 5-9 8-17 7Zm-12-1h24M29 54h14M33 58h6" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"/><circle cx="36" cy="36" r="2" fill="currentColor"/></svg>
-      <p class="sv-opener__kicker">SUVARNA VIVAH · A WEDDING PAIGAAM</p>
-      <p class="sv-opener__names" id="svOpenerNames"></p>
-      <h1 class="sv-opener__title">With blessings, the celebration begins.</h1>
-      <button type="button" class="sv-opener__play" id="svPlay" aria-label="Play the wedding opening film"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15l12-7.5z"/></svg><span>Open the invitation</span></button>
-    </div>
-    <p class="sv-opener__status" id="svOpenerStatus" role="status" aria-live="polite"></p>
-    <button type="button" class="sv-opener__skip" id="svSkip">Skip opening</button>`;
-  document.body.appendChild(root);
-  document.documentElement.classList.add('sv-opening-lock');
-  document.body.classList.add('sv-opening-lock');
-  const nameEl = document.getElementById('svOpenerNames');
-  nameEl.textContent = names || 'A day made for forever';
-  const video = document.getElementById('svOpeningVideo');
-  const play = document.getElementById('svPlay');
-  const skip = document.getElementById('svSkip');
-  const status = document.getElementById('svOpenerStatus');
-  let started = false, leaving = false;
-  function reveal() {
-    if (leaving) return;
-    leaving = true;
-    try { if (window.SPInvite && window.SPInvite.open) window.SPInvite.open(); } catch {}
-    document.documentElement.classList.remove('sv-opening-lock');
-    document.body.classList.remove('sv-opening-lock');
-    const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    setTimeout(() => root.classList.add('is-leaving'), reduced ? 0 : 420);
-    setTimeout(() => root.remove(), reduced ? 220 : 2000);
+  let activeClose=null;
+  function create(){
+  const bootEl=document.getElementById('sp-boot');if(!bootEl||document.getElementById('sv-opener'))return;
+  let boot;try{boot=JSON.parse(bootEl.textContent||'{}');}catch{return;}
+  const C=window.SPCore,I=window.SPI18N,d=window.SVCurrentData||boot.data||{},lang=document.documentElement.lang||d.lang?.default||'en';
+  const text=k=>I?I.t(lang,k):k;
+  const sides=d.couple?.order==='bride'?['bride','groom']:['groom','bride'];
+  const names=sides.map(side=>C?C.txt(d,lang,`couple.${side}.first`):d.couple?.[side]?.first).filter(Boolean).join(' & ');
+  const root=document.createElement('section');root.id='sv-opener';root.className='sv-opener';root.setAttribute('role','dialog');root.setAttribute('aria-modal','true');root.setAttribute('aria-label','Suvarna Vivah opening film');
+  root.innerHTML=`<video class="sv-opener__video" id="svOpeningVideo" playsinline webkit-playsinline preload="metadata" poster="/suvarna-vivah/opening-poster.jpg"><source src="/suvarna-vivah/opening.mp4" type="video/mp4"></video><div class="sv-opener__veil" aria-hidden="true"></div><div class="sv-opener__copy"><p class="sv-opener__kicker">SUVARNA VIVAH</p><p class="sv-opener__names" id="svOpenerNames"></p><p class="sv-opener__title"></p><button class="sv-opener__play" id="svPlay" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4v16l12-8z"/></svg><span></span></button><p class="sv-opener__duration">00:10 · A CEREMONIAL BEGINNING</p></div><p class="sv-opener__status" id="svOpenerStatus" role="status" aria-live="polite"></p><button class="sv-opener__skip" id="svSkip" type="button"></button>`;
+  document.body.appendChild(root);document.documentElement.classList.add('sv-opening-lock');document.body.classList.add('sv-opening-lock');
+  const app=document.getElementById('sv-app');if(app)app.inert=true;
+  root.querySelector('#svOpenerNames').textContent=names;root.querySelector('.sv-opener__title').textContent=text('gettingMarried');root.querySelector('#svPlay span').textContent=text('tapToOpen');root.querySelector('#svSkip').textContent=text('skipIntro')+' ↗';
+  const video=root.querySelector('video'),play=root.querySelector('#svPlay'),skip=root.querySelector('#svSkip'),status=root.querySelector('#svOpenerStatus');
+  let started=false,leaving=false;
+  const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function keydown(e){
+    if(leaving)return;
+    if(e.key==='Escape'){e.preventDefault();reveal();}
+    if(e.key==='Tab'){e.preventDefault();if(started){skip.focus();}else{(document.activeElement===play?skip:play).focus();}}
   }
-  async function start() {
-    if (started || leaving) return;
-    started = true;
-    root.classList.add('is-playing');
-    status.textContent = 'The celebration is unfolding';
-    video.currentTime = 0;
-    try { await video.play(); }
-    catch {
-      started = false; root.classList.remove('is-playing');
-      status.textContent = 'The film could not start. You can skip straight to the invitation.';
-      play.querySelector('span').textContent = 'Try opening film again';
-    }
+  function reveal(){
+    if(leaving)return;leaving=true;video.pause();
+    window.scrollTo({top:0,behavior:'instant'});window.SPInvite?.reveal();root.classList.add('is-leaving');
+    // Scroll remains locked until the final film frame has dissolved, avoiding a jump on phones.
+    setTimeout(()=>{root.remove();document.documentElement.classList.remove('sv-opening-lock');document.body.classList.remove('sv-opening-lock');if(app)app.inert=false;document.removeEventListener('keydown',keydown);const heading=document.querySelector('.sv-hero__names');if(heading){heading.tabIndex=-1;heading.focus({preventScroll:true});}},reduced?30:1250);
   }
-  play.addEventListener('click', start);
-  video.addEventListener('click', start);
-  root.addEventListener('click', e => { if (!e.target.closest('#svSkip') && !e.target.closest('#svPlay') && !started && !leaving) start(); });
-  video.addEventListener('ended', reveal, { once: true });
-  video.addEventListener('error', () => { status.textContent = 'The film could not load. Skip to the invitation whenever you’re ready.'; });
-  skip.addEventListener('click', reveal);
-  document.addEventListener('keydown', e => { if (e.key === 'Escape' && !leaving) reveal(); }, { once: false });
-  play.focus({ preventScroll: true });
+  activeClose=reveal;
+  async function start(){
+    if(started||leaving)return;started=true;root.classList.add('is-playing');status.textContent='';video.currentTime=0;
+    try{await video.play();skip.focus({preventScroll:true});}
+    catch{started=false;root.classList.remove('is-playing');status.textContent=text('errGeneric');play.focus({preventScroll:true});}
+  }
+  root.addEventListener('click',e=>{if(!e.target.closest('#svSkip'))start();});skip.addEventListener('click',reveal);
+  video.addEventListener('ended',reveal,{once:true});video.addEventListener('error',()=>{status.textContent=text('errGeneric');root.classList.remove('is-playing');started=false;});
+  document.addEventListener('keydown',keydown);play.focus({preventScroll:true});
+  }
+  window.SVOpening={show:create,close:()=>activeClose?.()};
+  let initial={};try{initial=JSON.parse(document.getElementById('sp-boot')?.textContent||'{}');}catch{}
+  if(!initial.autoOpen)create();
 })();

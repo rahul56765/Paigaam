@@ -18,7 +18,7 @@ function future(days) { const d = new Date(Date.now() + days * 864e5); return d.
 function sample() {
   const d = JSON.parse(JSON.stringify(C.SAMPLE));
   const w = future(90);
-  d.wedding.date = w; d.rsvp.deadline = future(80);
+  d.wedding.date = w; d.rsvp.deadline = future(80); d.rsvp.whatsapp = '+919876543210';
   const shift = { 'ev-mehendi': -2, 'ev-haldi': -1, 'ev-arrival': 0, 'ev-wedding': 0, 'ev-reception': 1 };
   for (const e of d.events) e.date = future(90 + shift[e.id]);
   return d;
@@ -46,7 +46,7 @@ function sample() {
     // This flow tests both paid/offline and free publishing. The live template now
     // seeds at ₹0, so make the isolated test row nominally paid for its first pass.
     { const { DatabaseSync } = require('node:sqlite'); const db = new DatabaseSync(path.join(dir, 'paigaam.db')); db.prepare("UPDATE templates SET price=1 WHERE slug='suvarna-vivah'").run(); db.close(); }
-    let r = await J('/suvarna-vivah/demo'); let html = await r.text();
+    let r = await J('/suvarna-vivah/demo?palette=emerald-gold'); let html = await r.text();
     ok(r.status === 200 && html.includes('Aarav') && html.includes('sp-boot'), 'demo renders the sample couple');
     const bootMatch = html.match(/<script id="sp-boot" type="application\/json">([\s\S]*?)<\/script>/);
     const demoBoot = bootMatch && JSON.parse(bootMatch[1]);
@@ -56,7 +56,7 @@ function sample() {
     ok((await J('/templates/suvarna-vivah')).status === 200, 'catalogue detail page exists');
     ok((await J('/template-view/suvarna-vivah')).status === 200, 'gallery thumbnail uses the Suvarna experience');
     const editorHtml = await (await J('/create/suvarna-vivah')).text();
-    ok(editorHtml.includes('/shaadi-paigaam/editor.js?v=6') && editorHtml.includes('\"slug\":\"suvarna-vivah\"'), 'editor page loads the cache-busted route-aware editor');
+    ok(editorHtml.includes('/shaadi-paigaam/editor.js?v=7') && editorHtml.includes('\"slug\":\"suvarna-vivah\"'), 'editor page loads the cache-busted route-aware editor');
     ok((await J('/shaadi-paigaam/invite.css')).status === 200 && (await J('/shaadi-paigaam/art/scene-base.webp')).status === 200 && (await J('/suvarna-vivah/opening.css')).status === 200 && (await J('/suvarna-vivah/opening.js')).status === 200, 'shared invitation art and new opener assets are served');
     const video = await fetch(base + '/suvarna-vivah/opening.mp4', { headers: { range: 'bytes=0-15' } });
     ok(video.status === 206 && /^bytes 0-15\//.test(video.headers.get('content-range') || ''), 'opening video supports byte-range playback');
@@ -64,6 +64,20 @@ function sample() {
     ok(html.includes('/suvarna-vivah/opening.js') && html.includes('/suvarna-vivah/opening.css'), 'demo includes the click-to-play opening experience');
     const openerScript = await (await J('/suvarna-vivah/opening.js')).text();
     ok(openerScript.includes('video.play()') && openerScript.includes('opening.mp4'), 'opening film waits for a user gesture');
+    const defaultDemo = await (await J('/suvarna-vivah/demo')).text();
+    const defaultMatch = defaultDemo.match(/<script id="sp-boot" type="application\/json">([\s\S]*?)<\/script>/);
+    const defaultBoot = defaultMatch && JSON.parse(defaultMatch[1]);
+    ok(defaultBoot && defaultBoot.data.palette.id === 'custom' && defaultBoot.data.palette.custom.primary === '#70501F' && defaultBoot.data.palette.custom.bg === '#FBF4DE', 'Suvarna defaults to its warm ending-frame palette');
+    const customPreview = JSON.parse(JSON.stringify(C.SAMPLE)); customPreview.palette = { id: 'custom', custom: { primary: '#70501F', accent: '#BA8A31', bg: '#FBF4DE' } }; customPreview.font = 'royal';
+    ok(!C.validate(customPreview, { publish: true }).errors.length, 'the warm-gold default palette passes publish validation');
+    ok(['en','hi','mr','gu','ta','te','ur','ar'].every(l => ['suvarnaLetterTitle','suvarnaGalleryTitle','suvarnaDetailsTitle','suvarnaArtAlt','suvarnaPreviewRsvp','suvarnaBackToTop','suvarnaScratchHint','suvarnaRevealDate','skipIntro'].every(k => C.I18N.t(l,k) !== k)), 'Suvarna invitation and scratch-reveal copy is translated in eight languages');
+    const siteAssets = await Promise.all(['/shaadi-paigaam/core.js','/suvarna-vivah/site.css','/suvarna-vivah/site.js','/suvarna-vivah/continuity-ending.webp'].map(path => J(path)));
+    ok(siteAssets.every(r => r.status === 200), 'shared data engine and Suvarna-specific design assets are served');
+    const siteScript = await (await J('/suvarna-vivah/site.js')).text();
+    ok(siteScript.includes('sv-hero__art') && siteScript.includes('sv-date-reveal') && siteScript.includes('sv-scratch') && !siteScript.includes('intro-inner') && !html.includes('/shaadi-paigaam/invite.js'), 'invitation uses its bespoke ceremonial layout, not Shaadi doors/courtyard');
+    ok(siteScript.includes('window.parent !== window') && siteScript.includes('sp:ready'), 'guest preview is ready for the editor to send its current data');
+    ok(siteScript.includes('C.whatsappRsvpLink(data,true,lang)') && siteScript.includes('C.whatsappRsvpLink(data,false,lang)') && !siteScript.includes('sv-rsvp-form') && !siteScript.includes('fetch(boot.rsvpUrl'), 'Suvarna RSVP directly hands yes/no to organiser WhatsApp without a guest form or submission');
+    ok(['en','hi','mr','gu','ta','te','ur','ar'].every(l => ['suvarnaLetterTitle','suvarnaGalleryTitle','suvarnaDetailsTitle','suvarnaArtAlt','suvarnaPreviewRsvp','suvarnaBackToTop','skipIntro'].every(k => C.I18N.t(l,k) !== k)), 'Suvarna editorial and opener copy is localized in all eight supported languages');
     ok((await J('/shaadi-paigaam/music/shehnai-dawn.mp3')).status === 200, 'music library is served');
 
     // --- draft
@@ -113,6 +127,13 @@ function sample() {
     d.photos.unshift({ url: photoUrl, alt: 'Us', fx: 50, fy: 50 });
     await J('/api/suvarna-vivah/draft', { id, data: d }, cookie);
 
+    // A creator must supply the destination; never invent a fallback organiser number.
+    d.rsvp.whatsapp = ''; await J('/api/suvarna-vivah/draft', { id, data: d }, cookie);
+    r = await J('/api/suvarna-vivah/publish', { id, slug: 'aarav-ananya', confirmed: true }, cookie);
+    j = await r.json();
+    ok(r.status === 422 && JSON.stringify(j).includes('rsvp.whatsapp'), 'publishing requires the organiser WhatsApp number when RSVP is enabled');
+    d.rsvp.whatsapp = '+919876543210'; await J('/api/suvarna-vivah/draft', { id, data: d }, cookie);
+
     // --- publish: confirmation, payment, then free
     r = await J('/api/suvarna-vivah/publish', { id, slug: 'aarav-ananya' }, cookie);
     ok(r.status === 422, 'publishing needs the "I have checked" confirmation');
@@ -126,6 +147,7 @@ function sample() {
     ok(r.status === 200 && j.url === base + '/aarav-ananya', 'free publish returns the short link');
     r = await J('/aarav-ananya'); html = await r.text();
     ok(r.status === 200 && html.includes('"mode":"guest"') && html.includes('og:image'), 'paigaam.cc/aarav-ananya serves the invitation with a share card');
+    ok(html.includes('/suvarna-vivah/site.js') && html.includes('/suvarna-vivah/opening.js') && !html.includes('/shaadi-paigaam/invite.js'), 'published link uses the original Suvarna renderer and video opener');
     ok((await J(photoUrl)).status === 200, 'photos become public once published');
     r = await J('/p/aarav-ananya'); ok(r.status === 301 && r.headers.get('location') === '/aarav-ananya', '/p/<link> redirects to the short link');
     ok((await J('/no-such-couple')).status === 404, 'unknown short links fall through to the normal 404');
@@ -140,7 +162,7 @@ function sample() {
     r = await J('/api/suvarna-vivah/publish', { id: id2, slug: 'aarav-ananya', confirmed: true }, cookie2);
     ok(r.status === 409, 'publishing onto a taken link is refused');
 
-    // --- RSVP
+    // --- Legacy RSVP endpoint remains compatible; new guest UI never calls it.
     const rs = (b, c) => J('/api/suvarna-vivah/rsvp/' + id, Object.assign({ t: 6000, lang: 'en' }, b), c);
     r = await rs({ name: 'Bot', email: 'bot@x.com', attending: 'yes', website: 'http://spam' }); ok(r.status === 200, 'honeypot gets a silent OK');
     r = await rs({ name: 'Fast', email: 'fast@x.com', attending: 'yes', t: 300 }); ok(r.status === 200, 'too-fast bot gets a silent OK');
