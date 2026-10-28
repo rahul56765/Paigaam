@@ -36,4 +36,5 @@ module.exports = [
   'wedding-post',
   'birthday-atelier',
   'love-letter',
+  'anniversary-blue',
 ];
