@@ -8,3 +8,16 @@
 /* Private partner photos remain visible in the greeting at phone widths. */
 .pc-avatar{object-fit:cover;overflow:hidden;aspect-ratio:1/1}.pc-profile .pc-avatar{width:46px;height:46px}.pc-avatar--large{width:88px;height:88px;font-size:36px}.pc-mobile-profile{display:none}.pc-admin-identity,.pc-photo-preview{display:flex;align-items:center;gap:16px}.pc-admin-identity h1{margin:0}.pc-admin-identity .pc-avatar{flex-shrink:0}.pc-photo-preview{margin:18px 0 24px}.pc-photo-preview p{margin:0;max-width:580px}.pc-photo-editor form{max-width:620px}.pc-photo-remove{margin-top:14px}.pc-photo-status{margin-top:16px!important}.pc-field select{width:100%;min-height:46px;border:1px solid #d7ccd1;border-radius:4px;padding:11px 13px;background:#fff;color:var(--pc-ink);font:inherit}.pc-photo-editor input[type=file]{padding:10px;white-space:normal}.pc-photo-editor input[type=file]::file-selector-button{min-height:32px;margin-right:10px;border:1px solid var(--pc-line);background:var(--pc-paper);color:var(--pc-wine);border-radius:3px;cursor:pointer}.pc-terms strong{white-space:normal}
 @media(max-width:760px){.pc-mobile-profile{display:flex;align-items:center;gap:14px;margin-bottom:24px;padding-bottom:20px;border-bottom:1px solid var(--pc-line)}.pc-mobile-profile strong,.pc-mobile-profile small{display:block}.pc-mobile-profile small{color:var(--pc-muted);font-size:11px}.pc-avatar--greeting{height:64px;width:64px;font-size:27px}.pc-admin-identity{gap:12px}.pc-admin-identity .pc-avatar--large{width:64px;height:64px;font-size:27px}.pc-photo-preview{align-items:flex-start}.pc-photo-preview .pc-avatar--large{width:72px;height:72px}}
+
+/* Onboarding: the optional DP is a first-class step, before account details. */
+.pc-onboarding-photo{border:2px solid var(--pc-border,#d9c9bd);background:#faf5ef;border-radius:14px;padding:22px;margin-bottom:26px;min-width:0}
+.pc-onboarding-photo h3{margin:0 0 10px;font-size:1.25rem}
+.pc-onboarding-photo h3 span{font-size:.85rem;font-weight:400}
+.pc-onboarding-photo input[type=file]{width:100%;max-width:100%;min-width:0;box-sizing:border-box;font-size:14px;padding:10px}
+.pc-onboarding-photo [data-photo-preview]{object-fit:cover;margin:14px 12px 0 0}
+.pc-onboarding-photo [hidden]{display:none}
+.pc-password-control{display:flex;align-items:center;gap:8px;min-width:0}
+.pc-password-control input{flex:1;width:0;min-width:0}
+.pc-password-control button{flex-shrink:0;min-width:64px}
+[data-onboarding-status]{overflow-wrap:anywhere}
+@media(max-width:480px){.pc-onboarding-photo{padding:14px}.pc-password-control{gap:5px}}
