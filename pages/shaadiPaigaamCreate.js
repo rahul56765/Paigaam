@@ -36,8 +36,8 @@ function shaadiPaigaamCreatePage(opts = {}) {
 <script src="/shaadi-paigaam/i18n.js?v=${V}"></script>
 <script src="/shaadi-paigaam/core.js?v=${V}"></script>
 <script src="/shaadi-paigaam/art.js?v=${V}"></script>
-<script src="/js/paigaam-pay.js?v=1" defer></script>
-<script src="/shaadi-paigaam/editor.js?v=${V}"></script>
+<script src="/js/paigaam-pay.js?v=1&release=creator-20261028" defer></script>
+<script src="/shaadi-paigaam/editor.js?v=${V}&release=creator-20261028"></script>
 </body>
 </html>`;
 }

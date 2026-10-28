@@ -199,7 +199,12 @@
       state.resultUrl=safeUrl(result.url);state.published=true;updateShareLinks();
       $('wizard').hidden=true;$('publishedResult').hidden=false;status(null);$('resultTitle').focus();$('publishedResult').scrollIntoView({block:'start'});
       state.photos.forEach(photo=>{if(photo.localUrl){URL.revokeObjectURL(photo.localUrl);photo.localUrl=null;}photo.blob=null;});
-    }catch(err){error(err.code||'generic');status(null);}finally{setBusy(false);}
+    }catch(err){
+      const couponMessage=window.PaigaamCouponError && window.PaigaamCouponError(err);
+      if(couponMessage){$('formError').textContent=couponMessage;$('formError').hidden=false;}
+      else error(err.code||'generic');
+      status(null);
+    }finally{setBusy(false);}
   }
   $('eventDate').value=defaults[2026];$('eventDate').min='2026-01-01';$('eventDate').max='2026-12-31';$('eventTime').value='11:00';
   $('language').addEventListener('change',event=>setLanguage(event.target.value));

@@ -35,8 +35,8 @@ function loveAwaitsCreatePage(opts = {}) {
   const boot = rd ? { draftId: rd.id, data: rd.customer_data || {}, at: rd.updated_at ? new Date(rd.updated_at.replace(' ', 'T') + 'Z').getTime() : Date.now(), noun: 'proposal' } : null;
     return builderShell('Love Awaits', `
 <link rel="stylesheet" href="/love-awaits/create.css?v=3">
-<script src="/love-awaits/create.js?v=3" defer></script>
-<script src="/js/paigaam-pay.js?v=1" defer></script>
+<script src="/love-awaits/create.js?v=3&release=creator-20261028" defer></script>
+<script src="/js/paigaam-pay.js?v=1&release=creator-20261028" defer></script>
 ${boot ? `<script src="/js/resume.js?v=1" defer></script>
 <script type="application/json" id="wizardBoot">${JSON.stringify(boot).replace(/</g, '\u003c')}</script>` : ''}
 <script src="/js/qr-card.js?v=1" defer></script>

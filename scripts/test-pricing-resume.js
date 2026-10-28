@@ -1,7 +1,7 @@
 'use strict';
-// Paid-wizard pricing + resume flow: list_price, price-aware publish (payUrl),
+// Paid-wizard pricing + resume flow: list_price, price-aware inline checkout,
 // wizard CTA rendering, recent-draft resume. Server runs for real; Razorpay
-// API itself is not called (the payUrl branch returns before any network).
+// API is mocked by a local child-process HTTPS preload; no live calls.
 // Run: node scripts/test-pricing-resume.js
 const { spawn } = require('node:child_process'), { once } = require('node:events');
 const fs = require('node:fs'), path = require('node:path'), os = require('node:os'), net = require('node:net');
@@ -15,9 +15,47 @@ const root = path.join(__dirname, '..');
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'paigaam-prz-test-')), base = 'http://127.0.0.1:' + port;
   process.env.DATA_DIR = dir;
   let server;
+  // Preload only in the disposable child: intercept every HTTPS request so
+  // these regressions can never reach the live gateway (or another HTTPS host).
+  const fixturePath = path.join(dir, 'gateway.json');
+  const callsPath = path.join(dir, 'gateway-calls.jsonl');
+  const preloadPath = path.join(dir, 'mock-https.cjs');
+  const setGateway = value => fs.writeFileSync(fixturePath, JSON.stringify(value));
+  const gatewayCalls = () => fs.existsSync(callsPath) ? fs.readFileSync(callsPath, 'utf8').trim().split('\n').filter(Boolean).map(JSON.parse) : [];
+  setGateway({ payments: {} });
+  fs.writeFileSync(preloadPath, `
+'use strict';
+const https = require('node:https'), fs = require('node:fs');
+const assert = require('node:assert/strict');
+const { EventEmitter } = require('node:events');
+let sequence = 0;
+https.request = (options, callback) => {
+  assert.equal(options.hostname, 'api.razorpay.com', 'no live HTTPS allowed');
+  assert.equal(options.auth, process.env.RAZORPAY_KEY_ID + ':' + process.env.RAZORPAY_KEY_SECRET);
+  assert.ok((options.method === 'POST' && options.path === '/v1/orders') ||
+    (options.method === 'GET' && options.path.startsWith('/v1/payments/')), 'unexpected gateway request');
+  const req = new EventEmitter(); let payload = '';
+  req.write = data => { payload += data.toString(); };
+  req.destroy = err => { if (err) req.emit('error', err); };
+  req.end = () => queueMicrotask(() => {
+    assert.equal(options.headers['Content-Length'], Buffer.byteLength(payload));
+    const body = payload ? JSON.parse(payload) : null;
+    fs.appendFileSync(${JSON.stringify(callsPath)}, JSON.stringify({ method: options.method, path: options.path, body }) + '\\n');
+    const fixtures = JSON.parse(fs.readFileSync(${JSON.stringify(fixturePath)}, 'utf8'));
+    if (fixtures.failOrders && options.method === 'POST') return req.emit('error', new Error('local simulated gateway failure'));
+    const entity = options.method === 'POST' ? { ...body, id: 'order_local_' + (++sequence) } :
+      fixtures.payments[decodeURIComponent(options.path.slice('/v1/payments/'.length))];
+    const res = new EventEmitter(); res.statusCode = entity ? 200 : 404;
+    callback(res);
+    res.emit('data', Buffer.from(JSON.stringify(entity || { error: { code: 'payment_not_found' } })));
+    res.emit('end');
+  });
+  return req;
+};
+`);
 
   async function start(extraEnv) {
-    server = spawn(process.execPath, ['server.js'], {
+    server = spawn(process.execPath, ['--require', preloadPath, 'server.js'], {
       cwd: root,
       env: { ...process.env, PORT: String(port), HOST: '127.0.0.1', BASE_URL: base, DATA_DIR: dir, ...(extraEnv || {}) },
       stdio: ['ignore', 'pipe', 'pipe'],
@@ -54,7 +92,7 @@ const root = path.join(__dirname, '..');
     assert.match(html, /<s>&#8377;599<\/s>/, 'struck listing price');
     assert.doesNotMatch(html, /Free\. The link stays live/, 'no free hint on paid wizard');
 
-    /* ---- 3. publish now returns payUrl (not 403 "can't be edited") ---- */
+    /* ---- 3. publish now returns inline checkout (not 403 "can't be edited") ---- */
     r = await fetch(base + '/api/maafi/draft', {
       method: 'POST', headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ customer_data: { recipientName: 'Meher', senderName: 'Rahul' } }),
@@ -63,14 +101,21 @@ const root = path.join(__dirname, '..');
     const cookie = r.headers.get('set-cookie').split(';')[0];
     const { id } = await r.json();
     r = await fetch(base + '/api/maafi/publish', { method: 'POST', headers: { cookie, 'content-type': 'application/json' }, body: JSON.stringify({ id }) });
-    // Paid template: the handler tries Razorpay's API. With placeholder keys the
-    // gateway is unreachable → 502 gateway_unreachable (NOT 403 "can't edit").
-    // The inline-checkout payload shape is covered by the live verification.
-    assert.equal(r.status, 502, 'paid publish attempts gateway (502 with fake keys, not 403)');
+    assert.equal(r.status, 200, 'paid publish returns mocked inline checkout, not forbidden');
     const pub = await r.json();
-    assert.equal(pub.error, 'gateway_unreachable');
+    assert.equal(pub.razorpay, true);
+    assert.equal(pub.amount, 29900);
+    assert.equal(pub.currency, 'INR');
+    assert.match(pub.orderId, /^order_local_/);
+    assert.equal(gatewayCalls().at(-1).body.amount, 29900);
+    assert.equal(q.orderByRazorpayOrderId(pub.orderId).amount, 299);
     const stillDraft = q.paigaamById(id);
-    assert.equal(stillDraft.status, 'draft', 'not published yet — payment pending');
+    assert.equal(stillDraft.status, 'payment_pending', 'payment pending, not published');
+    setGateway({ payments: {}, failOrders: true });
+    r = await fetch(base + '/api/maafi/publish', { method: 'POST', headers: { cookie, 'content-type': 'application/json' }, body: JSON.stringify({ id }) });
+    assert.equal(r.status, 502, 'simulated gateway failure degrades honestly');
+    assert.equal((await r.json()).error, 'gateway_unreachable');
+    setGateway({ payments: {} });
 
     /* ---- 3b. abandoned checkout: dismissed modal → draft still editable ---- */
     // (publish flipped it to payment_pending; saving/editing must keep working)
@@ -82,7 +127,7 @@ const root = path.join(__dirname, '..');
 
     /* ---- 4. payments_offline: keys absent → honest 503, not "can't edit" ---- */
     await stop();
-    await start({}); // no razorpay env
+    await start({ RAZORPAY_ENABLED: '', RAZORPAY_KEY_ID: '', RAZORPAY_KEY_SECRET: '', RAZORPAY_WEBHOOK_SECRET: '' }); // explicitly offline, even if caller has keys
     r = await fetch(base + '/api/maafi/draft', {
       method: 'POST', headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ customer_data: { recipientName: 'Meher' } }),

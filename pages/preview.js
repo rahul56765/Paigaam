@@ -149,7 +149,7 @@ ${isFree ? `<script src="/js/qr-card.js?v=1" defer></script>
     }).catch(function () { btn.disabled = false; btn.textContent = 'Publish my Paigaam'; });
   });
 })();
-</script>` : `<script src="/js/paigaam-pay.js?v=1" defer></script>
+</script>` : `<script src="/js/paigaam-pay.js?v=1&release=creator-20261028" defer></script>
 <script src="/js/qr-card.js?v=1" defer></script>
 <script>
 (function () {
@@ -188,6 +188,8 @@ ${isFree ? `<script src="/js/qr-card.js?v=1" defer></script>
     }).catch(function (err) {
       btn.disabled = false;
       btn.innerHTML = 'Pay &amp; publish — ${paigaam.template_list_price > paigaam.template_price ? `<s>&#8377;${paigaam.template_list_price}</s>` : ''}&#8377;${esc(paigaam.template_price)}';
+      var couponMessage = window.PaigaamCouponError && window.PaigaamCouponError(err);
+      if (couponMessage) { alert(couponMessage); return; }
       if (err && err.code === 'dismissed') return;
       if (err && err.code === 'payments_offline') { alert('Payments are being switched on — check back shortly.'); return; }
       alert("Checkout didn't open. Please try again in a moment.");

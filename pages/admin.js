@@ -43,6 +43,7 @@ function adminShell(current, title, inner, opts = {}) {
         <li>${link('/admin/studio', 'Template studio', 'templates')}</li>
         <li>${link('/admin/paigaams', 'Paigaams', 'paigaams')}</li>
         <li>${link('/admin/orders', 'Orders', 'orders')}</li>
+        <li>${link('/admin/creators', 'Creators', 'paigaams')}</li>
         <li class="admin__nav-label">Creative studio</li>
         <li>${link('/admin/magazines', 'Magazines', 'magazine')}</li>
         <li>${link('/wedding-video', 'Video templates', 'video')}</li>
@@ -60,6 +61,7 @@ function adminShell(current, title, inner, opts = {}) {
     <details class="admin__more">
       <summary>${adminIcon('more')}<span>More</span></summary>
       <div class="admin__more-panel">
+        ${link('/admin/creators', 'Creators', 'paigaams')}
         ${link('/admin/magazines', 'Magazines', 'magazine')}
         ${link('/wedding-video', 'Video templates', 'video')}
         ${link('/admin/settings', 'Settings', 'settings')}

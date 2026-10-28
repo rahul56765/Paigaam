@@ -21,12 +21,47 @@ const root = path.join(__dirname, '..');
   const mock = await createCanvaMock({ dataset: {} });
   const m = registry.bySlug('birthday-collage');
   let server;
+  // Test-only child preload, as in test-razorpay.js: never contact a live
+  // gateway. Checkout deliberately fails; only explicit capture fixtures pass.
+  const fixturePath = path.join(dir, 'gateway.json');
+  const callsPath = path.join(dir, 'gateway-calls.jsonl');
+  const preloadPath = path.join(dir, 'mock-https.cjs');
+  const setGateway = payments => fs.writeFileSync(fixturePath, JSON.stringify({ payments }));
+  const gatewayCalls = () => fs.existsSync(callsPath) ? fs.readFileSync(callsPath, 'utf8').trim().split('\n').filter(Boolean).map(JSON.parse) : [];
+  setGateway({});
+  fs.writeFileSync(preloadPath, `
+'use strict';
+const https = require('node:https'), fs = require('node:fs');
+const assert = require('node:assert/strict');
+const { EventEmitter } = require('node:events');
+https.request = (options, callback) => {
+  assert.equal(options.hostname, 'api.razorpay.com', 'no live HTTPS allowed');
+  assert.equal(options.auth, process.env.RAZORPAY_KEY_ID + ':' + process.env.RAZORPAY_KEY_SECRET);
+  assert.ok((options.method === 'POST' && options.path === '/v1/orders') ||
+    (options.method === 'GET' && options.path.startsWith('/v1/payments/')), 'unexpected gateway request');
+  const req = new EventEmitter(); let payload = '';
+  req.write = data => { payload += data.toString(); };
+  req.destroy = err => { if (err) req.emit('error', err); };
+  req.end = () => queueMicrotask(() => {
+    assert.equal(options.headers['Content-Length'], Buffer.byteLength(payload));
+    fs.appendFileSync(${JSON.stringify(callsPath)}, JSON.stringify({ method: options.method, path: options.path }) + '\\n');
+    if (options.method === 'POST') return req.emit('error', new Error('local simulated gateway failure'));
+    const fixtures = JSON.parse(fs.readFileSync(${JSON.stringify(fixturePath)}, 'utf8'));
+    const entity = fixtures.payments[decodeURIComponent(options.path.slice('/v1/payments/'.length))];
+    const res = new EventEmitter(); res.statusCode = entity ? 200 : 404;
+    callback(res);
+    res.emit('data', Buffer.from(JSON.stringify(entity || { error: { code: 'payment_not_found' } })));
+    res.emit('end');
+  });
+  return req;
+};
+`);
   const env = { ...process.env, PORT: String(port), HOST: '127.0.0.1', BASE_URL: base, DATA_DIR: dir, ADMIN_EMAIL: 'admin@test.local', ADMIN_PASSWORD: 'e2e-admin-pass',
     RAZORPAY_ENABLED: '1', RAZORPAY_KEY_ID: 'rzp_test_placeholder', RAZORPAY_KEY_SECRET: 'test_secret_key_placeholder', RAZORPAY_WEBHOOK_SECRET: 'whsec_placeholder',
     CANVA_TEST_MODE: '1', CANVA_API_BASE: mock.apiBase, CANVA_AUTHORIZE_URL: mock.base + '/authorize', CANVA_POLL_MS: '10', CANVA_JOB_TIMEOUT_MS: '5000', CANVA_RETRY_AFTER_CAP_MS: '20',
     CANVA_CLIENT_ID: 'test-client', CANVA_CLIENT_SECRET: 'test-secret', CANVA_TOKEN_ENCRYPTION_KEY: 'e2e-key-' + 'k'.repeat(40) };
   async function start() {
-    server = spawn(process.execPath, ['server.js'], { cwd: root, env, stdio: ['ignore', 'pipe', 'pipe'] });
+    server = spawn(process.execPath, ['--require', preloadPath, 'server.js'], { cwd: root, env, stdio: ['ignore', 'pipe', 'pipe'] });
     server.stderr.on('data', x => { const t = x.toString(); if (!/ExperimentalWarning|trace-warnings/.test(t)) process.stderr.write(t); });
     await new Promise((resolve, reject) => {
       const timer = setTimeout(() => reject(new Error('server start timeout')), 20000);
@@ -273,7 +308,7 @@ const root = path.join(__dirname, '..');
     let gated = await jsonReq(dana, 'POST', `/api/magazines/drafts/${did}/generate`, {});
     assert.equal(gated.status, 402); assert.equal(gated.body.error, 'payment_required'); assert.equal(gated.body.price, 499);
     assert.equal((await jsonReq(bob, 'POST', `/api/magazines/drafts/${did}/checkout`, {})).status, 403); // checkout is owner-only
-    // Placeholder keys → honest gateway failure (same shape as the template rail).
+    // Deterministic gateway failure (same shape as the template rail).
     gated = await jsonReq(dana, 'POST', `/api/magazines/drafts/${did}/checkout`, {});
     assert.equal(gated.status, 502); assert.equal(gated.body.error, 'gateway_unreachable');
     // Unpaid result page offers the pay CTA; admin can settle manually and generation runs.
@@ -290,17 +325,34 @@ const root = path.join(__dirname, '..');
     await jsonReq(erin, 'PUT', `/api/magazines/drafts/${eid}`, { fields: { headline: 'Verified' } });
     const sq = new (require('node:sqlite').DatabaseSync)(path.join(dir, 'paigaam.db'));
     sq.prepare(`INSERT INTO magazine_payments (id, order_id, amount, currency, status, razorpay_order_id, created_at, updated_at) VALUES ('${'e'.repeat(32)}', ?, 499, 'INR', 'pending', 'order_mag_verify', ?, ?)`).run(eid, Date.now(), Date.now());
+    const payment = sq.prepare('SELECT * FROM magazine_payments WHERE razorpay_order_id=?').get('order_mag_verify');
     sq.close();
+    // Magazine amounts are stored in rupees; the gateway returns paise.
+    const captured = { id: 'pay_mag_verify', order_id: payment.razorpay_order_id,
+      status: 'captured', currency: payment.currency, amount: Math.round(Number(payment.amount) * 100) };
+    setGateway({ [captured.id]: captured });
     const magSig = crypto.createHmac('sha256', 'test_secret_key_placeholder').update('order_mag_verify|pay_mag_verify').digest('hex');
     let vr = await fetch(base + '/api/razorpay/verify', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ razorpay_order_id: 'order_mag_verify', razorpay_payment_id: 'pay_mag_verify', razorpay_signature: magSig }) });
     assert.equal(vr.status, 200); const vj = await vr.json(); assert.ok(vj.url && vj.url.includes('/magazines/m/'), 'magazine verify returns magazine url');
     await waitFor(async () => (await jsonReq(erin, 'GET', `/api/magazines/${eid}/status`)).body.status === 'ready');
-    // Replay is idempotent; unknown orders still 404.
+    assert.deepEqual(gatewayCalls().at(-1), { method: 'GET', path: '/v1/payments/pay_mag_verify' });
+    const designsBeforeReplay = mock.st.autofills.length;
+    // Replay is idempotent. An unknown gateway payment returns 404 from the
+    // stub, but the current verify handler maps ALL fetch errors to HTTP 409.
     vr = await fetch(base + '/api/razorpay/verify', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ razorpay_order_id: 'order_mag_verify', razorpay_payment_id: 'pay_mag_verify', razorpay_signature: magSig }) });
     assert.equal(vr.status, 200);
+    assert.equal(mock.st.autofills.length, designsBeforeReplay, 'verify replay creates no extra design');
+    const settledDb = new (require('node:sqlite').DatabaseSync)(path.join(dir, 'paigaam.db'));
+    const settledPayment = settledDb.prepare('SELECT status, razorpay_payment_id FROM magazine_payments WHERE id=?').get(payment.id);
+    settledDb.close();
+    assert.equal(settledPayment.status, 'paid');
+    assert.equal(settledPayment.razorpay_payment_id, captured.id);
     const missingSig = crypto.createHmac('sha256', 'test_secret_key_placeholder').update('order_missing|pay_missing').digest('hex');
-    assert.equal((await fetch(base + '/api/razorpay/verify', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ razorpay_order_id: 'order_missing', razorpay_payment_id: 'pay_missing', razorpay_signature: missingSig }) })).status, 404);
-    ok('Razorpay verify settles magazine payments: marks paid, starts generation, idempotent, unknown 404');
+    const missing = await fetch(base + '/api/razorpay/verify', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ razorpay_order_id: 'order_missing', razorpay_payment_id: 'pay_missing', razorpay_signature: missingSig }) });
+    assert.equal(missing.status, 409, 'current verify handler maps gateway 404 to 409');
+    assert.equal((await missing.json()).error, 'payment_not_found');
+    assert.deepEqual(gatewayCalls().at(-1), { method: 'GET', path: '/v1/payments/pay_missing' });
+    ok('Razorpay verify settles matching captured magazine payments; replay is idempotent; unknown gateway payment rejected');
 
     /* --- disconnect blocks new generation --- */
     const dis = await req(admin2, 'POST', '/admin/canva/disconnect', {}); assert.match(decodeURIComponent(dis.headers.get('location')), /disconnected/i); assert.ok(mock.st.revoked);

@@ -24,9 +24,47 @@ process.env.RAZORPAY_ENABLED = '1';
   // verification of orders/paigaams). Must be set before require('../db').
   process.env.DATA_DIR = dir;
   let server;
+  // Preload only in the disposable child: intercept every HTTPS request so
+  // these regressions can never reach the live gateway (or another HTTPS host).
+  const fixturePath = path.join(dir, 'gateway.json');
+  const callsPath = path.join(dir, 'gateway-calls.jsonl');
+  const preloadPath = path.join(dir, 'mock-https.cjs');
+  const setGateway = value => fs.writeFileSync(fixturePath, JSON.stringify(value));
+  const gatewayCalls = () => fs.existsSync(callsPath) ? fs.readFileSync(callsPath, 'utf8').trim().split('\n').filter(Boolean).map(JSON.parse) : [];
+  setGateway({ payments: {} });
+  fs.writeFileSync(preloadPath, `
+'use strict';
+const https = require('node:https'), fs = require('node:fs');
+const assert = require('node:assert/strict');
+const { EventEmitter } = require('node:events');
+let sequence = 0;
+https.request = (options, callback) => {
+  assert.equal(options.hostname, 'api.razorpay.com', 'no live HTTPS allowed');
+  assert.equal(options.auth, process.env.RAZORPAY_KEY_ID + ':' + process.env.RAZORPAY_KEY_SECRET);
+  assert.ok((options.method === 'POST' && options.path === '/v1/orders') ||
+    (options.method === 'GET' && options.path.startsWith('/v1/payments/')), 'unexpected gateway request');
+  const req = new EventEmitter(); let payload = '';
+  req.write = data => { payload += data.toString(); };
+  req.destroy = err => { if (err) req.emit('error', err); };
+  req.end = () => queueMicrotask(() => {
+    assert.equal(options.headers['Content-Length'], Buffer.byteLength(payload));
+    const body = payload ? JSON.parse(payload) : null;
+    fs.appendFileSync(${JSON.stringify(callsPath)}, JSON.stringify({ method: options.method, path: options.path, body }) + '\\n');
+    const fixtures = JSON.parse(fs.readFileSync(${JSON.stringify(fixturePath)}, 'utf8'));
+    if (fixtures.failOrders && options.method === 'POST') return req.emit('error', new Error('local simulated gateway failure'));
+    const entity = options.method === 'POST' ? { ...body, id: 'order_local_' + (++sequence) } :
+      fixtures.payments[decodeURIComponent(options.path.slice('/v1/payments/'.length))];
+    const res = new EventEmitter(); res.statusCode = entity ? 200 : 404;
+    callback(res);
+    res.emit('data', Buffer.from(JSON.stringify(entity || { error: { code: 'payment_not_found' } })));
+    res.emit('end');
+  });
+  return req;
+};
+`);
 
   async function start() {
-    server = spawn(process.execPath, ['server.js'], {
+    server = spawn(process.execPath, ['--require', preloadPath, 'server.js'], {
       cwd: root,
       env: {
         ...process.env, PORT: String(port), HOST: '127.0.0.1', BASE_URL: base, DATA_DIR: dir,
@@ -75,35 +113,57 @@ process.env.RAZORPAY_ENABLED = '1';
     assert.doesNotMatch(previewHtml, /go\/whatsapp/, 'no WhatsApp handoff on paid preview');
     assert.match(previewHtml, /\/recover\/[a-f0-9]{32}/, 'recovery link nudged on preview');
 
-    // /pay/:id is a redirect now (checkout is inline); the order API with
-    // placeholder keys → 502 gateway_unreachable (honest failure shape).
     r = await fetch(base + '/pay/' + paidId, { redirect: 'manual' });
     assert.equal(r.status, 303, '/pay redirects to preview (inline checkout)');
+    // A legacy, cookie-less buyer still gets a real INR order and snapshot.
     r = await fetch(base + '/api/razorpay/order', {
       method: 'POST', headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ id: paidId })
     });
-    assert.equal(r.status, 502, 'order API degrades gracefully when gateway unreachable');
-    const payHtml = await r.text();
-    assert.match(payHtml, /gateway_unreachable/, 'honest error, no crash');
+    assert.equal(r.status, 200, 'cookie-less order succeeds with local gateway');
+    const checkout = await r.json();
+    const { q, db } = require('../db');
+    const pgRow = q.paigaamById(paidId);
+    assert.equal(checkout.currency, 'INR');
+    assert.equal(checkout.amount, pgRow.template_price * 100);
+    const reservation = require('../lib/creators/store').getOrder(checkout.orderId);
+    assert.equal(reservation.creator_id, null, 'no attribution without cookie');
+    assert.equal(reservation.visitor_hash, '', 'no fabricated visitor hash');
+    assert.equal(q.orderByRazorpayOrderId(checkout.orderId).currency, 'INR');
+    const sentOrder = gatewayCalls().at(-1);
+    assert.equal(sentOrder.path, '/v1/orders');
+    assert.equal(sentOrder.body.amount, checkout.amount);
+    assert.equal(sentOrder.body.currency, 'INR');
 
-    /* ---- 3. verify endpoint: bad signature rejected, good signature settles ---- */
+    /* ---- 3. verify endpoint: signature plus matching captured payment required ---- */
     r = await fetch(base + '/api/razorpay/verify', {
       method: 'POST', headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ razorpay_order_id: 'order_fake', razorpay_payment_id: 'pay_fake', razorpay_signature: 'deadbeef' }),
     });
     assert.equal(r.status, 400, 'bad signature rejected');
 
-    // Seed an order with a known rzp order id + craft a valid signature.
-    const { q } = require('../db');
-    const pgRow = q.paigaamById(paidId);
-    q.orderInsert({ paigaam_id: paidId, customer_name: 'Meher & Raghav', amount: pgRow.template_price, currency: 'INR', razorpay_order_id: 'order_test123' });
-    const sig = crypto.createHmac('sha256', KEY_SECRET).update('order_test123|pay_test123').digest('hex');
-    r = await fetch(base + '/api/razorpay/verify', {
+    assert.equal(gatewayCalls().filter(x => x.method === 'GET').length, 0, 'bad signature never fetches payment');
+    const orderId = checkout.orderId, paymentId = 'pay_test123';
+    const captured = { id: paymentId, order_id: orderId, status: 'captured', amount: checkout.amount, currency: 'INR' };
+    const sig = crypto.createHmac('sha256', KEY_SECRET).update(orderId + '|' + paymentId).digest('hex');
+    const verify = () => fetch(base + '/api/razorpay/verify', {
       method: 'POST', headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ razorpay_order_id: 'order_test123', razorpay_payment_id: 'pay_test123', razorpay_signature: sig }),
+      body: JSON.stringify({ razorpay_order_id: orderId, razorpay_payment_id: paymentId, razorpay_signature: sig }),
     });
-    assert.equal(r.status, 200, 'good signature settles');
+    // A valid HMAC alone is insufficient: gateway capture must match every field.
+    for (const patch of [{ status: 'authorized' }, { amount: checkout.amount + 1 },
+      { currency: 'USD' }, { order_id: 'order_other' }, { id: 'pay_other' }]) {
+      setGateway({ payments: { [paymentId]: { ...captured, ...patch } } });
+      r = await verify();
+      assert.equal(r.status, 409, 'signed but mismatched capture rejected: ' + JSON.stringify(patch));
+      assert.equal((await r.json()).error, 'payment_mismatch');
+      assert.notEqual(q.paigaamById(paidId).payment_status, 'paid');
+      assert.notEqual(q.orderByRazorpayOrderId(orderId).status, 'paid');
+      assert.equal(gatewayCalls().at(-1).path, '/v1/payments/' + paymentId);
+    }
+    setGateway({ payments: { [paymentId]: captured } });
+    r = await verify();
+    assert.equal(r.status, 200, 'matching captured payment settles');
     const settled = await r.json();
     assert.ok(settled.url && settled.url.includes('/p/'), 'settlement returns live url');
 
@@ -114,19 +174,63 @@ process.env.RAZORPAY_ENABLED = '1';
     assert.equal(paidPg.status, 200, 'published paigaam serves');
 
     // Idempotent: replaying the same verify must not throw or double-publish.
-    r = await fetch(base + '/api/razorpay/verify', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ razorpay_order_id: 'order_test123', razorpay_payment_id: 'pay_test123', razorpay_signature: sig }),
-    });
+    r = await verify();
     assert.equal(r.status, 200, 'verify is idempotent');
+    const settledRow = q.orderByRazorpayOrderId(orderId);
+    assert.equal(settledRow.razorpay_payment_id, paymentId);
+    const generatedCount = () => db.prepare("SELECT COUNT(*) n FROM events WHERE event = 'paigaam_generated'").get().n;
+    const generatedBeforeReplay = generatedCount();
 
-    /* ---- 4. webhook fallback (tab closed before verify) ---- */
-    const wbBody = JSON.stringify({ event: 'payment.captured', payload: { payment: { entity: { id: 'pay_webhook1', order_id: 'order_test123', status: 'captured' } } } });
+    /* ---- 4. webhook replay uses the same real capture, not a conflicting id ---- */
+    const wbBody = JSON.stringify({ event: 'payment.captured', payload: { payment: { entity: captured } } });
     const wbSigLive = crypto.createHmac('sha256', 'whsec_placeholder').update(wbBody).digest('hex');
-    r = await fetch(base + '/api/razorpay/webhook', { method: 'POST', headers: { 'content-type': 'application/json', 'x-razorpay-signature': wbSigLive }, body: wbBody });
-    assert.equal(r.status, 200, 'webhook accepted');
+    for (let i = 0; i < 2; i++) {
+      r = await fetch(base + '/api/razorpay/webhook', { method: 'POST', headers: { 'content-type': 'application/json', 'x-razorpay-signature': wbSigLive }, body: wbBody });
+      assert.equal(r.status, 200, 'same captured payment webhook replay accepted');
+    }
+    assert.equal(q.orderByRazorpayOrderId(orderId).razorpay_payment_id, paymentId);
+    assert.equal(q.paigaamById(paidId).slug, pgAfter.slug, 'replays preserve publication');
+    assert.equal(generatedCount(), generatedBeforeReplay, 'replays do not emit another publication');
     const wbBad = await fetch(base + '/api/razorpay/webhook', { method: 'POST', headers: { 'content-type': 'application/json', 'x-razorpay-signature': 'nope' }, body: wbBody });
     assert.equal(wbBad.status, 400, 'webhook bad signature rejected');
+
+    // Tab-closed fallback: a different unpaid checkout is fulfilled by webhook
+    // alone, then replayed with that SAME payment id.
+    const fallbackPg = q.paigaamInsert({ template_id: pgRow.template_id, customer_name: 'Webhook buyer' });
+    r = await fetch(base + '/api/razorpay/order', {
+      method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id: fallbackPg.id }),
+    });
+    assert.equal(r.status, 200);
+    const fallbackOrder = await r.json();
+    const fallbackCapture = { id: 'pay_webhook1', order_id: fallbackOrder.orderId, status: 'captured', amount: fallbackOrder.amount, currency: fallbackOrder.currency };
+    const postWebhook = entity => {
+      const raw = JSON.stringify({ event: 'payment.captured', payload: { payment: { entity } } });
+      return fetch(base + '/api/razorpay/webhook', { method: 'POST', headers: {
+        'content-type': 'application/json',
+        'x-razorpay-signature': crypto.createHmac('sha256', 'whsec_placeholder').update(raw).digest('hex'),
+      }, body: raw });
+    };
+    r = await postWebhook({ ...fallbackCapture, amount: fallbackCapture.amount + 1 });
+    assert.equal(r.status, 409, 'signed webhook with wrong amount rejected');
+    assert.notEqual(q.paigaamById(fallbackPg.id).payment_status, 'paid');
+    const beforeFallback = generatedCount();
+    for (let i = 0; i < 2; i++) {
+      r = await postWebhook(fallbackCapture);
+      assert.equal(r.status, 200, 'webhook fallback and exact payment replay succeed');
+    }
+    assert.equal(q.paigaamById(fallbackPg.id).payment_status, 'paid');
+    assert.equal(q.paigaamById(fallbackPg.id).status, 'published');
+    assert.equal(q.orderByRazorpayOrderId(fallbackOrder.orderId).razorpay_payment_id, 'pay_webhook1');
+    assert.equal(generatedCount(), beforeFallback + 1, 'webhook fallback publishes only once');
+
+    // Legacy manual rail must not reference an undefined gateway order variable.
+    r = await fetch(base + '/go/whatsapp/' + paidId, { redirect: 'manual' });
+    assert.equal(r.status, 303, 'legacy WhatsApp handoff redirects without crashing');
+    assert.match(r.headers.get('location'), /^https:\/\/wa\.me\//);
+    const manual = q.ordersAll().find(o => o.paigaam_id === paidId && !o.razorpay_order_id);
+    assert.ok(manual, 'legacy manual order exists');
+    assert.equal(manual.amount, pgRow.template_price);
+    assert.equal(manual.currency, 'INR');
 
     /* ---- 5. recovery token ---- */
     const recToken = pgAfter.recovery_token || q.paigaamById(paidId).recovery_token;
