@@ -49,7 +49,7 @@ function courtyardCreatePage(opts = {}) {
 <link rel="icon" href="/brand/favicon-512.png" type="image/png">
 <link rel="stylesheet" href="/ganpati-courtyard/create.css">
 <script src="/ganpati-courtyard/create.js" defer></script>
-</head>
+<link rel="stylesheet" href="/css/creator-coupon.css?v=1"><script src="/js/creator-coupon.js?v=1" defer></script></head>
 <body>
 <header class="masthead"><a href="/" aria-label="Paigaam">${logoFull(128)}</a><a class="text-link" href="/templates">All templates</a></header>
 

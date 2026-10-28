@@ -6,16 +6,19 @@ const PAGES = {
   privacy: {
     title: 'Privacy Policy | Paigaam',
     h1: 'Privacy Policy',
-    updated: 'Last updated 27 September 2026',
+    updated: 'Last updated 28 October 2026',
     body: `
       <h3>What we collect</h3>
       <p>Paigaam is made for personal messages, so we keep data to a minimum. When you create a Paigaam we store the details you enter (names, dates, your message and any photograph you choose to upload) — only so your page can be rendered and shared.</p>
       <p>We also count anonymous, non-personal usage events (which pages are visited, which buttons are clicked) to understand where the product needs to be better. These events contain no names, no numbers and no message content.</p>
+      <h3>Creator referrals and coupons</h3>
+      <p>When you follow a creator’s tracked link we record the destination, timestamp and a random browser identifier. First-party cookies remember the latest active creator referral for up to 30 days and any creator coupon you apply. We do not use device fingerprinting or store your IP address in referral records. Known link-preview bots are excluded, but visits are approximate browser-based counts, not identified people.</p>
+      <p>A valid creator coupon takes priority over link attribution. Otherwise the last eligible creator link can receive commission from the amount you actually pay. Creators see aggregate performance and non-personal order references, not your name, contact details, message or invitation. Blocking cookies or changing browser may prevent attribution. Refunds adjust commission; accounting and payout records are retained for reconciliation. Creators use a separate password-protected account; passwords are stored as salted hashes, never recoverable plaintext.</p>
       <h3>What we never do</h3>
       <ul>
         <li>We never sell your data, and there is no advertising on Paigaam.</li>
         <li>We never read your messages into a marketing list.</li>
-        <li>We never require an account — most Paigaams are made and shared without one.</li>
+        <li>Customers can create Paigaams without an account; creator partners sign in to their separate portal.</li>
       </ul>
       <h3>Published Paigaams</h3>
       <p>Anyone with your Paigaam's link can view it. Please don't include anything you wouldn't want the recipient to forward. Published Paigaams can be deleted on request — reach us on WhatsApp.</p>
@@ -28,14 +31,16 @@ const PAGES = {
   terms: {
     title: 'Terms of Use | Paigaam',
     h1: 'Terms of Use',
-    updated: 'Last updated 27 September 2026',
+    updated: 'Last updated 28 October 2026',
     body: `
       <h3>Using Paigaam</h3>
       <p>Paigaam lets you create personalized digital greeting pages — invitations, letters, games and surprises — and share them as links. You may use it for personal, non-commercial messages.</p>
       <h3>Your content</h3>
       <p>You own everything you create. You confirm the content you upload (text and photographs) is yours to share and does not violate anyone's rights or any applicable law. We may remove Paigaams used for spam, harassment or unlawful content.</p>
       <h3>Paid templates</h3>
-      <p>Paid designs are one-time purchases per Paigaam — the price shown at creation, payable over WhatsApp, with no recurring charges and no account required.</p>
+      <p>Paid designs are one-time purchases per Paigaam — the price shown at checkout, paid through our payment provider, with no recurring charges and no account required.</p>
+      <h3>Creator discounts and commission</h3>
+      <p>One active creator coupon may be applied per INR checkout; discounts do not stack. A creator’s commission is calculated on the amount actually charged after discount, with no payment-processing fee deduction. The commission rate is fixed on the payment order; later rate changes do not rewrite historical earnings. Refunded amounts reverse the corresponding commission. A recorded creator payout means Paigaam has recorded a manual transfer, not that this website has initiated or bank-verified it. Creators should clearly disclose compensated recommendations.</p>
       <h3>Availability</h3>
       <p>We work hard to keep every link alive, and published Paigaams are meant to be permanent. In the unlikely event of a service interruption, published links are restored from backups.</p>
       <h3>Contact</h3>

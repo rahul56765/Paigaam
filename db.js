@@ -244,7 +244,7 @@ const q = {
     const id = uid();
     db.prepare(`INSERT INTO orders (id,paigaam_id,customer_name,whatsapp,amount,currency,status,razorpay_order_id,created_at,updated_at)
                 VALUES (?,?,?,?,?,?,?,?,?,?)`)
-      .run(id, o.paigaam_id, o.customer_name || '', o.whatsapp || '', o.amount | 0, o.currency || 'INR', o.status || 'pending', o.razorpay_order_id || '', now(), now());
+      .run(id, o.paigaam_id, o.customer_name || '', o.whatsapp || '', Number(o.amount), o.currency || 'INR', o.status || 'pending', o.razorpay_order_id || '', now(), now());
     return q.orderById(id);
   },
   orderUpdate: (id, status) => {

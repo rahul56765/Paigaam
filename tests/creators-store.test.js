@@ -1,0 +1,196 @@
+'use strict';
+const {test,after} = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('node:fs'), os = require('node:os'), path = require('node:path');
+const dir = fs.mkdtempSync(path.join(os.tmpdir(),'paigaam-creators-'));
+process.env.DATA_DIR = dir;
+const store = require('../lib/creators/store');
+const {db} = require('../db');
+after(()=>{ db.close(); fs.rmSync(dir,{recursive:true,force:true}); });
+let seq = 0;
+function creator(extra={}) { const n = `partner${++seq}`; return store.createCreator({username:n,display_name:'Test creator',password:'a secure password 123',commission_bps:1000,coupon_code:n.toUpperCase(),discount_bps:1000,...extra},'admin'); }
+function reserve(c,extra={}) { const n = ++seq; return store.reserveOrder({gateway_order_id:`order${n}`,product_id:`product${n}`,product_type:'greeting',template_slug:'birthday',...store.quote({amount_paise:10000,currency:'INR',referral_creator_id:c && c.id}),...extra}); }
+function code(expected,fn) { assert.throws(fn,e=>e.code===expected); }
+test('creator validation, uniqueness, safe objects and authentication',()=>{
+  const c = creator({username:'MixedCase',coupon_code:'mixedcode'});
+  assert.equal(c.username,'mixedcase'); assert.equal(c.coupon_code,'MIXEDCODE');
+  assert.equal(c.active,true); assert.equal(Object.keys(c).length,8);
+  assert.equal(store.authenticate('MIXEDCASE','a secure password 123').id,c.id);
+  assert.equal(store.authenticate('absent','a secure password 123'),null);
+  assert.equal(store.authenticate('mixedcase','wrong password!'),null);
+  assert.equal(store.authenticate({},null),null);
+  assert.equal(store.creatorByCoupon('mixedCODE').id,c.id);
+  code('conflict',()=>creator({username:'MIXEDCASE'}));
+  code('conflict',()=>creator({coupon_code:'mixedcode'}));
+  code('invalid_password',()=>creator({password:'short'}));
+  code('invalid_password',()=>creator({password:'x'.repeat(257)}));
+  code('invalid_username',()=>creator({username:'../abc'}));
+  code('invalid_input',()=>creator({commission_bps:10001}));
+  code('invalid_input',()=>creator({discount_bps:9001}));
+  code('invalid_input',()=>creator({active:'false'}));
+  assert.equal(store.listCreators().some(x=>'password_hash' in x),false);
+});
+test('session tokens hashed, persistent CSRF, expiry, reset and disable revoke',()=>{
+  const c=creator(), token=store.createSession(c.id), s=store.getSession(token);
+  assert.equal(s.creator.id,c.id); assert.equal(s.csrf,store.getSession(token).csrf);
+  const stored=db.prepare('SELECT * FROM partner_sessions WHERE creator_id=?').get(c.id);
+  assert.notEqual(stored.token_hash,token); assert.equal(stored.expires_at>Date.now()+6*86400000,true);
+  db.prepare('UPDATE partner_sessions SET expires_at=? WHERE creator_id=?').run(Date.now()-1,c.id);
+  assert.equal(store.getSession(token),null);
+  const t2=store.createSession(c.id);
+  code('invalid_input',()=>store.updateCreator(c.id,{username:'newname'},'admin'));
+  store.updateCreator(c.id,{password:'new secure password'},'admin');
+  assert.equal(store.getSession(t2),null); assert.equal(store.authenticate(c.username,'a secure password 123'),null);
+  assert.equal(store.authenticate(c.username,'new secure password').id,c.id);
+  const t3=store.createSession(c.id); store.updateCreator(c.id,{active:false},'admin');
+  assert.equal(store.getSession(t3),null); assert.equal(store.creatorByCoupon(c.coupon_code),null);
+  assert.equal(store.creatorByUsername(c.username),null); assert.equal(store.authenticate(c.username,'new secure password'),null);
+  code('unauthorized',()=>store.createSession(c.id));
+  store.updateCreator(c.id,{active:true},'admin'); const t4=store.createSession(c.id); store.deleteSession(t4); assert.equal(store.getSession(t4),null);
+});
+test('quotes: coupon wins without stacking, INR, exact integer rounding and minimum',()=>{
+  const a=creator({commission_bps:1234}),b=creator({discount_bps:1234,commission_bps:5678});
+  const q=store.quote({amount_paise:10001,currency:'INR',referral_creator_id:a.id,coupon_code:b.coupon_code.toLowerCase()});
+  assert.equal(q.creator_id,b.id); assert.equal(q.discount_paise,1234); assert.equal(q.amount_paise,8767);
+  assert.equal(q.commission_bps,5678);
+  assert.equal(store.quote({amount_paise:105,currency:'INR',referral_creator_id:a.id}).discount_paise,0);
+  assert.equal(store.quote({amount_paise:105,currency:'INR'}).creator_id,null);
+  code('invalid_coupon',()=>store.quote({amount_paise:1000,currency:'INR',referral_creator_id:a.id,coupon_code:'MISSING'}));
+  code('unsupported_currency',()=>store.quote({amount_paise:1000,currency:'USD',coupon_code:a.coupon_code}));
+  code('invalid_input',()=>store.quote({amount_paise:NaN,currency:'INR'}));
+  code('invalid_input',()=>store.quote({amount_paise:1.5,currency:'INR'}));
+  code('invalid_input',()=>store.quote({amount_paise:Number.MAX_SAFE_INTEGER,currency:'INR'}));
+  code('amount_too_small',()=>store.quote({amount_paise:100,currency:'INR',coupon_code:a.coupon_code}));
+  store.updateCreator(a.id,{active:false},'admin');
+  assert.equal(store.quote({amount_paise:1000,currency:'INR',referral_creator_id:a.id}).creator_id,null);
+  code('invalid_coupon',()=>store.quote({amount_paise:1000,currency:'INR',coupon_code:a.coupon_code}));
+});
+test('immutable order snapshots survive rate/coupon changes; reservation retry checked',()=>{
+  const c=creator(),q=store.quote({amount_paise:12345,currency:'INR',coupon_code:c.coupon_code});
+  const input={gateway_order_id:`order${++seq}`,product_id:`product${seq}`,product_type:'magazine',template_slug:'birthday',...q};
+  const o=store.reserveOrder(input); assert.deepEqual(store.reserveOrder(input),o);
+  code('idempotency_conflict',()=>store.reserveOrder({...input,template_slug:'other'}));
+  store.updateCreator(c.id,{commission_bps:9000,discount_bps:8000,coupon_code:`NEW${seq}`,active:false},'admin');
+  store.settleOrder(o.gateway_order_id,`payment${++seq}`);
+  const settled=store.getOrder(o.gateway_order_id);
+  assert.equal(settled.commission_bps,1000); assert.equal(settled.commission_paise,1111);
+  assert.throws(()=>db.prepare('UPDATE partner_orders SET amount_paise=101 WHERE gateway_order_id=?').run(o.gateway_order_id),/immutable/);
+  assert.throws(()=>db.prepare('DELETE FROM partner_orders WHERE gateway_order_id=?').run(o.gateway_order_id),/immutable/);
+});
+test('capture transaction idempotency, payment reuse rejection and product-wide deduplication',()=>{
+  const a=creator(),b=creator(),o=reserve(a),payment=`pay${++seq}`;
+  const first=store.settleOrder(o.gateway_order_id,payment);
+  assert.deepEqual(store.settleOrder(o.gateway_order_id,payment),first);
+  code('payment_conflict',()=>store.settleOrder(o.gateway_order_id,'another-payment'));
+  const retry=reserve(b,{product_id:o.product_id});
+  code('payment_conflict',()=>store.settleOrder(retry.gateway_order_id,payment));
+  assert.equal(store.getOrder(retry.gateway_order_id).status,'reserved');
+  assert.equal(store.settleOrder(retry.gateway_order_id,`pay${++seq}`).credited,0);
+  assert.equal(store.dashboard(a.id).totals.earned_paise,1000);
+  assert.equal(store.dashboard(b.id).totals.earned_paise,0);
+  assert.equal(store.dashboard(b.id).totals.paid_customers,0);
+  const otherType=reserve(b,{product_id:o.product_id,product_type:'magazine'});
+  store.settleOrder(otherType.gateway_order_id,`pay${++seq}`);
+  assert.equal(store.dashboard(b.id).totals.earned_paise,1000);
+  assert.equal(store.settleOrder('unknown','some-pay'),null);
+});
+test('partial cumulative refunds, retry mismatch, cap and immutable ledger',()=>{
+  const c=creator({commission_bps:3333}),o=reserve(c,{...store.quote({amount_paise:101,currency:'INR',referral_creator_id:c.id})});
+  const p=`pay${++seq}`; store.settleOrder(o.gateway_order_id,p);
+  assert.equal(o.commission_paise,34);
+  const r=store.refundPayment(p,`refund${++seq}`,1); assert.deepEqual(store.refundPayment(p,r.refund_id,1),r);
+  code('idempotency_conflict',()=>store.refundPayment(p,r.refund_id,2));
+  code('idempotency_conflict',()=>store.refundPayment('different-payment',r.refund_id,1));
+  store.refundPayment(p,`refund${++seq}`,1);
+  assert.equal(store.dashboard(c.id).totals.balance_paise,33);
+  store.refundPayment(p,`refund${++seq}`,99);
+  assert.equal(store.dashboard(c.id).totals.balance_paise,0);
+  assert.equal(store.dashboard(c.id).totals.refund_paise,101);
+  assert.equal(store.getOrder(o.gateway_order_id).status,'refunded');
+  code('refund_exceeds_payment',()=>store.refundPayment(p,`refund${++seq}`,1));
+  assert.throws(()=>db.exec('UPDATE partner_ledger SET amount_paise=0'),/immutable/);
+  assert.throws(()=>db.exec('DELETE FROM partner_refunds'),/immutable/);
+});
+test('out-of-order refunds persist and apply during later settlement',()=>{
+  const c=creator(),p=`pay${++seq}`,r=`refund${++seq}`;
+  store.refundPayment(p,r,3500);
+  assert.equal(store.adminSummary().pending_refunds.some(x=>x.refund_id===r),true);
+  const o=reserve(c); store.settleOrder(o.gateway_order_id,p);
+  assert.equal(store.getOrder(o.gateway_order_id).status,'partially_refunded');
+  assert.equal(store.dashboard(c.id).totals.balance_paise,650);
+  assert.equal(store.adminSummary().pending_refunds.some(x=>x.refund_id===r),false);
+  store.refundPayment(p,`refund${++seq}`,6500);
+  assert.equal(store.dashboard(c.id).totals.balance_paise,0);
+});
+test('inconsistent pre-capture refund is retained and settlement rolls back atomically',()=>{
+  const c=creator(),p=`pay${++seq}`,r=`refund${++seq}`; store.refundPayment(p,r,20000); const o=reserve(c);
+  code('refund_exceeds_payment',()=>store.settleOrder(o.gateway_order_id,p));
+  assert.equal(store.getOrder(o.gateway_order_id).status,'reserved');
+  assert.equal(store.dashboard(c.id).totals.earned_paise,0);
+  assert.equal(store.adminSummary().pending_refunds.some(x=>x.refund_id===r),true);
+});
+test('payout idempotency, balance enforcement, audit and post-payout refund debt',()=>{
+  const c=creator(),o=reserve(c),p=`pay${++seq}`; store.settleOrder(o.gateway_order_id,p);
+  const input={amount_paise:1000,reference:'BANK-TRANSFER-1',note:'Manual transfer',idempotency_key:`key${++seq}`};
+  const payout=store.recordPayout(c.id,input,'admin');
+  assert.deepEqual(store.recordPayout(c.id,input,'admin'),payout);
+  code('idempotency_conflict',()=>store.recordPayout(c.id,{...input,amount_paise:999},'admin'));
+  code('idempotency_conflict',()=>store.recordPayout(c.id,{...input,reference:'changed'},'admin'));
+  code('idempotency_conflict',()=>store.recordPayout(c.id,{...input,paid_at:'2020-01-01'},'admin'));
+  code('insufficient_balance',()=>store.recordPayout(c.id,{...input,idempotency_key:'new-key'},'admin'));
+  code('invalid_input',()=>store.recordPayout(c.id,{...input,reference:''},'admin'));
+  code('invalid_input',()=>store.recordPayout(c.id,{...input,amount_paise:0},'admin'));
+  store.refundPayment(p,`refund${++seq}`,10000);
+  const d=store.dashboard(c.id); assert.equal(d.totals.balance_paise,-1000); assert.equal(d.totals.received_paise,1000);
+  assert.equal(d.payouts.length,1);
+  assert.equal(store.adminSummary().audit_log.some(x=>x.action==='payout.record'&&x.entity_id===payout.id),true);
+  assert.throws(()=>db.exec('DELETE FROM partner_payouts'),/immutable/);
+});
+test('zero commissions, unattributed orders and duplicate-product refunds never reverse original earnings',()=>{
+  const c=creator({commission_bps:0}),o=reserve(c),p=`pay${++seq}`;store.settleOrder(o.gateway_order_id,p);store.refundPayment(p,`refund${++seq}`,10000);
+  assert.equal(store.dashboard(c.id).totals.balance_paise,0);
+  const a=creator(), original=reserve(a); store.settleOrder(original.gateway_order_id,`pay${++seq}`);
+  const dupe=reserve(a,{product_id:original.product_id}), p2=`pay${++seq}`;store.settleOrder(dupe.gateway_order_id,p2);store.refundPayment(p2,`refund${++seq}`,10000);
+  assert.equal(store.dashboard(a.id).totals.balance_paise,1000);
+  const anon=reserve(null); store.settleOrder(anon.gateway_order_id,`pay${++seq}`);
+  assert.equal(store.getOrder(anon.gateway_order_id).creator_id,null);
+});
+test('analytics retain duplicate clicks, unique visitor counts, safe dashboard and date range',()=>{
+  const c=creator();const visitor='a'.repeat(64);
+  store.recordClick(c.id,{visitor_hash:visitor,path:'/templates/birthday?email=private@example.com',source:'social'});
+  store.recordClick(c.id,{visitor_hash:visitor,path:'/templates/birthday'});
+  store.recordClick(c.id,{visitor_hash:'b'.repeat(64),path:'/templates/birthday'});
+  code('invalid_input',()=>store.recordClick(c.id,{visitor_hash:'1.2.3.4',path:'/'}));
+  code('invalid_input',()=>store.recordClick(c.id,{visitor_hash:visitor,path:'https://elsewhere.example/'}));
+  const o=reserve(c); store.settleOrder(o.gateway_order_id,`pay${++seq}`);
+  const d=store.dashboard(c.id,{days:7});
+  assert.equal(d.totals.clicks,3);assert.equal(d.totals.unique_visitors,2);assert.equal(d.totals.paid_customers,1);assert.equal(d.totals.conversion_rate,50);
+  assert.equal(d.daily.length,7);assert.equal(d.daily.at(-1).clicks,3);assert.equal(d.templates[0].clicks,3);
+  assert.equal(d.recent_orders[0].amount_paise,10000);
+  for(const field of ['visitor_hash','customer_name','email','phone','payment_id','password_hash']) assert.equal(JSON.stringify(d).includes(`"${field}"`),false);
+  assert.equal(db.prepare('SELECT path FROM partner_clicks WHERE creator_id=? LIMIT 1').get(c.id).path,'/templates/birthday');
+  code('invalid_input',()=>store.dashboard(c.id,{days:10000}));
+});
+test('payout and capture roll back completely if their ledger append fails',()=>{
+  const c=creator(),o=reserve(c),payment=`pay${++seq}`;
+  db.exec(`CREATE TRIGGER partner_test_reject_ledger BEFORE INSERT ON partner_ledger BEGIN SELECT RAISE(ABORT,'test ledger failure'); END`);
+  try {assert.throws(()=>store.settleOrder(o.gateway_order_id,payment),/test ledger failure/);} finally {db.exec('DROP TRIGGER partner_test_reject_ledger');}
+  assert.equal(store.getOrder(o.gateway_order_id).payment_id,null);assert.equal(store.dashboard(c.id).totals.balance_paise,0);
+  store.settleOrder(o.gateway_order_id,payment);
+  const key=`key${++seq}`;
+  db.exec(`CREATE TRIGGER partner_test_reject_ledger BEFORE INSERT ON partner_ledger BEGIN SELECT RAISE(ABORT,'test ledger failure'); END`);
+  try {assert.throws(()=>store.recordPayout(c.id,{amount_paise:500,reference:'TEST',idempotency_key:key},'admin'),/test ledger failure/);} finally {db.exec('DROP TRIGGER partner_test_reject_ledger');}
+  assert.equal(store.dashboard(c.id).totals.balance_paise,1000);
+  assert.equal(db.prepare('SELECT COUNT(*) AS n FROM partner_payouts WHERE idempotency_key=?').get(key).n,0);
+});
+test('large paise values round exactly without floating point multiplication',()=>{
+  const c=creator({commission_bps:9999,discount_bps:1234});
+  const q=store.quote({amount_paise:999999999999,currency:'INR',coupon_code:c.coupon_code});
+  const expected=Number((999999999999n*1234n+5000n)/10000n);
+  assert.equal(q.discount_paise,expected);
+  const o=reserve(c,q);const payment=`pay${++seq}`;store.settleOrder(o.gateway_order_id,payment);
+  assert.equal(o.commission_paise,Number((BigInt(q.amount_paise)*9999n+5000n)/10000n));
+  store.refundPayment(payment,`refund${++seq}`,q.amount_paise-1);
+  store.refundPayment(payment,`refund${++seq}`,1);
+  assert.equal(store.dashboard(c.id).totals.balance_paise,0);
+});

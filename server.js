@@ -49,6 +49,8 @@ const shaadiPaigaam = require('./lib/shaadiPaigaamRoutes');   // wedding invitat
 const suvarnaVivah = require('./lib/suvarnaVivahRoutes');   // ceremonial video-opener wedding invitation, sharing Shaadi's editor flow
 const { streamFile } = require('./lib/streamFile');
 const razorpay = require('./lib/razorpay');
+const creatorTracking = require('./lib/creators/tracking');
+const creatorRoutes = require('./lib/creators/routes');
 const { ensureSawaalMedia } = require('./lib/sawaalMedia');
 
 const PORT = Number(process.env.PORT || 3000);
@@ -201,12 +203,15 @@ function seed() {
 }
 
 /* ---------------- router ---------------- */
-const server = http.createServer(async (req, res) => {
+const server = http.createServer((req, res) => creatorTracking.runRequest(req, async () => {
   try {
     const u = new URL(req.url, BASE_URL);
     const p = u.pathname.replace(/\/+$/, '') || '/';
     const method = req.method;
     let m;
+
+    if (await creatorTracking.handle(req, res, u, {baseUrl: BASE_URL})) return;
+    if (await creatorRoutes.handle(req, res, u, {baseUrl: BASE_URL, admin: getAdmin(req)})) return;
 
     if (await shaadiPaigaam.handle(req, res, u, { baseUrl: BASE_URL, isAdmin: !!getAdmin(req) })) return;
     if (await suvarnaVivah.handle(req, res, u, { baseUrl: BASE_URL, isAdmin: !!getAdmin(req) })) return;
@@ -424,7 +429,7 @@ const server = http.createServer(async (req, res) => {
           q.orderInsert({
             paigaam_id: pg.id, customer_name: pg.customer_name,
             whatsapp: (pg.customer_data && pg.customer_data.whatsapp) || '',
-            amount: pg.template_price, currency: pg.template_currency || settings.currency || 'INR',
+            amount: rzpOrder.amount / 100, currency: pg.template_currency || settings.currency || 'INR',
             razorpay_order_id: rzpOrder.id,
           });
         }
@@ -432,7 +437,7 @@ const server = http.createServer(async (req, res) => {
         q.eventInsert('purchase_started', { template: pg.template_slug, via: 'razorpay', rzp_order: rzpOrder.id }, '/api/razorpay/order');
         return json(res, 200, {
           keyId: razorpay.KEY_ID, orderId: rzpOrder.id,
-          amount: Number(pg.template_price) * 100,
+          amount: rzpOrder.amount,
           currency: pg.template_currency || settings.currency || 'INR',
           name: settings.business_name || 'Paigaam', description: pg.template_name,
           prefillName: pg.customer_name || '',
@@ -456,9 +461,13 @@ const server = http.createServer(async (req, res) => {
       if (!razorpay.verifyCheckoutSignature(razorpay_order_id, razorpay_payment_id, razorpay_signature)) {
         return json(res, 400, { error: 'bad_signature' });
       }
+      try { await razorpay.verifyCapturedPayment(razorpay_order_id, razorpay_payment_id); }
+      catch (e) { return json(res, 409, { error: e.code || 'payment_not_captured' }); }
+      creatorTracking.settle(razorpay_order_id, razorpay_payment_id);
       const order = q.orderByRazorpayOrderId(razorpay_order_id);
       if (order) {
         const url = settlePaidOrder(order, razorpay_payment_id, razorpay_signature);
+        if (!url) return json(res, 503, {error:'fulfillment_pending'});
         return json(res, 200, { ok: true, url });
       }
       // Magazines share the Razorpay rail: their payments settle into generation + a magazine URL.
@@ -471,17 +480,22 @@ const server = http.createServer(async (req, res) => {
       const sig = req.headers['x-razorpay-signature'];
       if (!razorpay.verifyWebhookSignature(raw, sig)) return json(res, 400, { error: 'bad_signature' });
       let event; try { event = JSON.parse(raw); } catch { return json(res, 400, { error: 'bad_json' }); }
+      if (event.event === 'refund.processed') {
+        const refund = event.payload?.refund?.entity;
+        if (!refund || refund.status !== 'processed' || !refund.id || !refund.payment_id || !Number.isSafeInteger(refund.amount) || refund.amount <= 0) return json(res, 400, {error:'invalid_refund'});
+        require('./lib/creators/store').refundPayment(refund.payment_id, refund.id, refund.amount);
+        return json(res, 200, {ok:true});
+      }
       const rzpOrderId = razorpay.handleWebhookEvent(event);
       if (rzpOrderId) {
+        const entity = event.payload?.payment?.entity;
+        if (!entity?.id) return json(res, 503, {error:'payment_entity_required'});
+        try { razorpay.validateCapturedEntity(rzpOrderId, entity); }
+        catch (e) { return json(res, 409, {error:e.code || 'payment_mismatch'}); }
+        creatorTracking.settle(rzpOrderId, entity.id);
         const order = q.orderByRazorpayOrderId(rzpOrderId);
-        if (order && order.status !== 'paid') {
-          const entity = event.payload && event.payload.payment && event.payload.payment.entity;
-          settlePaidOrder(order, (entity && entity.id) || '', 'webhook');
-        } else if (!order) {
-          // Not a greeting-template order — settle magazines the same way.
-          const entity = event.payload && event.payload.payment && event.payload.payment.entity;
-          magazines.settleRazorpayOrder(rzpOrderId, (entity && entity.id) || '', 'webhook');
-        }
+        const fulfilled = order ? settlePaidOrder(order, entity.id, 'webhook') : magazines.settleRazorpayOrder(rzpOrderId, entity.id, 'webhook');
+        if (!fulfilled) return json(res, 503, {error:'fulfillment_pending'});
       }
       return json(res, 200, { ok: true });
     }
@@ -490,10 +504,13 @@ const server = http.createServer(async (req, res) => {
     function settlePaidOrder(order, paymentId, signature) {
       const pg = q.paigaamById(order.paigaam_id);
       if (!pg) return '';
+      creatorTracking.settle(order.razorpay_order_id, paymentId);
+      const wasPaid = order.status === 'paid';
       q.orderMarkPaid(order.id, { razorpay_payment_id: paymentId, razorpay_signature: signature });
       const pub = publishPaigaam(pg);
       razorpay.ensureRecoveryToken(pub);
-      q.eventInsert('paigaam_generated', { template: pub.template_slug, via: 'razorpay', paid: true }, '/api/razorpay/verify');
+      creatorTracking.fulfilled(order.razorpay_order_id);
+      if (!wasPaid) q.eventInsert('paigaam_generated', { template: pub.template_slug, via: 'razorpay', paid: true }, '/api/razorpay/verify');
       return `${BASE_URL}/p/${pub.slug}`;
     }
 
@@ -565,7 +582,7 @@ Sitemap: ${origin}/sitemap.xml
       const num = (settings.whatsapp_number || '').replace(/\D/g, '');
       const d = pg.customer_data || {};
       const names = displayNames(pg.template_slug, d).join(' & ');
-      // create/refresh the order
+      // create/refresh the order (legacy manual WhatsApp rail; no gateway quote).
       const order = q.orderInsert({
         paigaam_id: pg.id, customer_name: names,
         amount: pg.template_price, currency: pg.template_currency || settings.currency || 'INR',
@@ -830,7 +847,7 @@ Sitemap: ${origin}/sitemap.xml
     console.error('[error]', err);
     return send(res, 500, errorPage('500', 'Something quiet went wrong.', 'Please try again in a moment.'));
   }
-});
+}));
 
 function buildTemplateFromForm(form) {
   let fields;
