@@ -31,7 +31,8 @@
     "test:magazines": "node --test tests/magazines.test.js tests/magazine-preview.test.js tests/magazine-sample-flow.test.js tests/magazine-face-framing.test.js && node scripts/test-magazines.js",
     "test:wedding-video": "node --test wedding-video/tests/timeline.test.js && node --test tests/wedding-video.test.js",
     "wedding-video:setup": "npm --prefix wedding-video ci && npm --prefix wedding-video run build:editor && cd wedding-video && npx remotion browser ensure",
-    "test:creators": "node --test tests/creators-*.test.js"
+    "test:creators": "node --test tests/creators-*.test.js",
+    "test:creators:browser": "node scripts/qa-creator-partners-browser.js"
   },
   "engines": {
     "node": ">=22.5.0 <25"

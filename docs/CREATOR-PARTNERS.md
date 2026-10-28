@@ -51,7 +51,13 @@ lib/creators/{schema,store,tracking,routes}.js, pages/creators.js, public/{css,j
 
 npm run test:creators covers store, portal routes, referrals/coupons, mocked gateway creation/capture/webhooks, request concurrency, rounding, password/session/CSRF isolation, partial/pre-capture refunds, payout replays/overpayment, orphan delivery and human-percentage forms. node scripts/test-razorpay.js and node scripts/test-pricing-resume.js use deterministic HTTPS preloads in child test servers, never real payments. Existing Shaadi/Suvarna/admin suites remain regression gates.
 
-Full npm test requires the existing locked Sharp and Playwright packages and prepared MediaPipe assets; document the actual run outcome in the PR. Static review screenshots are not proof of an authenticated production walkthrough or real capture/payout.
+Validation update (28 October 2026, after registry access approval): npm ci --ignore-scripts installed exact lockfile dependencies, Chromium installed, and node scripts/prepare-magazine-face.js prepared the MediaPipe assets. Full npm test now PASSES with exit 0, including the existing Ganapati browser/API checks and all 14 magazine HTTP E2E groups. Creator unit/HTTP/payment tests pass 48/48.
+
+npm run test:creators:browser runs a real local server with disposable SQLite/admin/creator/buyer sessions, Playwright Chromium, and a test-only fail-closed Razorpay HTTPS/SDK stub. Final run: 31 checks, 44 screenshots at 320/390/430/1440px, zero findings and no unexpected browser errors. It covers actual admin creation/forms/native HTML validity, separate creator login, catalogue/search/clipboard, referral cookies, coupon CSRF/validation, eight-step Noor editor, Pay & publish through real server verification, earnings, manual payout/replay, signed refund/replay, isolation, logout/reset/disable. No response-header workarounds remain. Fonts/external assets are stubbed for deterministic offline QA. This is not a physical-device benchmark or an external Razorpay test-mode integration test; no live accounts/funds were used.
+
+Browser findings fixed: same-origin Referrer-Policy preserves real browser form Origin while suppressing cross-origin console referrers; HTML pattern hyphens escaped for Chromium v-mode; shared QR card made responsive at 320px with a cache-busted stylesheet. Magazine E2E now provides explicit captured-payment fixtures rather than assuming signature alone sufficient.
+
+Existing dependency advisory: npm audit reports one high-severity Sharp/librsvg issue, GHSA-wq5f-xc86-pv6w / CVE-2026-96889, affecting locked sharp 0.35.4; fixed release reported as 0.35.5. This PR deliberately does not alter dependency versions. Address/test that patch separately before production release. Static review screenshots are not proof of an authenticated production walkthrough or a real gateway/bank capture/payout.
 
 ## Rollout / owner acceptance
 
@@ -64,4 +70,5 @@ Full npm test requires the existing locked Sharp and Playwright packages and pre
 
 ## Changelog
 
+- 2026-10-28 QA follow-up: completed full test suite and unmodified authenticated Chromium journey; corrected form referrer policy, native HTML validation and mobile QR overflow; added reusable browser QA and updated magazine capture fixtures. PR67 remains draft/unmerged/undeployed; external gateway test-mode acceptance and existing Sharp advisory remain release follow-ups.
 - 2026-10-28: Initial creator partner accounts, mobile dashboards, published-template/magazine sharing, 30-day referral attribution, creator coupons, captured-payment commissions, refund reversal ledger, manual payout records, admin analytics/reconciliation and security tests. Review-only; deployment requires separate authorization.

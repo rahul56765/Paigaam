@@ -75,7 +75,7 @@ test('login is CSRF protected and carries privacy/security headers', async () =>
   assert.equal(response.headers.get('cache-control'), 'private, no-store');
   assert.equal(response.headers.get('vary'), 'Cookie');
   assert.equal(response.headers.get('x-frame-options'), 'DENY');
-  assert.equal(response.headers.get('referrer-policy'), 'no-referrer');
+  assert.equal(response.headers.get('referrer-policy'), 'same-origin');
   assert.match(response.headers.get('content-security-policy'), /frame-ancestors 'none'/);
   assert.match(response.headers.get('x-robots-tag'), /noindex/);
   const c = creator();
