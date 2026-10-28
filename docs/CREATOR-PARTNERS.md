@@ -1,10 +1,11 @@
 # Creator partners, coupons and commission accounting
 
-Status: review implementation, 28 October 2026. Additive SQLite migrations, no production accounts or transfers created by development. Do not deploy without owner approval and the rollout checks below.
+Status: owner-authorized release preparation, 28 October 2026; verify deployment status in the release record below. Additive SQLite migrations, no production accounts or transfers created by development. Do not deploy without owner approval and the rollout checks below.
 
 ## Product
 
 - Admin navigation → Creators (/admin/creators): create an individual username/password, display name, commission percentage, unique coupon and audience discount; edit/reset/disable; inspect conversions and record completed manual transfers.
+- Admin can add, replace or remove a creator profile photo after creating the account. Photos are private to that creator and admins, normalized to 512×512 JPEG with metadata stripped; still JPG/PNG/WebP ≤5MB/16MP accepted. Creator mobile greeting/sidebar and admin rows show the DP.
 - Separate partner sign-in /creator/login; dashboard /creator; searchable sharing catalogue /creator/templates. Published greeting templates and magazines only, never draft templates. Mobile-responsive SSR, no customer account required.
 - Creator sees current coupon/rate, lifetime visits, unique browsers, attributed paid orders, charged revenue, refunds, gross/net commission, payout history and outstanding balance; 7/30/90-day activity, template breakdown and anonymized order references. No customer names, contact details, invitation URLs/content, password hashes or internal payout notes.
 - Copy/WhatsApp links use /r/username?to=/templates/slug (or /magazines/slug). WhatsApp is only a share draft; site never sends a message.
@@ -15,7 +16,7 @@ Status: review implementation, 28 October 2026. Additive SQLite migrations, no p
 
 1. Last active creator link, 30 days, same browser. Opaque random referral token, server-side expiry. A valid explicit creator coupon wins over the link, even if from another creator. No stacked coupons. Referral alone earns credit but does not automatically discount.
 2. Commission = ROUND(actual captured amount after coupon × commission percentage), integer paise and half-up rounding. No gateway-fee deduction. Example: ₹49 price, 10% discount → ₹44.10 captured; 20% share → ₹8.82 commission. Tax is not separately broken out by the current checkout; this uses its full captured amount.
-3. Commission 0–100%; discount 0–90%; paid gateway amount must remain at least ₹1. Rates/coupon/discount/charged amount snapshotted when gateway order is created. Later admin changes do not rewrite it. Disabling stops new attribution and login, not previously captured/reserved financial history.
+3. Commission 0–100%; percentage discount 0–90%, optionally capped at a flat INR maximum. Coupons can instead use a positive flat INR discount. Both modes support minimum order, optional expiry in IST and independent enabled switch. Every discount is limited to the order amount less ₹1, so a flat amount may be advertised as up to its configured value. Below-minimum, expired/disabled and non-INR coupon failures give actionable remove/change guidance; unrelated errors retain their normal handling. Coupon settings migrate additively and old percentage data remains compatible. Rates/coupon/discount/charged amount snapshotted when gateway order is created. Later admin changes do not rewrite it. Disabling stops new attribution and login, not previously captured/reserved financial history.
 4. Only INR purchases participate. Non-INR checkout remains unchanged without a coupon; an explicit creator coupon on non-INR fails rather than silently charging a different amount. Free publishing, legacy WhatsApp/manual mark-paid, and non-selling wedding-video renders do not generate commission.
 5. One commission per purchased product, not per payment callback or retry. Extra successful duplicate product payments remain recorded without a second commission and should be reconciled with the customer.
 6. Refund commission reversals use cumulative refunded proportion, rounded against original commission; full refund reverses it exactly. If payout already happened, balance may become negative. No further payout can exceed positive outstanding balance.
@@ -57,7 +58,15 @@ npm run test:creators:browser runs a real local server with disposable SQLite/ad
 
 Browser findings fixed: same-origin Referrer-Policy preserves real browser form Origin while suppressing cross-origin console referrers; HTML pattern hyphens escaped for Chromium v-mode; shared QR card made responsive at 320px with a cache-busted stylesheet. Magazine E2E now provides explicit captured-payment fixtures rather than assuming signature alone sufficient.
 
-Existing dependency advisory: npm audit reports one high-severity Sharp/librsvg issue, GHSA-wq5f-xc86-pv6w / CVE-2026-96889, affecting locked sharp 0.35.4; fixed release reported as 0.35.5. This PR deliberately does not alter dependency versions. Address/test that patch separately before production release. Static review screenshots are not proof of an authenticated production walkthrough or a real gateway/bank capture/payout.
+Dependency remediation (owner-authorized release follow-up): patched sharp 0.35.4 → 0.35.5 and updated the lockfile; npm audit now reports zero vulnerabilities, including after production-only audit. Shared image/media regressions pass. Static review screenshots are not proof of an authenticated production walkthrough or a real gateway/bank capture/payout.
+
+## Release acceptance update — 28 October 2026
+
+Owner explicitly requested creator DP, flat/more flexible discounts and then live deployment. All requested extensions are implemented. Full npm test passes with the patched dependency. Creator tests include new coupon constraints, photo/migration/security and consistent pre-migration backup checks. Final reusable local browser journey: 46 checks, 72 screenshots, zero findings; verifies DP upload/replace/remove and private decoded mobile image, richer coupon form roundtrips, flat discount tray plus actual post-flat charged amount/commission, and actionable below-minimum errors followed by coupon removal/retry for both generic Noor and bfday Lajja. Gateway remains deterministic mocked HTTPS/SDK, not an external live/test-mode capture. No production creator identity, payout or fake conversion is provisioned by deployment.
+
+Startup creates a private consistent SQLite VACUUM INTO snapshot at DATA_DIR/backups/before-creator-partners-20261028.db before the first creator migration on a populated database. It is a one-time rollback safety snapshot, not a substitute for recurring backups, and is never exposed by HTTP. Later code rollback must preserve all new financial records; never blindly restore that older database over captured payments.
+
+Deployment is authorized; PR67 is to be merged only at the tested expected head and Railway success plus authenticated read-only production smoke verified. The release report must distinguish code availability from any external Razorpay/bank transfer validation, which has not been performed here.
 
 ## Rollout / owner acceptance
 
@@ -70,5 +79,6 @@ Existing dependency advisory: npm audit reports one high-severity Sharp/librsvg 
 
 ## Changelog
 
+- 2026-10-28 authorized release extension: added private creator DP management, percentage/flat/minimum/cap/expiry/enable coupon controls, actionable buyer coupon failures, consistent private startup snapshot and Sharp0.35.5 security fix. Full-suite and expanded46check browser journey pass; owner explicitly authorized deployment.
 - 2026-10-28 QA follow-up: completed full test suite and unmodified authenticated Chromium journey; corrected form referrer policy, native HTML validation and mobile QR overflow; added reusable browser QA and updated magazine capture fixtures. PR67 remains draft/unmerged/undeployed; external gateway test-mode acceptance and existing Sharp advisory remain release follow-ups.
 - 2026-10-28: Initial creator partner accounts, mobile dashboards, published-template/magazine sharing, 30-day referral attribution, creator coupons, captured-payment commissions, refund reversal ledger, manual payout records, admin analytics/reconciliation and security tests. Review-only; deployment requires separate authorization.

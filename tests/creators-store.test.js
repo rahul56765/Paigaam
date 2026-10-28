@@ -14,7 +14,7 @@ function code(expected,fn) { assert.throws(fn,e=>e.code===expected); }
 test('creator validation, uniqueness, safe objects and authentication',()=>{
   const c = creator({username:'MixedCase',coupon_code:'mixedcode'});
   assert.equal(c.username,'mixedcase'); assert.equal(c.coupon_code,'MIXEDCODE');
-  assert.equal(c.active,true); assert.equal(Object.keys(c).length,8);
+  assert.equal(c.active,true); assert.equal(Object.keys(c).length,15);
   assert.equal(store.authenticate('MIXEDCASE','a secure password 123').id,c.id);
   assert.equal(store.authenticate('absent','a secure password 123'),null);
   assert.equal(store.authenticate('mixedcase','wrong password!'),null);
@@ -60,7 +60,7 @@ test('quotes: coupon wins without stacking, INR, exact integer rounding and mini
   code('invalid_input',()=>store.quote({amount_paise:NaN,currency:'INR'}));
   code('invalid_input',()=>store.quote({amount_paise:1.5,currency:'INR'}));
   code('invalid_input',()=>store.quote({amount_paise:Number.MAX_SAFE_INTEGER,currency:'INR'}));
-  code('amount_too_small',()=>store.quote({amount_paise:100,currency:'INR',coupon_code:a.coupon_code}));
+  assert.equal(store.quote({amount_paise:100,currency:'INR',coupon_code:a.coupon_code}).amount_paise,100);
   store.updateCreator(a.id,{active:false},'admin');
   assert.equal(store.quote({amount_paise:1000,currency:'INR',referral_creator_id:a.id}).creator_id,null);
   code('invalid_coupon',()=>store.quote({amount_paise:1000,currency:'INR',coupon_code:a.coupon_code}));

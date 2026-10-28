@@ -444,7 +444,8 @@ const server = http.createServer((req, res) => creatorTracking.runRequest(req, a
         });
       } catch (e) {
         console.error('[razorpay] order create failed:', e.message);
-        return json(res, 502, { error: 'gateway_unreachable' });
+        const failure = razorpay.checkoutError(e);
+        return json(res, failure.status, { error: failure.code, message: failure.message });
       }
     }
     m = p.match(/^\/recover\/([a-f0-9]{32})$/);

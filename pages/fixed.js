@@ -54,7 +54,7 @@ function fixedPage(tpl) {
     </div>
   </div>
 </main>
-<script src="/js/paigaam-pay.js?v=1" defer></script>
+<script src="/js/paigaam-pay.js?v=1&release=creator-20261028" defer></script>
 <script>
 (function () {
   var form = document.getElementById('fixedForm');
@@ -105,6 +105,8 @@ function fixedPage(tpl) {
       if (result) result.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }).catch(function (e2) {
       btn.disabled = false; btn.textContent = 'Pay & get my link';
+      var couponMessage = window.PaigaamCouponError && window.PaigaamCouponError(e2);
+      if (couponMessage) { alert(couponMessage); return; }
       if (e2 && e2.code === 'dismissed') return;
       alert((e2 && e2.code === 'payments_offline') ? 'Payments are being switched on — check back shortly.' : "Checkout didn't open. Please try again in a moment.");
     });

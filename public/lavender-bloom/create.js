@@ -219,7 +219,7 @@
         .catch(function (err) {
           publishBtn.disabled = false;
           say('');
-          setError(MESSAGES[err.code] || 'Publishing didn’t work. Try again in a moment.');
+          setError((window.PaigaamCouponError && window.PaigaamCouponError(err)) || MESSAGES[err.code] || 'Publishing didn’t work. Try again in a moment.');
         });
     });
   }

@@ -1113,7 +1113,9 @@
       const r = await fetch(API + '/publish', { method: 'POST', headers: { 'content-type': 'application/json' }, credentials: 'same-origin', body: JSON.stringify({ id: S.id, slug: S.slugInput, confirmed: S.live ? true : !!S.confirmed }) });
       const j = await r.json().catch(() => ({}));
       if (!r.ok) {
-        if (j.error === 'incomplete') { toast('A few details still need attention.'); S.tried.add(6); go(6); }
+        const couponMessage = window.PaigaamCouponError && window.PaigaamCouponError(j);
+        if (couponMessage) toast(couponMessage, null, null, 8000);
+        else if (j.error === 'incomplete') { toast('A few details still need attention.'); S.tried.add(6); go(6); }
         else if (/^slug_/.test(j.error)) { toast('That link was just taken. Please pick another.'); S.slugState = null; renderStep(true); }
         else if (j.error === 'payments_offline') toast('Payments are paused for a moment. Your invitation is saved. Please try again soon.', null, null, 8000);
         else if (j.error === 'storage_unavailable') toast('Publishing is paused for maintenance. Your invitation is saved.', null, null, 8000);
@@ -1125,7 +1127,7 @@
       if (j.razorpay) {
         if (!window.PaigaamPay) throw new Error('pay');
         try { const p = await window.PaigaamPay.open({ order: j, prefillName: j.prefillName }); url = p.url; }
-        catch (e) { if (pb) { pb.disabled = false; pb.textContent = label; } return toast(e && e.code === 'dismissed' ? 'Payment cancelled. Your invitation is saved, so you can publish whenever you are ready.' : 'The payment could not be completed. You have not been charged twice. Please try again.', null, null, 8000); }
+        catch (e) { if (pb) { pb.disabled = false; pb.textContent = label; } return toast((window.PaigaamCouponError && window.PaigaamCouponError(e)) || (e && e.code === 'dismissed' ? 'Payment cancelled. Your invitation is saved, so you can publish whenever you are ready.' : 'The payment could not be completed. You have not been charged twice. Please try again.'), null, null, 8000); }
       }
       S.slug = j.slug || (url || '').split('/').pop(); S.live = true; S.status = 'published'; S.synced = true; S.dirty = false;
       S.tab = 'share'; saveLocal(); renderStep();

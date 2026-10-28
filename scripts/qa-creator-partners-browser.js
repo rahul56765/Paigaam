@@ -15,6 +15,7 @@ const path = require('node:path');
 const net = require('node:net');
 const crypto = require('node:crypto');
 const { chromium } = require('playwright');
+const sharp = require('sharp');
 const root = path.resolve(__dirname, '..');
 const output = process.env.QA_CREATOR_OUTPUT || '/agent/workspace/creator-browser-qa';
 const key = 'qa_creator_local_secret_only', webhookKey = 'qa_creator_webhook_only';
@@ -161,6 +162,34 @@ https.get=()=>{throw new Error('External HTTPS GET forbidden in QA');};
     check('served partner pages use same-origin referrer policy without response correction');
     await snapshot(admin, 'admin-empty-create');
     const detailUrl = await createPartner(admin, 'qa-shares', 'Browser QA Creator', 'BROWSER725');
+    // Real admin file input + upload handler, not an API replacement or injected avatar.
+    async function uploadPhoto(color) {
+      const bytes = await sharp({ create: { width: 720, height: 540, channels: 3, background: color } }).png().toBuffer();
+      await admin.locator('input[name=photo]').setInputFiles({ name: 'disposable-profile.png', mimeType: 'image/png', buffer: bytes });
+      const response = admin.waitForResponse(r => r.url() === detailUrl + '/photo' && r.request().method() === 'POST');
+      await admin.getByRole('button', { name: 'Upload photo', exact: true }).click();
+      assert.equal((await response).status(), 200);
+      await admin.waitForFunction(() => /saved/.test(document.querySelector('.pc-photo-status')?.textContent || '') || !!document.querySelector('.pc-photo-remove'));
+      // Reload the persisted admin representation, including the private URL.
+      await navigate(admin, detailUrl);
+      const src = await admin.locator('.pc-photo-preview img').getAttribute('src');
+      assert.match(src, /^\/creator\/photos\/[^/]+\/[a-f0-9]{64}\.jpg$/);
+      const saved = await adminCtx.request.get(base + src); assert.equal(saved.status(), 200);
+      const metadata = await sharp(await saved.body()).metadata();
+      assert.equal(metadata.format, 'jpeg'); assert.equal(metadata.width, 512); assert.equal(metadata.height, 512);
+      assert.equal(metadata.exif, undefined);
+      return src;
+    }
+    const firstPhoto = await uploadPhoto('#b03f71');
+    const replacementPhoto = await uploadPhoto('#147c8a'); assert.notEqual(replacementPhoto, firstPhoto);
+    assert.equal((await adminCtx.request.get(base + firstPhoto)).status(), 404, 'Replaced photo is no longer served');
+    const removed = admin.waitForResponse(r => r.url() === detailUrl + '/photo/remove' && r.request().method() === 'POST');
+    await admin.getByRole('button', { name: 'Remove profile photo', exact: true }).click(); assert.equal((await removed).status(), 303);
+    await admin.waitForURL(detailUrl + '?saved=1'); assert.equal(await admin.locator('.pc-photo-preview img').count(), 0);
+    assert.equal((await adminCtx.request.get(base + replacementPhoto)).status(), 404, 'Removed photo is no longer served');
+    const privatePhoto = await uploadPhoto('#5e47a3');
+    await snapshot(admin, 'admin-real-photo');
+    check('actual admin DP upload, replace, remove and re-upload persist sanitized private 512px JPEG');
     await snapshot(admin, 'admin-partner-created');
     await createPartner(admin, 'qa-other', 'Isolated Other Creator', 'OTHER725');
     await navigate(creator, '/creator/login'); await snapshot(creator, 'creator-login');
@@ -178,6 +207,19 @@ https.get=()=>{throw new Error('External HTTPS GET forbidden in QA');};
     check('raw-creator normal browser login returns 303 without header correction');
     await rawCtx.close();
     await creatorLogin(creator, 'qa-shares'); await creatorLogin(other, 'qa-other');
+    assert.equal((await buyerCtx.request.get(base + privatePhoto)).status(), 404, 'Anonymous buyer cannot read private DP');
+    assert.equal((await otherCtx.request.get(base + privatePhoto)).status(), 404, 'Other creator cannot read private DP');
+    const ownPhoto = await creatorCtx.request.get(base + privatePhoto); assert.equal(ownPhoto.status(), 200);
+    assert.match(ownPhoto.headers()['cache-control'], /private.*no-store/);
+    for (const width of [320, 390, 430]) {
+      await creator.setViewportSize({ width, height: 844 });
+      const greeting = creator.locator('.pc-mobile-profile img'); await greeting.waitFor({ state: 'visible' });
+      assert.equal(await greeting.getAttribute('src'), privatePhoto);
+      const decoded = await greeting.evaluate(async img => { await img.decode(); return { width: img.naturalWidth, height: img.naturalHeight, complete: img.complete }; });
+      assert.deepEqual(decoded, { width: 512, height: 512, complete: true });
+    }
+    await creator.setViewportSize({ width: 1440, height: 1000 });
+    check('creator mobile DP decoded at 320/390/430px; anonymous and other creator private photo access denied');
     await snapshot(creator, 'creator-empty-overview');
     await creator.getByRole('link', { name: /Find something to share/ }).click(); await creator.waitForURL(base + '/creator/templates');
     await snapshot(creator, 'creator-catalogue');
@@ -241,7 +283,8 @@ https.get=()=>{throw new Error('External HTTPS GET forbidden in QA');};
     await navigate(creator, '/creator');
     const earned = round(checkout.amount, 1250); assert.equal(await metric(creator, 'Commission earned'), money(earned)); assert.equal(await metric(creator, 'Outstanding balance'), money(earned));
     const row = creator.locator('tr').filter({ hasText: capturedOrder.orderId }); assert.match(await row.innerText(), /BROWSER725/); assert.match(await row.innerText(), /12.5%/);
-    const gross = Math.round(checkout.amount / .9275); assert.equal(gross - round(gross, 725), checkout.amount, 'discounted checkout reconciles');
+    assert.equal(checkout.amount, 46282, 'Original ₹499 Noor minus 7.25% remains fixed');
+    const gross = Math.round(checkout.amount / .9275); assert.equal(gross, 49900); assert.equal(gross - round(gross, 725), checkout.amount, 'discounted checkout reconciles');
     await snapshot(creator, 'creator-earned'); check('creator sees earned commission and attributed coupon order', { amountPaise: checkout.amount, earnedPaise: earned });
     await navigate(other, '/creator'); assert.equal(await metric(other, 'Commission earned'), money(0)); assert.ok(!(await other.locator('body').innerText()).includes(capturedOrder.orderId));
     const csrf = await creator.locator('form[action="/creator/logout"] [name=csrf]').inputValue();
@@ -279,6 +322,154 @@ https.get=()=>{throw new Error('External HTTPS GET forbidden in QA');};
     check('date-range lifetime invariance, logout, password reset and disable revoke sessions; history preserved');
     await navigate(other, '/creator'); assert.equal(await metric(other, 'Outstanding balance'), money(0));
     check('unrelated creator remains signed in and financially isolated after reset/disable');
+    // A separate creator/buyer preserves all original ₹499 percentage, balance,
+    // refund and isolation assertions above. Flat coupon is created via admin UI.
+    const flatDetail = await createPartner(admin, 'qa-flat', 'Flat Coupon Creator', 'FLAT12551');
+    const flatSettings = admin.locator('form.pc-editor').filter({ has: admin.locator('[name=discount_type]') });
+    async function saveFlatSettings(enabled) {
+      await flatSettings.locator('[name=coupon_enabled]').setChecked(enabled);
+      const posted = admin.waitForResponse(r => r.url() === flatDetail && r.request().method() === 'POST');
+      await flatSettings.getByRole('button', { name: 'Save partner settings' }).click();
+      assert.equal((await posted).status(), 303); await admin.waitForURL(flatDetail + '?saved=1');
+      // Explicit GET proves every control persisted rather than merely retaining DOM state.
+      await navigate(admin, flatDetail);
+      assert.equal(await flatSettings.locator('[name=discount_type]').inputValue(), 'flat');
+      for (const [name, expected] of Object.entries({ discount_percent: '0', discount_flat: '125.51', discount_min: '49', discount_max: '25.02', coupon_expires_at: '2090-05-20T23:59' })) {
+        assert.equal(await flatSettings.locator(`[name=${name}]`).inputValue(), expected, name + ' persisted');
+      }
+      assert.equal(await flatSettings.locator('[name=coupon_enabled]').isChecked(), enabled);
+      assert.equal(await flatSettings.locator('[name=active]').isChecked(), true, 'Coupon toggle is not account disable');
+    }
+    await flatSettings.locator('[name=discount_type]').selectOption('flat');
+    for (const [name, value] of Object.entries({ discount_percent: '0', discount_flat: '125.51', discount_min: '49', discount_max: '25.02', coupon_expires_at: '2090-05-20T23:59' })) await flatSettings.locator(`[name=${name}]`).fill(value);
+    await saveFlatSettings(true); await saveFlatSettings(false);
+    const flatBuyerCtx = await context('flat-buyer'), flatBuyer = await flatBuyerCtx.newPage();
+    const flatCreatorCtx = await context('flat-creator'), flatCreator = await flatCreatorCtx.newPage();
+    await creatorLogin(flatCreator, 'qa-flat'); // Coupon-disabled partner can still sign in.
+    await navigate(flatBuyer, '/create/noor');
+    await flatBuyer.locator('#partner-coupon summary').click();
+    await flatBuyer.waitForFunction(() => !document.querySelector('#partner-coupon-apply').disabled);
+    await flatBuyer.locator('#partner-coupon-code').fill('FLAT12551');
+    await flatBuyer.locator('#partner-coupon-apply').click();
+    await flatBuyer.waitForFunction(() => /invalid|inactive/.test(document.querySelector('#partner-coupon-status').textContent));
+    await saveFlatSettings(true);
+    await snapshot(admin, 'admin-flat-coupon-controls');
+    check('admin flat/minimum/cap/IST expiry controls and coupon disable/re-enable roundtrip; disabled coupon rejected, account remains active');
+    await flatBuyer.locator('#partner-coupon-code').fill('flat12551');
+    const applied = flatBuyer.waitForResponse(r => r.url() === base + '/api/creator-coupon' && r.request().method() === 'POST');
+    await flatBuyer.locator('#partner-coupon-apply').click(); assert.equal((await applied).status(), 200);
+    await flatBuyer.waitForFunction(() => /FLAT12551 applied/.test(document.querySelector('#partner-coupon-status').textContent));
+    async function assertFlatTray() {
+      const text = await flatBuyer.locator('#partner-coupon-status').innerText();
+      assert.match(text, /Up to ₹125\.51 off/); assert.doesNotMatch(text, /0%|maximum ₹25/);
+      assert.match(text, /minimum order ₹49/); assert.match(text, /IST/); assert.match(text, /Minimum payable ₹1/);
+      const state = await (await flatBuyerCtx.request.get(base + '/api/creator-coupon')).json();
+      assert.equal(state.discount_type, 'flat'); assert.equal(state.discount_bps, 0); assert.equal(state.discount_flat_paise, 12551);
+      assert.equal(state.discount_min_paise, 4900); assert.equal(state.discount_max_paise, 2502);
+      assert.equal(state.coupon_expires_at, '2090-05-20T18:29:00.000Z');
+    }
+    await assertFlatTray(); await snapshot(flatBuyer, 'buyer-flat-builder-coupon');
+    check('actual buyer flat coupon tray shows rupee discount, minimum and IST expiry, never 0%');
+    // The first purchase above exercises every generic builder step. Here HTTP
+    // creates a second generic draft, then the real preview + PaigaamPay UI pays it.
+    const flatDraftResponse = await flatBuyerCtx.request.post(base + '/api/drafts', { data: { template: 'noor', customer_data: { brideName: 'Flat Meher', groomName: 'Flat Raghav', eventDate: '2026-12-12' } } });
+    assert.equal(flatDraftResponse.status(), 200); const flatDraft = await flatDraftResponse.json(); assert.notEqual(flatDraft.id, draftId);
+    await navigate(flatBuyer, '/preview/' + flatDraft.id);
+    await flatBuyer.locator('#partner-coupon summary').click();
+    await flatBuyer.waitForFunction(() => /FLAT12551 applied/.test(document.querySelector('#partner-coupon-status').textContent));
+    await assertFlatTray(); await snapshot(flatBuyer, 'buyer-flat-preview-coupon');
+    let flatOrder, flatPayment;
+    await flatBuyer.exposeFunction('qaCapture', async orderId => {
+      const entries = fs.readFileSync(calls, 'utf8').trim().split('\n').map(JSON.parse);
+      const order = entries.filter(r => r.path === '/v1/orders').at(-1).body;
+      flatOrder = { orderId, ...order };
+      flatPayment = { id: 'pay_browser_flat_qa', order_id: orderId, status: 'captured', amount: order.amount, currency: order.currency };
+      const fixture = JSON.parse(fs.readFileSync(fixtures, 'utf8')); fixture.payments[flatPayment.id] = flatPayment;
+      fs.writeFileSync(fixtures, JSON.stringify(fixture));
+      return { razorpay_order_id: orderId, razorpay_payment_id: flatPayment.id, razorpay_signature: crypto.createHmac('sha256', key).update(orderId + '|' + flatPayment.id).digest('hex') };
+    });
+    assert.equal(await flatBuyer.evaluate(() => typeof window.PaigaamPay?.open), 'function');
+    const flatOrderResponse = flatBuyer.waitForResponse(r => r.url() === base + '/api/razorpay/order' && r.request().method() === 'POST');
+    const flatVerifyResponse = flatBuyer.waitForResponse(r => r.url() === base + '/api/razorpay/verify' && r.request().method() === 'POST');
+    await flatBuyer.locator('#payPublish').click();
+    const flatOrderRes = await flatOrderResponse; assert.equal(flatOrderRes.status(), 200); const flatCheckout = await flatOrderRes.json();
+    const flatVerifyRes = await flatVerifyResponse; assert.equal(flatVerifyRes.status(), 200); const flatSettled = await flatVerifyRes.json();
+    await flatBuyer.locator('#paidDone').waitFor({ state: 'visible' });
+    assert.equal(flatCheckout.amount, 49900 - 12551); assert.equal(flatOrder.amount, flatCheckout.amount);
+    assert.equal(flatOrder.notes.paigaam_id, flatDraft.id); assert.equal(flatOrder.notes.template, 'noor');
+    assert.ok(fs.readFileSync(calls, 'utf8').includes('/v1/payments/' + flatPayment.id), 'Real verify fetched captured payment through local gateway');
+    await snapshot(flatBuyer, 'buyer-flat-published');
+    await navigate(flatBuyer, flatSettled.url); assert.equal(await flatBuyer.locator('#partner-coupon').count(), 0);
+    await navigate(flatCreator, '/creator');
+    const flatEarned = round(flatCheckout.amount, 1250); assert.equal(flatEarned, 4669);
+    assert.equal(await metric(flatCreator, 'Commission earned'), money(flatEarned));
+    assert.equal(await metric(flatCreator, 'Outstanding balance'), money(flatEarned));
+    const flatRow = flatCreator.locator('tr').filter({ hasText: flatOrder.orderId });
+    assert.match(await flatRow.innerText(), /FLAT12551/); assert.match(await flatRow.innerText(), /12.5%/);
+    assert.equal((await flatCreator.locator('body').innerText()).includes(capturedOrder.orderId), false);
+    await snapshot(flatCreator, 'creator-flat-earned');
+    await navigate(other, '/creator'); assert.equal(await metric(other, 'Outstanding balance'), money(0));
+    check('second generic Noor flat checkout via PaigaamPay SDK and real server verify snaps ₹373.49, earns ₹46.69 and isolates attribution', { draftId: flatDraft.id, checkout: flatCheckout, order: flatOrder, earnedPaise: flatEarned, settled: flatSettled });
+    // Checkout-error regression: the previous browser-QA author has finished;
+    // these isolated extra purchases run after all financial-isolation assertions.
+    await navigate(admin, flatDetail);
+    await flatSettings.locator('[name=discount_min]').fill('9999');
+    await Promise.all([admin.waitForURL(flatDetail + '?saved=1'), flatSettings.getByRole('button', { name: 'Save partner settings' }).click()]);
+    const errorCtx = await context('coupon-errors'), errorBuyer = await errorCtx.newPage();
+    async function applyErrorCoupon() {
+      const tray = errorBuyer.locator('#partner-coupon');
+      if (!(await tray.evaluate(el => el.open))) await tray.locator('summary').click();
+      await errorBuyer.waitForFunction(() => !document.querySelector('#partner-coupon-apply').disabled);
+      await errorBuyer.locator('#partner-coupon-code').fill('FLAT12551');
+      await errorBuyer.locator('#partner-coupon-apply').click();
+      await errorBuyer.waitForFunction(() => /FLAT12551 applied/.test(document.querySelector('#partner-coupon-status').textContent));
+    }
+    async function removeErrorCoupon() {
+      await errorBuyer.locator('#partner-coupon-clear').click();
+      await errorBuyer.waitForFunction(() => document.querySelector('#partner-coupon-clear').hidden && !document.querySelector('#partner-coupon-apply').disabled);
+    }
+    let errorPaymentSequence = 0;
+    await errorBuyer.exposeFunction('qaCapture', async orderId => {
+      const order = fs.readFileSync(calls, 'utf8').trim().split('\n').map(JSON.parse).filter(r => r.path === '/v1/orders').at(-1).body;
+      const payment = { id: 'pay_coupon_retry_' + (++errorPaymentSequence), order_id: orderId, status: 'captured', amount: order.amount, currency: order.currency };
+      const fixture = JSON.parse(fs.readFileSync(fixtures, 'utf8')); fixture.payments[payment.id] = payment;
+      fs.writeFileSync(fixtures, JSON.stringify(fixture));
+      return { razorpay_order_id: orderId, razorpay_payment_id: payment.id, razorpay_signature: crypto.createHmac('sha256', key).update(orderId + '|' + payment.id).digest('hex') };
+    });
+    const errorDraftRes = await errorCtx.request.post(base + '/api/drafts', { data: { template: 'noor', customer_data: { brideName: 'Retry Meher', groomName: 'Retry Raghav', eventDate: '2026-12-12' } } });
+    assert.equal(errorDraftRes.status(), 200); const errorDraft = await errorDraftRes.json();
+    await navigate(errorBuyer, '/preview/' + errorDraft.id); await applyErrorCoupon();
+    const genericDecline = errorBuyer.waitForResponse(r => r.url() === base + '/api/razorpay/order' && r.request().method() === 'POST');
+    const genericDialog = errorBuyer.waitForEvent('dialog');
+    await errorBuyer.locator('#payPublish').click();
+    const helpful = await genericDialog; assert.match(helpful.message(), /minimum spend.*Remove the coupon.*choose another coupon/); await helpful.accept();
+    assert.equal((await genericDecline).status(), 400); assert.equal((await (await genericDecline).json()).error, 'coupon_minimum');
+    assert.equal(await errorBuyer.locator('#payPublish').isEnabled(), true);
+    await removeErrorCoupon();
+    const genericRetry = errorBuyer.waitForResponse(r => r.url() === base + '/api/razorpay/order' && r.request().method() === 'POST');
+    await errorBuyer.locator('#payPublish').click(); assert.equal((await genericRetry).status(), 200);
+    await errorBuyer.locator('#paidDone').waitFor({ state: 'visible' });
+    check('actual generic Noor minimum-spend decline displays remove/change guidance; remove coupon and retry fully verifies payment');
+    // Price a real bfday-family template through the existing admin form.
+    await navigate(admin, '/admin/templates');
+    const bfEdit = await admin.locator('tr').filter({ has: admin.locator('a[href="/templates/unrejectable"]') }).getByRole('link', { name: 'Edit', exact: true }).getAttribute('href');
+    await navigate(admin, bfEdit); await admin.locator('[name=price]').fill('499');
+    await Promise.all([admin.waitForURL(base + '/admin/templates'), admin.getByRole('button', { name: 'Save changes', exact: true }).click()]);
+    await navigate(errorBuyer, '/create/unrejectable'); await applyErrorCoupon();
+    await errorBuyer.locator('[name=senderName]').fill('Browser retry');
+    const bfStepCount = await errorBuyer.locator('#bfForm .step').count();
+    for (let i = 0; i < bfStepCount - 1; i++) await errorBuyer.locator('#next').click();
+    const bfDecline = errorBuyer.waitForResponse(r => r.url() === base + '/api/unrejectable/publish' && r.request().method() === 'POST');
+    await errorBuyer.locator('#publish').click(); assert.equal((await bfDecline).status(), 400);
+    assert.equal((await (await bfDecline).json()).error, 'coupon_minimum');
+    await errorBuyer.waitForFunction(() => /minimum spend.*Remove the coupon.*choose another coupon/.test(document.querySelector('#formError').textContent));
+    assert.equal(await errorBuyer.locator('#publish').isEnabled(), true);
+    await snapshot(errorBuyer, 'buyer-bfday-minimum-spend');
+    await removeErrorCoupon();
+    const bfRetry = errorBuyer.waitForResponse(r => r.url() === base + '/api/unrejectable/publish' && r.request().method() === 'POST');
+    await errorBuyer.locator('#publish').click(); assert.equal((await bfRetry).status(), 200);
+    await errorBuyer.locator('#publishedResult').waitFor({ state: 'visible' });
+    check('actual bfday Lajja minimum-spend decline uses shared helper; remove coupon and retry fully verifies payment');
     // Negative UI operations intentionally log HTTP 400/401 to the browser console.
     const patterns = report.errors.filter(e => /Pattern attribute value/.test(e.message));
     if (patterns.length) report.findings.push({ type: 'invalid-html-pattern', message: 'Username and coupon pattern use unescaped hyphens rejected by Chromium HTML pattern v-mode; browser validation is bypassed, server validation remains.', samples: [...new Set(patterns.map(e => e.message))] });

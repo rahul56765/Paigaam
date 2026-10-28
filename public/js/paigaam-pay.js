@@ -83,5 +83,7 @@
     }).then(start);
   }
 
-  window.PaigaamPay = { open: open, paigaamId: paigaamId };
+  window.PaigaamPay = { open: open, paigaamId: paigaamId, errorMessage: function (error) {
+    return window.PaigaamCouponError ? window.PaigaamCouponError(error) : '';
+  } };
 })();

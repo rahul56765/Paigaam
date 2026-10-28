@@ -74,7 +74,7 @@
     payments_offline: 'Payments are being switched on — check back shortly. Your draft is safe.',
     not_found: 'This draft has wandered off. Reload and start again.',
   };
-  function msg(err) { return MESSAGES[err && err.code] || 'That didn’t work — check your connection and try again.'; }
+  function msg(err) { return (window.PaigaamCouponError && window.PaigaamCouponError(err)) || MESSAGES[err && err.code] || 'That didn’t work — check your connection and try again.'; }
 
   function saveDraft() {
     if (saving) return saving;

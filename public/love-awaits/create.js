@@ -221,7 +221,7 @@
         })
         .catch(function (err) {
           say('');
-          setError(MESSAGES[err.code] || 'That didn’t publish. Check your connection and try again.');
+          setError((window.PaigaamCouponError && window.PaigaamCouponError(err)) || MESSAGES[err.code] || 'That didn’t publish. Check your connection and try again.');
           publishBtn.disabled = false;
         });
     });

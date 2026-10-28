@@ -155,7 +155,7 @@ test('real browser coupon widget never inserts on a magazine result without #mag
       },
       body: { appendChild(node) { appended.push(node); } },
     };
-    vm.runInNewContext(script, { location: { pathname }, document, fetch: async (url, options) => {
+    vm.runInNewContext(script, { window: {}, location: { pathname }, document, fetch: async (url, options) => {
       requests.push({ url, options });
       return { ok: true, json: async () => ({ csrf: 'local-csrf', code: '', valid: true }) };
     } });

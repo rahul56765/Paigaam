@@ -180,7 +180,7 @@
       storage_unavailable: 'Publishing is paused until persistent storage is attached.',
       too_large: 'Your entries are too long — please shorten them.',
     };
-    errBox.textContent = map[e.message] || 'Something went wrong. Please try again.';
+    errBox.textContent = (window.PaigaamCouponError && window.PaigaamCouponError(e)) || map[e.message] || 'Something went wrong. Please try again.';
   }
 
   btnPreview.addEventListener('click', function () {

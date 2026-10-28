@@ -18,7 +18,7 @@ const pages = [
 ];
 
 test('shared page shell cache-busts the updated stylesheet', () => {
-  assert.match(head('Admin test'), /href="\/css\/paigaam\.css\?v=20261028-creator-qa"/);
+  assert.match(head('Admin test'), /href="\/css\/paigaam\.css\?v=20261028-creator-launch"/);
 });
 
 test('sign-in uses the studio surface and a focused, responsive credential form', () => {
