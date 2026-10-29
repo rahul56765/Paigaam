@@ -17,7 +17,7 @@
     opts=opts||{};var existing=opts.order||null;if(existing&&existing.alreadyPaid)return Promise.resolve({url:existing.url,alreadyPaid:true});
     var id=opts.id||paigaamId();
     var context={order:existing,id:id,product_type:opts.productType||(/\/api\/magazines\//.test(opts.orderEndpoint||'')?'magazine':'paigaam'),orderEndpoint:opts.orderEndpoint};
-    var choose=window.PaigaamCouponFlow?window.PaigaamCouponFlow.open(context):Promise.resolve({continue:true,skip:true});
+    var choose=window.PaigaamCouponFlow?(opts.inlineCoupon&&window.PaigaamCouponFlow.confirmInline?window.PaigaamCouponFlow.confirmInline():window.PaigaamCouponFlow.open(context)):Promise.resolve({continue:true,skip:true});
     return Promise.resolve(choose).then(function(choice){
       if(!choice||choice.continue===false)throw {code:'dismissed'};
       if(choice.alreadyPaid)return {url:choice.url,alreadyPaid:true};

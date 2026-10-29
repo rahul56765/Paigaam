@@ -38,7 +38,16 @@ function previewPage(paigaam, settings, opts = {}) {
       </div>
     </div>`
     : `
-    <button class="btn btn--primary" id="payPublish" data-paigaam-id="${esc(paigaam.id)}" data-track="purchase_started" data-template="${esc(paigaam.template_slug)}">Pay &amp; publish — ${paigaam.template_list_price > paigaam.template_price ? `<s>&#8377;${paigaam.template_list_price}</s>` : ''}&#8377;${esc(paigaam.template_price)}</button>
+    <section class="pc-inline-checkout" id="pc-inline-checkout" aria-labelledby="pc-inline-title">
+      <h2 id="pc-inline-title">Your checkout</h2>
+      <p class="pc-inline-checkout__intro">Add a coupon here if you have one. You’ll see the final amount before Razorpay opens.</p>
+      <label for="pc-inline-input">Coupon code <span>(optional)</span></label>
+      <div class="pc-inline-checkout__row"><input id="pc-inline-input" maxlength="32" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="Enter coupon code"><button id="pc-inline-apply" type="button">Apply</button></div>
+      <button id="pc-inline-remove" class="pc-inline-checkout__remove" type="button" hidden>Remove coupon</button>
+      <p id="pc-inline-status" role="status" aria-live="polite">Checking your total…</p>
+      <div id="pc-inline-price" class="pc-inline-checkout__price" role="status" aria-live="polite"></div>
+    </section>
+    <button class="btn btn--primary" id="payPublish" data-paigaam-id="${esc(paigaam.id)}" data-track="purchase_started" data-template="${esc(paigaam.template_slug)}" disabled>Checking your total…</button>
     <a class="btn btn--ghost" href="/create/${esc(paigaam.template_slug)}?draft=${esc(paigaam.id)}">Edit Paigaam</a>
     <div id="paidDone" hidden style="margin-top:8px;width:100%">
       <p style="font-family:var(--serif);font-style:italic;font-size:20px;margin-bottom:18px">Payment received — it's live. Share it.</p>
@@ -158,7 +167,7 @@ ${isFree ? `<script src="/js/qr-card.js?v=1" defer></script>
   btn.addEventListener('click', function () {
     btn.disabled = true; btn.textContent = 'Opening checkout…';
     if (window.paTrack) window.paTrack('preview_opened', { template: btn.dataset.template, paid: true });
-    window.PaigaamPay.open({}).then(function (res) {
+    window.PaigaamPay.open({ inlineCoupon: true }).then(function (res) {
       if (window.paTrack) window.paTrack('paigaam_generated', { template: btn.dataset.template, paid: true });
       var url = res.url, short = url.replace(/^https:\\/\\//, '');
       btn.hidden = true;
@@ -187,9 +196,14 @@ ${isFree ? `<script src="/js/qr-card.js?v=1" defer></script>
       done.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }).catch(function (err) {
       btn.disabled = false;
-      btn.innerHTML = 'Pay &amp; publish — ${paigaam.template_list_price > paigaam.template_price ? `<s>&#8377;${paigaam.template_list_price}</s>` : ''}&#8377;${esc(paigaam.template_price)}';
+      if (window.PaigaamCouponFlow && window.PaigaamCouponFlow.restoreInlineButton) window.PaigaamCouponFlow.restoreInlineButton();
+      else btn.textContent = 'Continue to checkout';
       var couponMessage = window.PaigaamCouponError && window.PaigaamCouponError(err);
-      if (couponMessage) { alert(couponMessage); return; }
+      if (couponMessage) {
+        var couponStatus = document.getElementById('pc-inline-status');
+        if (couponStatus) couponStatus.textContent = couponMessage;
+        return;
+      }
       if (err && err.code === 'dismissed') return;
       if (err && err.code === 'payments_offline') { alert('Payments are being switched on — check back shortly.'); return; }
       alert("Checkout didn't open. Please try again in a moment.");
