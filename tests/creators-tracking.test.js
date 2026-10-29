@@ -116,14 +116,22 @@ test('coupon priority never stacks referral discount; expired, forged and disabl
   const referred = quote(ref); assert.equal(referred.creator_id, a.id); assert.equal(referred.amount_paise, 10001); assert.equal(referred.discount_paise, 0);
   const explicit = quote(`${ref}; pg_partner_coupon=${b.coupon_code}`);
   assert.equal(explicit.creator_id, b.id); assert.equal(explicit.discount_paise, 1234); assert.equal(explicit.amount_paise, 8767); assert.equal(explicit.commission_bps, 4321);
-  assert.throws(() => quote(`${ref}; pg_partner_coupon=NOTREAL`), { code: 'invalid_coupon' });
+  const expiredCodeFallsBack=quote(`${ref}; pg_partner_coupon=NOTREAL`);assert.equal(expiredCodeFallsBack.creator_id,a.id);assert.equal(expiredCodeFallsBack.coupon_code,'');assert.equal(expiredCodeFallsBack.discount_paise,0);
   assert.equal(quote('pg_partner_ref=' + 'f'.repeat(64)).creator_id, null);
   db.prepare('UPDATE partner_referrals SET expires_at=? WHERE creator_id=?').run(Date.now() - 1, a.id);
   assert.equal(quote(ref).creator_id, null);
   const again = await get(`/r/${a.username}`); store.updateCreator(a.id, { active: false }, 'test');
   assert.equal(quote(cookie(again, 'pg_partner_ref')).creator_id, null);
   store.updateCreator(b.id, { active: false }, 'test');
-  assert.throws(() => quote(`pg_partner_coupon=${b.coupon_code}`), { code: 'invalid_coupon' });
+  const disabledCodeFallsBack=quote(`pg_partner_coupon=${b.coupon_code}`);assert.equal(disabledCodeFallsBack.creator_id,null);assert.equal(disabledCodeFallsBack.coupon_code,'');
+});
+
+test('expired saved coupon is cleared with a checkout notice and falls back to normal full-price checkout',()=>{
+  const headers=new Map(),res={getHeader(name){return headers.get(name);},setHeader(name,value){headers.set(name,value);}};
+  const req={headers:{cookie:'pg_partner_coupon=OLDPROMO; pg_partner_ref=not-a-valid-token'}};
+  const quote=tracking.runRequest(req,res,'https://checkout.example.test',()=>tracking.checkoutQuote({amount:10001,currency:'INR'}));
+  assert.equal(quote.amount_paise,10001);assert.equal(quote.discount_paise,0);assert.equal(quote.coupon_code,'');
+  const cookies=headers.get('Set-Cookie');assert.ok(Array.isArray(cookies));assert.ok(cookies.some(c=>c.startsWith('pg_partner_coupon=')&&c.includes('Max-Age=0')));assert.ok(cookies.some(c=>c.startsWith('pg_partner_coupon_notice=invalid_coupon')));
 });
 
 test('legacy no-context and non-INR requests bypass attribution, but explicit non-INR coupon rejects', () => {
@@ -131,6 +139,6 @@ test('legacy no-context and non-INR requests bypass attribution, but explicit no
   const run = (cookie, currency) => tracking.runRequest({ headers: { cookie } }, () => tracking.checkoutQuote({ amount: 10001, currency }));
   assert.equal(run('', 'INR').creator_id, null);
   assert.equal(run('pg_partner_ref=' + 'a'.repeat(64), 'USD'), null);
-  assert.throws(() => run('pg_partner_coupon=INVALID', 'USD'), { code: 'unsupported_currency' });
+  assert.equal(run('pg_partner_coupon=INVALID', 'USD'),null,'an invalid saved coupon is discarded and a non-INR order remains unchanged');
   assert.deepEqual({ ...tracking.cookies({ headers: { cookie: 'bad=%ZZ; pg_partner_coupon=TRACK%31; noequals; x=a=b' } }) }, { pg_partner_coupon: 'TRACK1', x: 'a=b' });
 });

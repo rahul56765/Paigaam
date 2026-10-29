@@ -142,36 +142,14 @@ test('same-slug greeting and magazine stats stay separate and referral magazine 
   assert.equal(stats.totals.unique_visitors, 2);
 });
 
-test('real browser coupon widget never inserts on a magazine result without #magPay (positive purchase controls)', async () => {
+test('coupon checkout controller is passive on all pages until PaigaamPay.open invokes payment', () => {
   const script = fs.readFileSync(path.join(__dirname, '../public/js/creator-coupon.js'), 'utf8');
-  async function run(pathname, paywall) {
-    const appended = [], requests = [];
-    const nodes = new Map();
-    const document = {
-      getElementById(id) { return id === 'magPay' && paywall ? {} : null; },
-      createElement(tag) {
-        assert.equal(tag, 'details');
-        return { querySelector(selector) { if (!nodes.has(selector)) nodes.set(selector, { addEventListener() {} }); return nodes.get(selector); } };
-      },
-      body: { appendChild(node) { appended.push(node); } },
-    };
-    vm.runInNewContext(script, { window: {}, location: { pathname }, document, fetch: async (url, options) => {
-      requests.push({ url, options });
-      return { ok: true, json: async () => ({ csrf: 'local-csrf', code: '', valid: true }) };
-    } });
-    await new Promise(resolve => setImmediate(resolve));
-    return { appended, requests };
-  }
-  for (const route of ['/magazines/m/' + 'a'.repeat(32), '/magazines/m/ready-result', '/magazines/m/ready-result/magazine.pdf']) {
-    const result = await run(route, false);
-    assert.equal(result.appended.length, 0, route);
-    assert.equal(result.requests.length, 0, 'recipient result must not even fetch coupon state');
-  }
-  for (const [route, paywall] of [['/magazines/m/unpaid-result', true], ['/magazines/birthday-story', false], ['/create/birthday', false]]) {
-    const result = await run(route, paywall);
-    assert.equal(result.appended.length, 1, route);
-    assert.equal(result.appended[0].id, 'partner-coupon');
-    assert.equal(result.requests.length, 1);
-    assert.equal(result.requests[0].url, '/api/creator-coupon');
+  for (const pathname of ['/templates','/templates/noor','/create/noor','/preview/draft','/magazines/birthday-story','/magazines/m/result','/p/a-customer-paigaam']) {
+    const appends=[],fetches=[];
+    const context={window:{},location:{pathname},document:{body:{appendChild(node){appends.push(node);}}},fetch:function(...args){fetches.push(args);return Promise.resolve({});}};
+    vm.runInNewContext(script,context);
+    assert.equal(typeof context.window.PaigaamCouponFlow.open,'function');
+    assert.equal(appends.length,0,pathname+' must not show coupon entry while browsing');
+    assert.equal(fetches.length,0,pathname+' must not fetch coupon state before checkout');
   }
 });

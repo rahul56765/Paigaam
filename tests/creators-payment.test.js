@@ -115,14 +115,16 @@ test('overlapped gateway responses preserve AsyncLocalStorage buyer isolation (i
   } finally { held = false; pending.length = 0; }
 });
 
-test('no-context legacy checkout and non-INR bypass remain compatible; invalid coupons fail before gateway', async () => {
+test('no-context legacy checkout and non-INR bypass remain compatible; stale saved codes fall back to the full price', async () => {
   const legacy = await razorpay.createOrderFor(options()); assert.equal(legacy.amount, 10001); assert.equal(store.getOrder(legacy.id), null);
   const usd = await checkout(null, options({ currency: 'USD' })); assert.equal(usd.currency, 'USD'); assert.equal(usd.amount, 10001); assert.equal(store.getOrder(usd.id), null);
   const before = calls.length;
-  await assert.rejects(tracking.runRequest({ headers: { cookie: 'pg_partner_coupon=MISSING' } }, () => razorpay.createOrderFor(options())), { code: 'invalid_coupon' });
-  await assert.rejects(tracking.runRequest({ headers: { cookie: 'pg_partner_coupon=MISSING' } }, () => razorpay.createOrderFor(options({ currency: 'USD' }))), { code: 'unsupported_currency' });
+  const staleInr = await tracking.runRequest({ headers: { cookie: 'pg_partner_coupon=MISSING' } }, () => razorpay.createOrderFor(options()));
+  assert.equal(staleInr.amount,10001);assert.equal(store.getOrder(staleInr.id).coupon_code,'');assert.equal(store.getOrder(staleInr.id).amount_paise,10001);
+  const staleUsd = await tracking.runRequest({ headers: { cookie: 'pg_partner_coupon=MISSING' } }, () => razorpay.createOrderFor(options({ currency: 'USD' })));
+  assert.equal(staleUsd.currency,'USD');assert.equal(staleUsd.amount,10001);assert.equal(store.getOrder(staleUsd.id),null);
   for (const amount of [0, 99, 100.5, NaN, Infinity]) await assert.rejects(razorpay.createOrderFor(options({ amount })), { code: 'invalid_amount' });
-  assert.equal(calls.length, before);
+  assert.equal(calls.length, before+2);
 });
 
 test('old no-cookie HTTP buyer can still create an unattributed INR checkout', async () => {

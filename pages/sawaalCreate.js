@@ -33,7 +33,7 @@ function sawaalCreatePage(opts = {}) {
     return builderShell('Sawaal', `
 <link rel="stylesheet" href="/sawaal/create.css?v=3">
 <script src="/sawaal/create.js?v=3&release=creator-20261028" defer></script>
-<script src="/js/paigaam-pay.js?v=1&release=creator-20261028" defer></script>
+<script src="/js/paigaam-pay.js?v=2&release=checkout-coupon-20261029" defer></script>
 ${boot ? `<script src="/js/resume.js?v=1" defer></script>
 <script type="application/json" id="wizardBoot">${JSON.stringify(boot).replace(/</g, '\u003c')}</script>` : ''}
 <script src="/js/qr-card.js?v=1" defer></script>

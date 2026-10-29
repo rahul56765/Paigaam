@@ -170,6 +170,18 @@ test('all partner mutations reject wrong methods, content types, oversized forms
   assert.equal((await get('/creator', cookie)).status, 303);
 });
 
+test('Paigaam-wide coupons are admin-managed with CSRF, collision protection and enabled toggles', async () => {
+  const unauthorized=await get('/admin/coupons');assert.equal(unauthorized.status,303);assert.equal(unauthorized.headers.get('location'),'/admin/login');
+  const c=creator();
+  const page=await get('/admin/coupons',`paigaam_session=${adminToken}`);assert.equal(page.status,200);const html=await page.text();const token=csrf(html);assert.match(html,/site-wide codes/i);
+  const fields={csrf:token,code:'PAIGAAM15',description:'Paigaam campaign',discount_type:'percentage',discount_percent:'15',discount_flat:'0',discount_min:'0',discount_max:'0',coupon_expires_at:'',enabled:'1'};
+  let saved=await post('/admin/coupons',fields,`paigaam_session=${adminToken}`);assert.equal(saved.status,303);assert.equal(store.couponOffer('paigaam15').source,'paigaam');assert.equal(store.quote({amount_paise:10000,currency:'INR',coupon_code:'paigaam15'}).discount_paise,1500);
+  saved=await post('/admin/coupons/PAIGAAM15',{...fields,discount_type:'flat',discount_percent:'0',discount_flat:'25.50'},`paigaam_session=${adminToken}`);assert.equal(saved.status,303);const updated=store.couponOffer('PAIGAAM15');assert.equal(updated.discount_type,'flat');assert.equal(updated.discount_flat_paise,2550);
+  saved=await post('/admin/coupons/PAIGAAM15',{...fields,enabled:'0'},`paigaam_session=${adminToken}`);assert.equal(saved.status,303);assert.equal(store.couponOffer('PAIGAAM15'),null);assert.equal(store.creatorByUsername(c.username).active,true);
+  const collision=await post('/admin/coupons',{...fields,code:c.coupon_code},`paigaam_session=${adminToken}`);assert.equal(collision.status,400);assert.match(await collision.text(),/reserved by a creator/);
+  const noCsrf=await post('/admin/coupons',{...fields,csrf:'forged'},`paigaam_session=${adminToken}`);assert.equal(noCsrf.status,403);
+});
+
 test('admin list/create/edit/reset/disable require admin-session-bound CSRF', async () => {
   const cookie = `paigaam_session=${adminToken}`;
   const page = await get('/admin/creators', cookie); const token = csrf(await page.text());

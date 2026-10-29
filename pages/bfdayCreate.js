@@ -153,7 +153,7 @@ ${jsonPayload('bfSpec', spec)}
 <link rel="stylesheet" href="/bfday/create.css?v=3">
 <style>:root { --bg: ${escape(theme.bg)}; --ink: ${escape(theme.ink)}; --accent: ${escape(theme.accent)}; --soft: ${escape(theme.soft)}; }${darkThemeOverride(theme)}</style>
 ${['love-letter', 'anniversary-blue'].includes(t.slug) ? `<script src="/${S}/crop.js" defer></script><script src="/${S}/editor.js?release=creator-20261028" defer></script>` : '<script src="/bfday/create.js?v=4&release=lotus-20261029" defer></script>'}
-<script src="/js/paigaam-pay.js?v=1&release=creator-20261028" defer></script>
+<script src="/js/paigaam-pay.js?v=2&release=checkout-coupon-20261029" defer></script>
 <script src="/js/qr-card.js?v=1" defer></script>
 ${opts.resumeDraft ? `<script src="/js/resume.js?v=1" defer></script>
 <script type="application/json" id="wizardBoot">${JSON.stringify({ draftId: opts.resumeDraft.id, data: opts.resumeDraft.customer_data || {}, at: opts.resumeDraft.updated_at ? new Date(opts.resumeDraft.updated_at.replace(' ', 'T') + 'Z').getTime() : Date.now(), noun: create.noun || 'Paigaam' }).replace(/</g, '\\u003c')}</script>` : ''}

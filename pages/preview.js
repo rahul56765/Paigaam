@@ -149,7 +149,7 @@ ${isFree ? `<script src="/js/qr-card.js?v=1" defer></script>
     }).catch(function () { btn.disabled = false; btn.textContent = 'Publish my Paigaam'; });
   });
 })();
-</script>` : `<script src="/js/paigaam-pay.js?v=1&release=creator-20261028" defer></script>
+</script>` : `<script src="/js/paigaam-pay.js?v=2&release=checkout-coupon-20261029" defer></script>
 <script src="/js/qr-card.js?v=1" defer></script>
 <script>
 (function () {

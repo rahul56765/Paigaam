@@ -54,7 +54,7 @@ function fixedPage(tpl) {
     </div>
   </div>
 </main>
-<script src="/js/paigaam-pay.js?v=1&release=creator-20261028" defer></script>
+<script src="/js/paigaam-pay.js?v=2&release=checkout-coupon-20261029" defer></script>
 <script>
 (function () {
   var form = document.getElementById('fixedForm');
@@ -78,14 +78,8 @@ function fixedPage(tpl) {
       })
     }).then(function (r) { return r.json(); }).then(function (res) {
       if (!res || !res.id) throw new Error('no id');
-      // Inline checkout — the modal opens right here; no separate page.
-      return fetch('/api/razorpay/order', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin',
-        body: JSON.stringify({ id: res.id })
-      }).then(function (r2) { return r2.json().catch(function () { return {}; }).then(function (b2) {
-        if (!r2.ok) throw { code: (b2 && b2.error) || 'request_failed' };
-        return window.PaigaamPay.open({ order: b2 });
-      }); });
+      // The checkout review (including an optional coupon) opens before the Razorpay order is created.
+      return window.PaigaamPay.open({ id: res.id, prefillName: name });
     }).then(function (pay) {
       // Paid + published: show the link and QR — never auto-open the paigaam.
       if (result) result.hidden = false;
