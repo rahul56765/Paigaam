@@ -147,13 +147,24 @@ function bfdayCreatePage(t, opts = {}) {
     listPrice: c.listPrice | 0,
   };
   const S = escape(t.slug);
+  const promoPercent = c.listPrice > c.price && c.listPrice > 0 ? Math.round((c.listPrice - c.price) / c.listPrice * 100) : 0;
+  const checkoutPanel = c.price > 0 ? `<section class="pc-inline-checkout pc-inline-checkout--builder" id="pc-inline-checkout" data-list-price-paise="${c.listPrice * 100}" aria-labelledby="pc-inline-title">
+            <div class="pc-inline-offer"><div><p class="pc-inline-offer__eyebrow">${escape(c.category || 'Paigaam')} special</p><p class="pc-inline-offer__price"><strong>&#8377;${c.price}</strong>${c.listPrice > c.price ? ` <span class="pc-inline-offer__regular">regularly <s>&#8377;${c.listPrice}</s></span>` : ''}</p></div>${c.listPrice > c.price ? `<span class="pc-inline-offer__save">Save &#8377;${c.listPrice - c.price}${promoPercent ? ` · ${promoPercent}% off` : ''}</span>` : ''}</div>
+            <h3 id="pc-inline-title">Your final total</h3>
+            <p class="pc-inline-checkout__intro">Have a coupon? Apply it here. The amount below is what you’ll confirm before Razorpay.</p>
+            <label for="pc-inline-input">Coupon code <span>(optional)</span></label>
+            <div class="pc-inline-checkout__row"><input id="pc-inline-input" maxlength="32" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="Enter coupon code"><button id="pc-inline-apply" type="button" disabled>Apply</button></div>
+            <button id="pc-inline-remove" class="pc-inline-checkout__remove" type="button" hidden>Remove coupon</button>
+            <p id="pc-inline-status" role="status" aria-live="polite">Checking your total…</p>
+            <div id="pc-inline-price" class="pc-inline-checkout__price" role="status" aria-live="polite"></div>
+          </section>` : '';
 
   return builderShell(c.name, `
 ${jsonPayload('bfSpec', spec)}
 <link rel="stylesheet" href="/bfday/create.css?v=3">
 <style>:root { --bg: ${escape(theme.bg)}; --ink: ${escape(theme.ink)}; --accent: ${escape(theme.accent)}; --soft: ${escape(theme.soft)}; }${darkThemeOverride(theme)}</style>
-${['love-letter', 'anniversary-blue'].includes(t.slug) ? `<script src="/${S}/crop.js" defer></script><script src="/${S}/editor.js?release=creator-20261028" defer></script>` : '<script src="/bfday/create.js?v=4&release=lotus-20261029" defer></script>'}
-<script src="/js/paigaam-pay.js?v=2&release=checkout-coupon-20261029" defer></script>
+${['love-letter', 'anniversary-blue'].includes(t.slug) ? `<script src="/${S}/crop.js" defer></script><script src="/${S}/editor.js?release=creator-inline-coupon-20261030" defer></script>` : '<script src="/bfday/create.js?v=5&release=inline-coupon-20261030" defer></script>'}
+<script src="/js/paigaam-pay.js?v=2&release=checkout-coupon-inline-create-20261030" defer></script>
 <script src="/js/qr-card.js?v=1" defer></script>
 ${opts.resumeDraft ? `<script src="/js/resume.js?v=1" defer></script>
 <script type="application/json" id="wizardBoot">${JSON.stringify({ draftId: opts.resumeDraft.id, data: opts.resumeDraft.customer_data || {}, at: opts.resumeDraft.updated_at ? new Date(opts.resumeDraft.updated_at.replace(' ', 'T') + 'Z').getTime() : Date.now(), noun: create.noun || 'Paigaam' }).replace(/</g, '\\u003c')}</script>` : ''}
@@ -188,8 +199,9 @@ ${opts.resumeDraft ? `<script src="/js/resume.js?v=1" defer></script>
           <p>Publish and share — it takes one tap.</p>
           <div id="review" class="review"></div>
           <p id="previewState" class="hint" aria-live="polite"></p>
-          <button type="button" id="publish" class="button publish">${c.price > 0 ? `Pay &#8377;${c.price} &amp; publish this Paigaam` : 'Publish this Paigaam'}</button>
-          <p class="hint">${c.price > 0 ? `Secure payment via Razorpay${c.listPrice > c.price ? ` — <s>&#8377;${c.listPrice}</s>` : ''}. Your Paigaam publishes itself the moment payment lands.` : 'Free. The link stays live; only you can edit it before publishing.'}</p>
+          ${checkoutPanel}
+          <button type="button" id="publish" class="button publish" ${c.price > 0 ? 'disabled' : ''}>${c.price > 0 ? 'Checking your total…' : 'Publish this Paigaam'}</button>
+          <p class="hint">${c.price > 0 ? 'Secure payment via Razorpay. Your Paigaam publishes itself the moment payment lands.' : 'Free. The link stays live; only you can edit it before publishing.'}</p>
         </section>
 
         <div id="formError" class="error" role="alert" hidden></div>

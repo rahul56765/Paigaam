@@ -2,6 +2,7 @@
 const {test}=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
 const config=require('../templates/anniversary-blue/config'),schema=require('../templates/anniversary-blue/schema'),{render}=require('../templates/anniversary-blue/render'),art=require('../templates/anniversary-blue/art');
 const family=require('../lib/bfday/family'),{resolve,maxImages}=require('../lib/bfday/fields'),{escape}=require('../lib/bfday/page');
+const {bfdayCreatePage}=require('../pages/bfdayCreate');
 const {request,draft,png,HOSTILE}=require('./bfday-helpers');
 const asset=name=>fs.readFileSync(path.join(__dirname,'../public/anniversary-blue',name),'utf8');
 const photo='/bfday/uploads/'+'a'.repeat(48)+'.jpg',song='/bfday/uploads/'+'b'.repeat(48)+'.wav';
@@ -11,6 +12,12 @@ test('anniversary-blue is an additive family member with ten distinct accessible
  const h=render();assert.deepEqual([...h.matchAll(/data-scene="([^"]+)"/g)].map(x=>x[1]),config.sections);assert.equal(config.sections.length,10);assert.equal((h.match(/hidden inert/g)||[]).length,9);
  for(const id of config.sections)assert.match(h,new RegExp('id="title-'+id+'"'));assert.equal((h.match(/data-page=/g)||[]).length,10);
  assert.equal(config.backgroundMusic,false);assert.ok(!schema.FIELDS.some(f=>f.id==='bgmSong'));
+});
+test('paid review keeps coupon entry on the send step and makes the regular/sale price relationship prominent',()=>{
+ const html=bfdayCreatePage(family.bySlug('anniversary-blue'),{price:99,listPrice:199});
+ const sendStep=html.slice(html.indexOf('data-step="6"'),html.indexOf('data-step="6"')+5000);
+ assert.match(sendStep,/id="pc-inline-checkout"/);assert.match(sendStep,/id="pc-inline-input"/);assert.match(sendStep,/&#8377;99/);assert.match(sendStep,/&#8377;199/);assert.match(sendStep,/Save &#8377;100 · 50% off/);assert.match(sendStep,/id="publish"[^>]*disabled/);assert.doesNotMatch(html,/id="pc-inline-checkout".*data-step="0"/s);
+ const free=bfdayCreatePage(family.bySlug('anniversary-blue'),{price:0,listPrice:0});assert.doesNotMatch(free,/id="pc-inline-checkout"/);
 });
 test('defaults, malformed preview data and whitelist resolve without sharing mutable defaults',()=>{
  const d=resolve(config,{},schema);assert.equal(d.startMusic,'disc');assert.equal(d.recipientName,'My Love');assert.deepEqual([d.tallPhotos.length,d.polaroids.length,d.foreverPhotos.length,d.reasons.length],[3,5,3,10]);
@@ -73,7 +80,7 @@ function localOnly(){assert.ok(['127.0.0.1','localhost','[::1]'].includes(new UR
 function wav(){const b=Buffer.alloc(1644);b.write('RIFF');b.writeUInt32LE(b.length-8,4);b.write('WAVE',8);b.write('fmt ',12);b.writeUInt32LE(16,16);b.writeUInt16LE(1,20);b.writeUInt16LE(1,22);b.writeUInt32LE(8000,24);b.writeUInt32LE(16000,28);b.writeUInt16LE(2,32);b.writeUInt16LE(16,34);b.write('data',36);b.writeUInt32LE(1600,40);return b;}
 const save=(d,data)=>request('/api/anniversary-blue/draft',{method:'POST',cookie:d.cookie,body:{id:d.id,customer_data:data}});
 test('local API: create/demo/frame isolated assets, preview sanitization, owner access and CSRF',api,async()=>{
- localOnly();const create=await request('/create/anniversary-blue');assert.equal(create.status,200);for(const script of ['crop','editor'])assert.ok(create.text.includes('/anniversary-blue/'+script+'.js'));assert.doesNotMatch(create.text,/<script src="\/(?:love-letter|bfday)\/(?:editor|crop|create)\.js/);
+ localOnly();const oldUrl=await request('/create/anniversary');assert.equal(oldUrl.status,302);assert.equal(oldUrl.headers.get('location'),'/create/anniversary-blue');const create=await request('/create/anniversary-blue');assert.equal(create.status,200);for(const script of ['crop','editor'])assert.ok(create.text.includes('/anniversary-blue/'+script+'.js'));assert.ok(create.text.includes('creator-coupon.css?v=4'));assert.ok(create.text.includes('creator-coupon.js?v=6'));assert.doesNotMatch(create.text,/<script src="\/(?:love-letter|bfday)\/(?:editor|crop|create)\.js/);
  for(const file of ['editor.js','crop.js','experience.js','experience.css'])assert.equal((await request('/anniversary-blue/'+file)).status,200);
  const demo=await request('/anniversary-blue/demo');assert.equal(demo.status,200);assert.ok(demo.text.includes('data-editor="false"'));
  const frame=await request('/anniversary-blue/preview-frame',{method:'POST',body:{customer_data:{recipientName:HOSTILE,songUrl:'javascript:alert(1)',tallPhotos:[{photo:'https://evil.test/x',caption:HOSTILE}]}}});assert.equal(frame.status,200);assert.ok(frame.text.includes('data-editor="true"'));assert.ok(!frame.text.includes('javascript:alert(1)'));assert.ok(!frame.text.includes('<img src=x'));

@@ -22,7 +22,7 @@
       if(!choice||choice.continue===false)throw {code:'dismissed'};
       if(choice.alreadyPaid)return {url:choice.url,alreadyPaid:true};
       var finalId=id||choice.product_id;
-      if(existing&&choice.quote&&choice.quote.reuse_existing_order===true&&Number(existing.amount)===Number(choice.quote.amount_paise)&&String(existing.currency||'INR')===String(choice.quote.currency))return existing;
+      if(existing&&choice.quote&&(choice.quote.reuse_existing_order===true||opts.inlineCoupon===true)&&Number(existing.amount)===Number(choice.quote.amount_paise)&&String(existing.currency||'INR')===String(choice.quote.currency))return existing;
       if(existing&&(!choice.quote||choice.skip))return existing;
       return fetchOrder(opts.orderEndpoint,finalId,opts);
     }).then(function(order){return start(order,opts);});

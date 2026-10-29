@@ -75,7 +75,7 @@ body.shell {
 .shell .journey,
 .shell .livepane .aside-note,
 .shell .livepane .eyebrow { display: none !important; }
-.shell .workspace { display: flex !important; flex-direction: column; align-items: center; gap: 10px; padding: 0; }
+.shell .workspace { display: flex !important; flex-direction: column; align-items: center; gap: 10px; padding: 0; width: 100%; max-width: 100%; box-sizing: border-box; }
 @media (min-width: 861px) and (min-height: 700px) {
   .shell .workspace { flex-direction: row; justify-content: center; align-items: center; gap: clamp(40px, 6vw, 90px); padding: 40px; }
 }
@@ -94,6 +94,7 @@ body.shell {
   border: 0; border-radius: 0; box-shadow: none; background: transparent;
   padding: 10px 20px calc(30px + env(safe-area-inset-bottom));
   width: min(560px, 100%);
+  max-width: 100%; box-sizing: border-box;
   margin: 0 auto;
 }
 
