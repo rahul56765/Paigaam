@@ -207,7 +207,7 @@ function seed() {
 }
 
 /* ---------------- router ---------------- */
-const server = http.createServer((req, res) => creatorTracking.runRequest(req, async () => {
+const server = http.createServer((req, res) => creatorTracking.runRequest(req, res, BASE_URL, async () => {
   try {
     const u = new URL(req.url, BASE_URL);
     const p = u.pathname.replace(/\/+$/, '') || '/';

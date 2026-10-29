@@ -44,6 +44,7 @@ function adminShell(current, title, inner, opts = {}) {
         <li>${link('/admin/paigaams', 'Paigaams', 'paigaams')}</li>
         <li>${link('/admin/orders', 'Orders', 'orders')}</li>
         <li>${link('/admin/creators', 'Creators', 'paigaams')}</li>
+        <li>${link('/admin/coupons', 'Paigaam coupons', 'orders')}</li>
         <li class="admin__nav-label">Creative studio</li>
         <li>${link('/admin/magazines', 'Magazines', 'magazine')}</li>
         <li>${link('/wedding-video', 'Video templates', 'video')}</li>
@@ -62,6 +63,7 @@ function adminShell(current, title, inner, opts = {}) {
       <summary>${adminIcon('more')}<span>More</span></summary>
       <div class="admin__more-panel">
         ${link('/admin/creators', 'Creators', 'paigaams')}
+        ${link('/admin/coupons', 'Paigaam coupons', 'orders')}
         ${link('/admin/magazines', 'Magazines', 'magazine')}
         ${link('/wedding-video', 'Video templates', 'video')}
         ${link('/admin/settings', 'Settings', 'settings')}
