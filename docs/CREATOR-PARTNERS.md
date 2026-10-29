@@ -1,6 +1,6 @@
 # Creator partners, coupons and commission accounting
 
-Status: owner-authorized release preparation, 28 October 2026; verify deployment status in the release record below. Additive SQLite migrations, no production accounts or transfers created by development. Do not deploy without owner approval and the rollout checks below.
+Status: LIVE on Paigaam as of 29 October 2026. Creator core PR67 and checkout/promo update PR72 are merged; latest checkout deployment is Railway SUCCESS 81645376-e3df-4069-96bc-6983a7740a70 on main commit 58dfd5f. Admin controls at /admin/creators and /admin/coupons; creator sign-in at /creator/login. Creator analytics build e35465b is included. Additive SQLite migrations; no production test accounts, coupon redemptions or transfers were created. Gateway/SDK testing remains mocked; no live charges/refunds/bank transfers were performed.
 
 ## Product
 
@@ -78,7 +78,7 @@ Admin gets last successful login time/count, current active session count, throt
 
 ## Checkout-flow verification update — 29 October 2026
 
-Coupon entry is modal-only and reached after the shopper starts a paid purchase action. The amount shown in the review is exactly the amount confirmed in the next Razorpay order, and only Continue launches checkout. Browser verification: creator percentage coupon ₹499→₹462.82; Paigaam site-wide offer ₹499→₹399.20 with tracked creator commission on amount paid; flat creator coupon ₹499→₹373.49; below-minimum coupon stays before gateway creation, gives actionable guidance and can be removed for normal full-price Razorpay checkout. A disposable unpaid magazine fixture also confirmed the same modal and updated price while canceling before order creation. Creator/promo codes are separate namespaces with collision protection, one at a time; campaign code with referral keeps eligible creator attribution.
+Coupon entry is modal-only and reached after the shopper starts a paid purchase action. The amount shown in the review is exactly the amount confirmed in the next Razorpay order, and only Continue launches checkout. Browser verification: creator percentage coupon ₹499→₹462.82; Paigaam site-wide offer ₹499→₹399.20 with tracked creator commission on amount paid; flat creator coupon ₹499→₹373.49; below-minimum coupon stays before gateway creation, gives actionable guidance and can be removed for normal full-price Razorpay checkout. A disposable unpaid magazine fixture also confirmed the same modal and updated price while canceling before order creation. Creator/promo codes are separate namespaces with collision protection, one at a time; campaign code with referral keeps eligible creator attribution. This update is LIVE after PR72/Railway 81645376-e3df-4069-96bc-6983a7740a70 SUCCESS.
 
 Final verification: full `npm test` exit 0, **95 creator-focused tests**, all14 magazine E2E groups. Real local browser run: **51 checks, 72 screenshots, zero findings**, including all checkout screen dimensions and the no-code-before-checkout assertion. Deterministic local Razorpay/SDK mocks were used, not external test-mode or live charge. npm audit --omit=dev reports zero vulnerabilities. No real customer/account/financial records were created by QA.
 
@@ -88,16 +88,21 @@ Owner explicitly requested creator DP, flat/more flexible discounts and then liv
 
 Startup creates a private consistent SQLite VACUUM INTO snapshot at DATA_DIR/backups/before-creator-partners-20261028.db before the first creator migration on a populated database. It is a one-time rollback safety snapshot, not a substitute for recurring backups, and is never exposed by HTTP. Later code rollback must preserve all new financial records; never blindly restore that older database over captured payments.
 
-Creator accounts/coupons core release is live (PR67, Railway SUCCESS 28 Oct 2026). Checkout review/site-wide promotion follow-up is the currently tested code change; as of this document update it must remain on a review branch until the owner-approved release merge/deployment is confirmed. The latest feature has only mocked gateway/SDK testing; do not claim external Razorpay capture/refund or bank transfer proof.
+Creator core (PR67), onboarding correction (PR68), admin login analytics (PR71), and checkout review/site-wide promotion update (PR72) have all been merged and deployed. Current production checkout deployment: Railway 81645376-e3df-4069-96bc-6983a7740a70, SUCCESS on 29 October 2026. See “Checkout release verification” for read-only smoke and test status. External Razorpay test-mode capture/refund and bank-transfer validation have not been performed; all automated gateway assertions are mocked.
 
-## Rollout / owner acceptance
+## Operational and rollback notes
 
-1. Review attribution/payment defaults above; approve the branch before merging. Back up /var/data/paigaam.db with a consistent SQLite backup before release. Keep one replica and persistent DATA_DIR=/var/data.
-2. Install locked dependencies, prepare normal build assets, run npm test plus local mobile/browser journey. Ensure no dependency or live template price changes entered the PR.
-3. Confirm Razorpay test-mode capture and processed refund delivery, webhook secret and event subscriptions. Check exact discounted amount matches checkout/order/accounting; no real funds needed for test mode.
-4. After authorized deployment, verify /healthz persistent storage, admin navigation and /creator/login. Admin creates an intentional first creator with agreed percentages, then logs in from a separate browser and shares a real published template. Do not pre-create marketing identities or default passwords in migrations.
-5. Validate click, coupon application/removal and test-mode capture/refund. Record a real completed transfer only after paying outside Paigaam; verify creator receipt record. Feature never claims bank verification.
-6. Monitor pending fulfillment/unmatched refunds. If rollback necessary, revert code only; keep additive partner tables/ledger and reconcile any captures/refunds received while old code is running before re-enabling. Do not delete creator or financial tables.
+- Production remains one replica backed by the persistent `/var/data` volume; keep this arrangement while SQLite is the source of truth.
+- A private, consistent one-time pre-creator-migration database snapshot exists at `/var/data/backups/before-creator-partners-20261028.db`. It is not a recurring backup. Do not restore this older snapshot over later creator orders, coupons, payouts, captures or refunds.
+- If deploying future code changes, run the current full regression and responsive browser suite and confirm all Razorpay webhook settings. External Razorpay test-mode capture/refund verification is a remaining operational validation, not something inferred from our local gateway mocks.
+- Only record a manual payout after an external transfer has actually been made. This feature does not initiate or bank-verify transfers.
+- If code rollback is needed, revert code only and keep all additive partner/promo tables and financial records. Reconcile captures/refunds and outstanding fulfillment before re-enabling payment processing.
+
+## Checkout release verification — 29 October 2026
+
+PR72 is deployed successfully. Read-only smoke verified /healthz persistent /var/data, /create/noor with no coupon field and checkout JS cache-busted, /creator/login private/no-store, and unauthenticated /admin/coupons redirected to admin sign-in. Browser visit verified the actual admin site-wide coupon list/Manage page, while the local browser suite exercised creation/application/checkout without mutating production.
+
+Full npm test exits 0; 95 creator-focused tests, all full repo suites, and 14 magazine E2E groups pass. The unmodified Playwright QA run completed 51 checks/72 screenshots/0 findings at mobile and desktop sizes. It verified creator and site-wide codes, correct price updates before RZP, normal verified mocked Razorpay payment, flat coupon, min-spend removal/retry, admin campaign redemption metrics, and magazine modal/cancel with zero gateway order. SDK/HTTPS were local fail-closed mocks; do not describe these as external Razorpay test-mode or real-payment verification. npm audit --omit=dev reports zero vulnerabilities.
 
 ## Creator sign-in and activity analytics — 29 October 2026
 
