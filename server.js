@@ -102,7 +102,11 @@ function serveStatic(req, res, urlPath) {
   if (fs.existsSync(file) && fs.statSync(file).isDirectory()) file = path.join(file, 'index.html');
   if (!fs.existsSync(file)) return false;
   if (!fs.realpathSync(file).startsWith(fs.realpathSync(PUBLIC_DIR) + path.sep)) return false;
-  return streamFile(req, res, file, MIME[path.extname(file)] || 'application/octet-stream');
+  // Keep the creator handoff page fresh in Instagram's in-app browser. Other
+  // public assets retain the normal one-hour cache policy.
+  const relative = path.relative(PUBLIC_DIR, file).split(path.sep).join('/');
+  const cache = relative === 'collab/index.html' ? 'no-store, no-cache, must-revalidate, max-age=0' : undefined;
+  return streamFile(req, res, file, MIME[path.extname(file)] || 'application/octet-stream', cache);
 }
 
 function saveTemplateThumbnail(templateId, value) {

@@ -96,7 +96,7 @@
       <p class="browser-gate__eyebrow">Instagram in-app browser</p>
       <h2 id="browser-gate-title">Open this guide in your browser</h2>
       <p class="browser-gate__copy" id="browser-gate-copy">The PDF works best in your device’s browser.</p>
-      <a id="browser-gate-open" class="button button-primary browser-gate__open" href="#" target="_blank" rel="noopener noreferrer">Open in browser</a>
+      <a id="browser-gate-open" class="button button-primary browser-gate__open" href="#" target="_self" rel="noopener noreferrer">Open in browser</a>
       <p class="browser-gate__manual" id="browser-gate-manual">If the button doesn’t switch browsers, tap <strong>⋯</strong> in Instagram and choose <strong>Open in external browser</strong>.</p>
     </div>
   </section>
@@ -155,6 +155,15 @@
         open.href=page+'?browser=external';
         copy.textContent='Continue outside Instagram for the most reliable PDF experience.';
       }
+      // Navigate the current webview directly from the user's tap. Some
+      // in-app browsers handle target=_blank as another in-app tab and never
+      // dispatch the platform URL scheme to Safari/Chrome.
+      open.target='_self';
+      open.addEventListener('click',event=>{
+        if(!ios&&!android) return;
+        event.preventDefault();
+        window.location.assign(open.href);
+      });
       gate.hidden=false;
       document.body.style.overflow='hidden';
     })();
