@@ -252,7 +252,7 @@ https.get=()=>{throw new Error('External HTTPS GET forbidden in QA');};
     assert.equal((await adminCtx.request.get(base + '/creator')).url(), base + '/creator/login');
     check('buyer/admin/creator authorization remains isolated across contexts');
     await buyer.locator('a[href="/create/noor"]').first().click(); await buyer.waitForURL(base + '/create/noor');
-    assert.equal(await buyer.locator('.pc-checkout-dialog').count(),0,'coupon input is absent while browsing/creating');
+    assert.equal(await buyer.locator('.pc-checkout-dialog').count(),0,'coupon modal is absent while browsing/creating');assert.equal(await buyer.locator('#pc-inline-checkout').count(),0,'inline coupon is absent while browsing/creating');
     const couponCsrf=(await (await buyerCtx.request.get(base+'/api/creator-coupon')).json()).csrf;
     negative = await buyerCtx.request.post(base + '/api/creator-coupon', { data: { code: 'BROWSER725', csrf: 'tampered' } }); assert.equal(negative.status(), 403);
     check('coupon input is deferred until checkout; coupon API rejects tampered CSRF');
@@ -272,7 +272,7 @@ https.get=()=>{throw new Error('External HTTPS GET forbidden in QA');};
       await buyer.locator('#btnNext').click();
     }
     await buyer.waitForURL(/\/preview\/[^/]+$/, { timeout: 30000 }); const draftId = new URL(buyer.url()).pathname.split('/').pop();
-    assert.ok(await buyer.locator('#payPublish').isVisible()); assert.equal(await buyer.locator('.pc-checkout-dialog').count(),0); check('standard noor draft created through actual builder navigation; coupon remains hidden before checkout', { draftId, steps });
+    assert.ok(await buyer.locator('#payPublish').isVisible()); assert.equal(await buyer.locator('.pc-checkout-dialog').count(),0); assert.equal(await buyer.locator('#pc-inline-checkout').count(),1); check('standard noor draft created through actual builder navigation; inline coupon is shown only on final preview', { draftId, steps });
 
     let capturedOrder, payment;
     await buyer.exposeFunction('qaCapture', async orderId => {
@@ -281,20 +281,18 @@ https.get=()=>{throw new Error('External HTTPS GET forbidden in QA');};
       fs.writeFileSync(fixtures, JSON.stringify({ payments: { [payment.id]: payment } }));
       return { razorpay_order_id: orderId, razorpay_payment_id: payment.id, razorpay_signature: crypto.createHmac('sha256', key).update(orderId + '|' + payment.id).digest('hex') };
     });
-    await buyer.locator('#payPublish').click();
-    const checkoutDialog=buyer.locator('.pc-checkout-dialog');await checkoutDialog.waitFor({state:'visible'});
+    const checkoutReview=buyer.locator('.pc-inline-checkout');await checkoutReview.waitFor({state:'visible'});
     await snapshot(buyer,'buyer-checkout-price-before-code');
-    await checkoutDialog.locator('details summary').click();
-    await checkoutDialog.locator('#pc-checkout-input').fill('INVALID-QA');await checkoutDialog.locator('#pc-checkout-apply').click();
-    await buyer.waitForFunction(()=>document.querySelector('.pc-checkout-dialog #pc-checkout-status').textContent.includes('invalid'));
-    assert.equal(await checkoutDialog.locator('#pc-checkout-continue').isDisabled(),true);
-    await checkoutDialog.locator('#pc-checkout-input').fill('browser725');await checkoutDialog.locator('#pc-checkout-apply').click();
-    await buyer.waitForFunction(()=>document.querySelector('.pc-checkout-dialog #pc-checkout-total')?.textContent.includes('₹462.82'));
-    assert.match(await checkoutDialog.locator('#pc-checkout-continue').innerText(),/₹462.82/);
+    await checkoutReview.locator('#pc-inline-input').fill('INVALID-QA');await checkoutReview.locator('#pc-inline-apply').click();
+    await buyer.waitForFunction(()=>document.querySelector('#pc-inline-status').textContent.includes('invalid'));
+    assert.equal(await buyer.locator('#payPublish').isDisabled(),true);
+    await checkoutReview.locator('#pc-inline-input').fill('browser725');await checkoutReview.locator('#pc-inline-apply').click();
+    await buyer.waitForFunction(()=>document.querySelector('.pc-inline-checkout #pc-checkout-total')?.textContent.includes('₹462.82'));
+    assert.match(await buyer.locator('#payPublish').innerText(),/₹462.82/);
     await snapshot(buyer,'buyer-checkout-price-after-code');
     let orderResponse=buyer.waitForResponse(r=>r.url()===base+'/api/razorpay/order'&&r.request().method()==='POST');
     const verifyResponse = buyer.waitForResponse(r => r.url() === base + '/api/razorpay/verify' && r.request().method() === 'POST');
-    await checkoutDialog.locator('#pc-checkout-continue').click();
+    await buyer.locator('#payPublish').click();
     const orderRes = await orderResponse; assert.equal(orderRes.status(), 200); const checkout = await orderRes.json();
     const verifyRes = await verifyResponse; assert.equal(verifyRes.status(), 200); const settled = await verifyRes.json();
     await buyer.locator('#paidDone').waitFor({ state: 'visible' }); assert.ok(settled.url.startsWith(base + '/p/'));
@@ -336,12 +334,12 @@ https.get=()=>{throw new Error('External HTTPS GET forbidden in QA');};
     await navigate(promoBuyer,base+'/r/qa-shares?to=%2Ftemplates%2Fnoor');
     const promoDraftResponse=await promoCtx.request.post(base+'/api/drafts',{data:{template:'noor',customer_data:{brideName:'Promo Meher',groomName:'Promo Raghav',eventDate:'2026-12-12'}}});assert.equal(promoDraftResponse.status(),200);const promoDraft=await promoDraftResponse.json();await navigate(promoBuyer,'/preview/'+promoDraft.id);
     let promoOrder,promoPayment;await promoBuyer.exposeFunction('qaCapture',async orderId=>{const order=fs.readFileSync(calls,'utf8').trim().split('\n').map(JSON.parse).filter(r=>r.path==='/v1/orders').at(-1).body;promoOrder={orderId,...order};promoPayment={id:'pay_browser_paigaam_coupon',order_id:orderId,status:'captured',amount:order.amount,currency:order.currency};const fixture=JSON.parse(fs.readFileSync(fixtures,'utf8'));fixture.payments[promoPayment.id]=promoPayment;fs.writeFileSync(fixtures,JSON.stringify(fixture));return{razorpay_order_id:orderId,razorpay_payment_id:promoPayment.id,razorpay_signature:crypto.createHmac('sha256',key).update(orderId+'|'+promoPayment.id).digest('hex')};});
-    await promoBuyer.locator('#payPublish').click();const promoDialog=promoBuyer.locator('.pc-checkout-dialog');await promoDialog.waitFor({state:'visible'});await promoDialog.locator('details summary').click();await promoDialog.locator('#pc-checkout-input').fill('paigaam20');await promoDialog.locator('#pc-checkout-apply').click();await promoBuyer.waitForFunction(()=>document.querySelector('.pc-checkout-dialog #pc-checkout-status').textContent.includes('Paigaam offer applied'));
-    assert.match(await promoDialog.locator('#pc-checkout-price').innerText(),/Subtotal\s+₹499\.00/);assert.match(await promoDialog.locator('#pc-checkout-price').innerText(),/Discount\s+−₹99\.80/);assert.match(await promoDialog.locator('#pc-checkout-price').innerText(),/Total to pay\s+₹399\.20/);
-    const promoOrderResponse=promoBuyer.waitForResponse(r=>r.url()===base+'/api/razorpay/order'&&r.request().method()==='POST'),promoVerifyResponse=promoBuyer.waitForResponse(r=>r.url()===base+'/api/razorpay/verify'&&r.request().method()==='POST');await promoDialog.locator('#pc-checkout-continue').click();assert.equal((await promoOrderResponse).status(),200);assert.equal((await promoVerifyResponse).status(),200);await promoBuyer.locator('#paidDone').waitFor({state:'visible'});assert.equal(promoOrder.amount,39920);
+    const promoReview=promoBuyer.locator('.pc-inline-checkout');await promoReview.waitFor({state:'visible'});await promoReview.locator('#pc-inline-input').fill('paigaam20');await promoReview.locator('#pc-inline-apply').click();await promoBuyer.waitForFunction(()=>document.querySelector('.pc-inline-checkout #pc-inline-status').textContent.includes('Paigaam offer applied'));
+    assert.match(await promoReview.locator('#pc-inline-price').innerText(),/Subtotal\s+₹499\.00/);assert.match(await promoReview.locator('#pc-inline-price').innerText(),/Discount\s+−₹99\.80/);assert.match(await promoReview.locator('#pc-inline-price').innerText(),/Total to pay\s+₹399\.20/);
+    const promoOrderResponse=promoBuyer.waitForResponse(r=>r.url()===base+'/api/razorpay/order'&&r.request().method()==='POST'),promoVerifyResponse=promoBuyer.waitForResponse(r=>r.url()===base+'/api/razorpay/verify'&&r.request().method()==='POST');await promoBuyer.locator('#payPublish').click();assert.equal((await promoOrderResponse).status(),200);assert.equal((await promoVerifyResponse).status(),200);await promoBuyer.locator('#paidDone').waitFor({state:'visible'});assert.equal(promoOrder.amount,39920);
     earned+=round(promoOrder.amount,1250);assert.equal(earned,10775);await navigate(creator,'/creator');assert.equal(await metric(creator,'Commission earned'),money(earned));assert.equal(await metric(creator,'Outstanding balance'),money(earned-payoutPaise-reversed));assert.match(await creator.locator('tr').filter({hasText:promoOrder.orderId}).innerText(),/PAIGAAM20/);check('site-wide promo applies actual ₹399.20 checkout and referred creator still earns ₹49.90',{order:promoOrder.orderId,commissionPaise:round(promoOrder.amount,1250)});
     await navigate(admin,'/admin/coupons');assert.match(await admin.locator('body').innerText(),/PAIGAAM20/);assert.match(await admin.locator('body').innerText(),/1 paid orders/);check('admin site-wide coupon analytics report the redeemed paid order');
-    // Fixture-only unpaid magazine exercises the shared checkout modal without a Canva export or live payment.
+    // Fixture-only unpaid magazine retains the shared coupon review modal without a Canva export or live payment.
     const {DatabaseSync}=require('node:sqlite'),magDb=new DatabaseSync(path.join(dir,'paigaam.db'));
     const magazine=require('../lib/magazines/registry').bySlug('birthday-collage'),magId=crypto.randomBytes(16).toString('hex'),magOwner=crypto.randomBytes(32).toString('hex'),magOwnerHash=crypto.createHash('sha256').update(magOwner).digest('hex');
     magDb.prepare("UPDATE magazine_templates SET status='published',price=499,currency='INR',published_at=? WHERE slug=?").run(Date.now(),'birthday-collage');
@@ -394,28 +392,25 @@ https.get=()=>{throw new Error('External HTTPS GET forbidden in QA');};
     const flatCreatorCtx = await context('flat-creator'), flatCreator = await flatCreatorCtx.newPage();
     await creatorLogin(flatCreator, 'qa-flat'); // Coupon-disabled partner can still sign in.
     await navigate(flatBuyer, '/create/noor');
-    assert.equal(await flatBuyer.locator('.pc-checkout-dialog').count(),0,'coupon option is hidden before a pay action');
-    // HTTP creates a local disposable draft. The coupon prompt appears only when its actual checkout button is clicked.
+    assert.equal(await flatBuyer.locator('.pc-checkout-dialog').count(),0,'no checkout modal while browsing');assert.equal(await flatBuyer.locator('#pc-inline-checkout').count(),0,'coupon is not shown while browsing');
+    // HTTP creates a local disposable draft. The coupon panel appears on the final preview, not during browsing or editing.
     const flatDraftResponse = await flatBuyerCtx.request.post(base + '/api/drafts', { data: { template: 'noor', customer_data: { brideName: 'Flat Meher', groomName: 'Flat Raghav', eventDate: '2026-12-12' } } });
     assert.equal(flatDraftResponse.status(), 200); const flatDraft = await flatDraftResponse.json(); assert.notEqual(flatDraft.id, draftId);
     await navigate(flatBuyer, '/preview/' + flatDraft.id);
-    await flatBuyer.locator('#payPublish').click();
-    let flatDialog=flatBuyer.locator('.pc-checkout-dialog');await flatDialog.waitFor({state:'visible'});
-    await flatDialog.locator('details summary').click();await flatDialog.locator('#pc-checkout-input').fill('FLAT12551');await flatDialog.locator('#pc-checkout-apply').click();
-    await flatBuyer.waitForFunction(()=>/invalid, disabled or expired/.test(document.querySelector('.pc-checkout-dialog #pc-checkout-status').textContent));
-    await flatDialog.locator('#pc-checkout-cancel').click();
+    let flatReview=flatBuyer.locator('.pc-inline-checkout');await flatReview.waitFor({state:'visible'});
+    await flatReview.locator('#pc-inline-input').fill('FLAT12551');await flatReview.locator('#pc-inline-apply').click();
+    await flatBuyer.waitForFunction(()=>/invalid, disabled or expired/.test(document.querySelector('#pc-inline-status').textContent));
     await saveFlatSettings(true);
     await snapshot(admin, 'admin-flat-coupon-controls');
-    check('site coupon option is hidden before checkout; disabled creator coupon rejected at checkout without disabling partner access');
-    await flatBuyer.locator('#payPublish').click();flatDialog=flatBuyer.locator('.pc-checkout-dialog');await flatDialog.waitFor({state:'visible'});
-    await flatDialog.locator('details summary').click();await flatDialog.locator('#pc-checkout-input').fill('flat12551');
+    check('coupon remains absent during browsing; disabled creator coupon is rejected on final preview without disabling partner access');
+    await flatReview.locator('#pc-inline-input').fill('flat12551');
     const applied = flatBuyer.waitForResponse(r => r.url() === base + '/api/creator-coupon' && r.request().method() === 'POST');
-    await flatDialog.locator('#pc-checkout-apply').click(); assert.equal((await applied).status(), 200);
-    await flatBuyer.waitForFunction(() => document.querySelector('.pc-checkout-dialog #pc-checkout-status').textContent.includes('Creator code applied'));
+    await flatReview.locator('#pc-inline-apply').click(); assert.equal((await applied).status(), 200);
+    await flatBuyer.waitForFunction(() => document.querySelector('#pc-inline-status').textContent.includes('Creator code applied'));
     async function assertFlatCheckout() {
-      const total = await flatDialog.locator('#pc-checkout-price').innerText();
+      const total = await flatReview.locator('#pc-inline-price').innerText();
       assert.match(total, /Subtotal\s+₹499\.00/);assert.match(total,/Discount\s+−₹125\.51/);assert.match(total,/Total to pay\s+₹373\.49/);
-      assert.match(await flatDialog.locator('#pc-checkout-continue').innerText(),/₹373\.49/);
+      assert.match(await flatBuyer.locator('#payPublish').innerText(),/₹373\.49/);
       const state = await (await flatBuyerCtx.request.get(base + '/api/creator-coupon')).json();
       assert.equal(state.discount_type, 'flat'); assert.equal(state.discount_bps, 0); assert.equal(state.discount_flat_paise, 12551);
       assert.equal(state.discount_min_paise, 4900); assert.equal(state.discount_max_paise, 2502);
@@ -436,7 +431,7 @@ https.get=()=>{throw new Error('External HTTPS GET forbidden in QA');};
     assert.equal(await flatBuyer.evaluate(() => typeof window.PaigaamPay?.open), 'function');
     const flatOrderResponse = flatBuyer.waitForResponse(r => r.url() === base + '/api/razorpay/order' && r.request().method() === 'POST');
     const flatVerifyResponse = flatBuyer.waitForResponse(r => r.url() === base + '/api/razorpay/verify' && r.request().method() === 'POST');
-    await flatDialog.locator('#pc-checkout-continue').click();
+    await flatBuyer.locator('#payPublish').click();
     const flatOrderRes = await flatOrderResponse; assert.equal(flatOrderRes.status(), 200); const flatCheckout = await flatOrderRes.json();
     const flatVerifyRes = await flatVerifyResponse; assert.equal(flatVerifyRes.status(), 200); const flatSettled = await flatVerifyRes.json();
     await flatBuyer.locator('#paidDone').waitFor({ state: 'visible' });
@@ -461,18 +456,14 @@ https.get=()=>{throw new Error('External HTTPS GET forbidden in QA');};
     await flatSettings.locator('[name=discount_min]').fill('9999');
     await Promise.all([admin.waitForURL(flatDetail + '?saved=1'), flatSettings.getByRole('button', { name: 'Save partner settings' }).click()]);
     const errorCtx = await context('coupon-errors'), errorBuyer = await errorCtx.newPage();
-    async function applyErrorCoupon(page) {
-      const dialog=page.locator('.pc-checkout-dialog');
-      await dialog.waitFor({state:'visible'});
-      if(!(await dialog.locator('details').evaluate(el=>el.open)))await dialog.locator('details summary').click();
-      await dialog.locator('#pc-checkout-input').fill('FLAT12551');await dialog.locator('#pc-checkout-apply').click();
-      await page.waitForFunction(()=>document.querySelector('.pc-checkout-dialog #pc-checkout-status').textContent.includes('minimum spend'));
-      return dialog;
+    async function applyErrorCoupon(page, inline) {
+      if(inline){const review=page.locator('.pc-inline-checkout');await review.waitFor({state:'visible'});await review.locator('#pc-inline-input').fill('FLAT12551');await review.locator('#pc-inline-apply').click();await page.waitForFunction(()=>document.querySelector('#pc-inline-status').textContent.includes('minimum spend'));return review;}
+      const dialog=page.locator('.pc-checkout-dialog');await dialog.waitFor({state:'visible'});if(!(await dialog.locator('details').evaluate(el=>el.open)))await dialog.locator('details summary').click();await dialog.locator('#pc-checkout-input').fill('FLAT12551');await dialog.locator('#pc-checkout-apply').click();await page.waitForFunction(()=>document.querySelector('.pc-checkout-dialog #pc-checkout-status').textContent.includes('minimum spend'));return dialog;
     }
-    async function removeErrorCoupon(dialog) {
-      await dialog.locator('#pc-checkout-remove').click();
-      await dialog.locator('#pc-checkout-remove').waitFor({state:'hidden'});
-      await dialog.locator('#pc-checkout-continue').waitFor({state:'visible'});
+    async function removeErrorCoupon(review, inline) {
+      await review.locator('#'+(inline?'pc-inline-remove':'pc-checkout-remove')).click();
+      await review.locator('#'+(inline?'pc-inline-remove':'pc-checkout-remove')).waitFor({state:'hidden'});
+      await (inline?review.page().locator('#payPublish'):review.locator('#pc-checkout-continue')).waitFor({state:'visible'});
     }
     let errorPaymentSequence = 0;
     await errorBuyer.exposeFunction('qaCapture', async orderId => {
@@ -484,18 +475,18 @@ https.get=()=>{throw new Error('External HTTPS GET forbidden in QA');};
     });
     const errorDraftRes = await errorCtx.request.post(base + '/api/drafts', { data: { template: 'noor', customer_data: { brideName: 'Retry Meher', groomName: 'Retry Raghav', eventDate: '2026-12-12' } } });
     assert.equal(errorDraftRes.status(), 200); const errorDraft = await errorDraftRes.json();
-    await navigate(errorBuyer, '/preview/' + errorDraft.id);await errorBuyer.locator('#payPublish').click();
-    const genericDialog=await applyErrorCoupon(errorBuyer);
-    assert.equal(await genericDialog.locator('#pc-checkout-continue').isDisabled(),true);
-    assert.match(await genericDialog.locator('#pc-checkout-price').innerText(),/Total to pay\s+₹499\.00/);
+    await navigate(errorBuyer, '/preview/' + errorDraft.id);
+    const genericReview=await applyErrorCoupon(errorBuyer,true);
+    assert.equal(await errorBuyer.locator('#payPublish').isDisabled(),true);
+    assert.match(await genericReview.locator('#pc-inline-price').innerText(),/Total to pay\s+₹499\.00/);
     await snapshot(errorBuyer,'buyer-checkout-minimum-decline');
-    await removeErrorCoupon(genericDialog);
-    await errorBuyer.waitForFunction(()=>document.querySelector('.pc-checkout-dialog #pc-checkout-status').textContent.includes('Coupon removed'));
-    assert.match(await genericDialog.locator('#pc-checkout-status').innerText(),/Coupon removed/);
-    assert.match(await genericDialog.locator('#pc-checkout-continue').innerText(),/₹499\.00/);
+    await removeErrorCoupon(genericReview,true);
+    await errorBuyer.waitForFunction(()=>document.querySelector('#pc-inline-status').textContent.includes('Coupon removed'));
+    assert.match(await genericReview.locator('#pc-inline-status').innerText(),/Coupon removed/);
+    assert.match(await errorBuyer.locator('#payPublish').innerText(),/₹499\.00/);
     const genericOrder=errorBuyer.waitForResponse(r=>r.url()===base+'/api/razorpay/order'&&r.request().method()==='POST');
     const genericVerify=errorBuyer.waitForResponse(r=>r.url()===base+'/api/razorpay/verify'&&r.request().method()==='POST');
-    await genericDialog.locator('#pc-checkout-continue').click();assert.equal((await genericOrder).status(),200);assert.equal((await genericVerify).status(),200);
+    await errorBuyer.locator('#payPublish').click();assert.equal((await genericOrder).status(),200);assert.equal((await genericVerify).status(),200);
     await errorBuyer.locator('#paidDone').waitFor({ state: 'visible' });
     check('below-minimum creator coupon is declined before gateway order, shows guidance, and removing restores full-price Razorpay checkout');
     // Price a real bfday-family template through the existing admin form.
@@ -509,9 +500,9 @@ https.get=()=>{throw new Error('External HTTPS GET forbidden in QA');};
     for (let i = 0; i < bfStepCount - 1; i++) await errorBuyer.locator('#next').click();
     const bfPublish = errorBuyer.waitForResponse(r => r.url() === base + '/api/unrejectable/publish' && r.request().method() === 'POST');
     await errorBuyer.locator('#publish').click();assert.equal((await bfPublish).status(),200);
-    const bfDialog=await applyErrorCoupon(errorBuyer);await snapshot(errorBuyer,'buyer-bfday-minimum-spend');
+    const bfDialog=await applyErrorCoupon(errorBuyer,false);await snapshot(errorBuyer,'buyer-bfday-minimum-spend');
     assert.equal(await bfDialog.locator('#pc-checkout-continue').isDisabled(),true);
-    await removeErrorCoupon(bfDialog);
+    await removeErrorCoupon(bfDialog,false);
     const bfVerify=errorBuyer.waitForResponse(r=>r.url()===base+'/api/razorpay/verify'&&r.request().method()==='POST');
     await bfDialog.locator('#pc-checkout-continue').click();assert.equal((await bfVerify).status(),200);
     await errorBuyer.locator('#publishedResult').waitFor({ state: 'visible' });

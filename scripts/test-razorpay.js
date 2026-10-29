@@ -109,7 +109,9 @@ https.request = (options, callback) => {
     r = await fetch(base + '/preview/' + paidId);
     assert.equal(r.status, 200);
     const previewHtml = await r.text();
-    assert.match(previewHtml, /Pay &amp; publish/, 'razorpay CTA on paid preview');
+    assert.match(previewHtml, /id="pc-inline-checkout"/, 'coupon entry is inline on the final paid preview');
+    assert.match(previewHtml, /id="payPublish"/, 'razorpay CTA on paid preview');
+    assert.match(previewHtml, /inlineCoupon: true/, 'preview payment confirms its inline price before opening Razorpay');
     assert.doesNotMatch(previewHtml, /go\/whatsapp/, 'no WhatsApp handoff on paid preview');
     assert.match(previewHtml, /\/recover\/[a-f0-9]{32}/, 'recovery link nudged on preview');
 

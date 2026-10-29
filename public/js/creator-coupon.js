@@ -42,5 +42,27 @@
       api('/api/creator-coupon','GET').then(function(r){state.csrf=r.csrf;state.code=r.code||'';state.offer=r;state.notice=r.notice||'';input.value=state.code;if(state.code)codePanel.open=true;remove.hidden=!state.code;if(!r.valid){state.blocked=true;status.textContent='That saved coupon has expired or is disabled. Remove it or choose another before paying.';go.disabled=true;return quote('').then(function(q){priceBox.innerHTML=priceMarkup(q);});}return quote(state.code).then(setQuote).catch(function(e){handleCouponError(e);});}).catch(function(e){status.textContent=window.PaigaamCouponError(e)||'Price check unavailable. Close and try again.';go.disabled=true;});
     });
   }
-  window.PaigaamCouponFlow={open:open};
+  var inlineState=null;
+  function mountInline(ctx){
+    ctx=ctx||{};
+    var panel=document.getElementById('pc-inline-checkout'),button=document.getElementById('payPublish');
+    if(!panel||!button)return null;
+    var input=panel.querySelector('#pc-inline-input'),apply=panel.querySelector('#pc-inline-apply'),remove=panel.querySelector('#pc-inline-remove'),status=panel.querySelector('#pc-inline-status'),priceBox=panel.querySelector('#pc-inline-price');
+    var productId=ctx.product_id||button.getAttribute('data-paigaam-id')||(window.PaigaamPay&&window.PaigaamPay.paigaamId&&window.PaigaamPay.paigaamId())||'';
+    var state={code:'',quote:null,csrf:'',blocked:true,loading:true};
+    function setQuote(q){if(q.alreadyPaid){state.quote=q;return;}state.quote=q;state.blocked=false;state.loading=false;priceBox.innerHTML=priceMarkup(q);button.disabled=false;button.textContent='Pay '+money(q.amount_paise,q.currency)+' with Razorpay & publish';if(q.coupon_code){status.textContent=(q.coupon_label||'Coupon')+' applied.';remove.hidden=false;}else if(!state.code){status.textContent='No coupon applied. You can continue securely to Razorpay.';remove.hidden=true;}}
+    function quote(code,ignoreSaved){return api('/api/creator-coupon/quote','POST',{csrf:state.csrf,product_id:productId,product_type:'paigaam',code:code||'',ignore_saved_coupon:ignoreSaved===true});}
+    function clearCoupon(message){return api('/api/creator-coupon','POST',{csrf:state.csrf,code:''}).then(function(){state.code='';input.value='';remove.hidden=true;return quote('').then(function(q){setQuote(q);status.textContent=message||'Coupon removed. You can continue at the amount shown.';});});}
+    function applyCoupon(){var code=input.value.trim().toUpperCase();if(!code){status.textContent='Enter a coupon code, or continue without one.';return;}apply.disabled=true;button.disabled=true;state.blocked=true;state.loading=true;status.textContent='Checking coupon…';api('/api/creator-coupon','POST',{csrf:state.csrf,code:code}).then(function(r){state.code=r.code;input.value=r.code;return quote(r.code);}).then(setQuote).catch(function(e){state.blocked=true;state.loading=false;remove.hidden=false;status.textContent=window.PaigaamCouponError(e)||'That coupon could not be applied. Remove it or try another code.';if(e.code==='coupon_minimum')quote('',true).then(function(q){priceBox.innerHTML=priceMarkup(q);state.quote=q;}).catch(function(){});}).finally(function(){apply.disabled=false;button.disabled=state.blocked||!state.quote;});}
+    apply.addEventListener('click',applyCoupon);input.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();applyCoupon();}});
+    remove.addEventListener('click',function(){remove.disabled=true;apply.disabled=true;button.disabled=true;status.textContent='Removing coupon…';clearCoupon().catch(function(e){status.textContent=window.PaigaamCouponError(e)||'Could not remove that coupon. Please try again.';}).finally(function(){remove.disabled=false;apply.disabled=false;button.disabled=state.blocked||!state.quote;});});
+    function restoreButton(){button.disabled=state.blocked||!state.quote;button.textContent=state.quote?'Pay '+money(state.quote.amount_paise,state.quote.currency)+' with Razorpay & publish':'Continue to checkout';}
+    api('/api/creator-coupon','GET').then(function(r){state.csrf=r.csrf;state.code=r.code||'';input.value=state.code;remove.hidden=!state.code;if(!r.valid&&state.code){state.blocked=true;status.textContent='That saved coupon has expired or is disabled. Remove it to continue.';return quote('',true).then(function(q){state.quote=q;state.loading=false;priceBox.innerHTML=priceMarkup(q);button.disabled=true;});}return quote(state.code).then(setQuote).catch(function(e){state.blocked=true;state.loading=false;button.disabled=true;status.textContent=window.PaigaamCouponError(e)||'We could not confirm your price. Please refresh and try again.';});}).catch(function(e){state.blocked=true;state.loading=false;button.disabled=true;status.textContent=window.PaigaamCouponError(e)||'We could not confirm your price. Please refresh and try again.';});
+    inlineState={confirm:function(){if(state.blocked||state.loading||!state.quote)return Promise.reject({code:'price_unavailable'});return Promise.resolve({continue:true,quote:state.quote,product_id:productId,product_type:'paigaam',code:state.code});},restoreButton:restoreButton};
+    return inlineState;
+  }
+  function confirmInline(){if(!inlineState)return Promise.reject({code:'price_unavailable'});return inlineState.confirm();}
+  function restoreInlineButton(){if(inlineState)inlineState.restoreButton();}
+  if(typeof document!=='undefined'&&document.getElementById){if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){mountInline({});},{once:true});else mountInline({});}
+  window.PaigaamCouponFlow={open:open,confirmInline:confirmInline,restoreInlineButton:restoreInlineButton};
 })();

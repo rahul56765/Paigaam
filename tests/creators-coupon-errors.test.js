@@ -41,5 +41,5 @@ test('PaigaamPay.errorMessage safely delegates when helper is present or absent'
   assert.equal(context.window.PaigaamPay.errorMessage({ code: 'network' }), '');
 });
 test('shared purchase head and standalone Ganapati head load the coupon helper', () => {
-  for (const filename of ['lib/layout.js', 'pages/ganapatiCreate.js']) assert.match(fs.readFileSync(path.join(root, filename), 'utf8'), /<script src="\/js\/creator-coupon\.js\?v=4" defer><\/script>/);
+  for (const filename of ['lib/layout.js', 'pages/ganapatiCreate.js']) assert.match(fs.readFileSync(path.join(root, filename), 'utf8'), /<script src="\/js\/creator-coupon\.js\?v=5" defer><\/script>/);
 });
