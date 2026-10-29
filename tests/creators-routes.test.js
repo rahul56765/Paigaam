@@ -86,6 +86,22 @@ test('login is CSRF protected and carries privacy/security headers', async () =>
   assert.equal((await post('/creator/login', { username: c.username, password, csrf: csrf(html) }, cookie, { 'sec-fetch-site': 'cross-site' })).status, 403);
 });
 
+test('successful partner login records coarse device analytics visible only to admin', async () => {
+  const c = creator();
+  const loginPage = await get('/creator/login');
+  const loginCookie = cookieValue(loginPage, 'pg_partner_login_csrf');
+  const token = csrf(await loginPage.text());
+  const ua = 'Mozilla/5.0 (Linux; Android 15; Pixel 9) Chrome/131.0.0.0 Mobile TEST-UA-RAW-NEVER-STORE';
+  const result = await post('/creator/login', { username:c.username,password,csrf:token }, loginCookie, { 'user-agent':ua });
+  assert.equal(result.status,303);
+  const adminPage = await get('/admin/creators',`paigaam_session=${adminToken}`);
+  const html = await adminPage.text();
+  assert.equal(adminPage.status,200);
+  assert.match(html,/Last login/); assert.match(html,/Android/); assert.match(html,/Chrome/); assert.match(html,/Phone/); assert.match(html,/>Logins</);
+  assert.doesNotMatch(html,/TEST-UA-RAW-NEVER-STORE/);
+  assert.equal(store.creatorAnalytics(c.id).login_count,1);
+});
+
 test('login creates a separate HttpOnly session, rotates session and logout requires CSRF', async () => {
   const c = creator(); const { cookie, response } = await login(c);
   assert.ok(store.getSession(cookie.split('=')[1]));

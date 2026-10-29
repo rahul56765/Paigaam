@@ -60,6 +60,14 @@ Browser findings fixed: same-origin Referrer-Policy preserves real browser form 
 
 Dependency remediation (owner-authorized release follow-up): patched sharp 0.35.4 → 0.35.5 and updated the lockfile; npm audit now reports zero vulnerabilities, including after production-only audit. Shared image/media regressions pass. Static review screenshots are not proof of an authenticated production walkthrough or a real gateway/bank capture/payout.
 
+## Creator admin sign-in analytics — 29 October 2026
+
+Admin creator list and creator detail now show successful login count, most recent successful sign-in, coarse device/browser/OS categories, most recent authenticated portal activity, and the number of unexpired creator sessions. Device categories are allowlisted phone/tablet/desktop/unknown; browser and OS values are coarse named families, never exact versions. Parser examines only an ephemeral first 512 characters of the request User-Agent to classify; it does not retain the raw header, IP, fingerprint, or location. Failed login attempts do not update creator activity. Authenticated creator page requests update `last_activity_at` at most once a minute; successful login updates all sign-in fields transactionally with an audit entry containing only timestamp and categories. Pre-feature logins are intentionally not backfilled; admin sees Not recorded until first new sign-in. Existing active sessions may appear in the unexpired session count without a historical login row. Creator portal safe objects do not expose those admin-only columns. Privacy policy describes this collection and audience.
+
+## Creator analytics follow-up — 29 October 2026
+
+Admin gets last successful login time/count, current active session count, throttled last portal activity, and broad device/browser/OS classification. No raw UA/IP/fingerprinting; Privacy Policy updated. Additive SQLite migration supplies existing creators with blank/0 history until their next successful login. Creator safe API objects exclude analytics metadata; only admin views get these fields.
+
 ## Release acceptance update — 28 October 2026
 
 Owner explicitly requested creator DP, flat/more flexible discounts and then live deployment. All requested extensions are implemented. Full npm test passes with the patched dependency. Creator tests include new coupon constraints, photo/migration/security and consistent pre-migration backup checks. Final reusable local browser journey: 46 checks, 72 screenshots, zero findings; verifies DP upload/replace/remove and private decoded mobile image, richer coupon form roundtrips, flat discount tray plus actual post-flat charged amount/commission, and actionable below-minimum errors followed by coupon removal/retry for both generic Noor and bfday Lajja. Gateway remains deterministic mocked HTTPS/SDK, not an external live/test-mode capture. No production creator identity, payout or fake conversion is provisioned by deployment.
@@ -77,6 +85,12 @@ Deployment is authorized; PR67 is to be merged only at the tested expected head 
 5. Validate click, coupon application/removal and test-mode capture/refund. Record a real completed transfer only after paying outside Paigaam; verify creator receipt record. Feature never claims bank verification.
 6. Monitor pending fulfillment/unmatched refunds. If rollback necessary, revert code only; keep additive partner tables/ledger and reconcile any captures/refunds received while old code is running before re-enabling. Do not delete creator or financial tables.
 
+## Creator sign-in and activity analytics — 29 October 2026
+
+The admin Creator list and creator Manage page show last successful sign-in (IST), coarse device/browser/OS category, successful-login count, last authenticated portal activity and count of currently unexpired sessions. Failed authentication never increments activity. Existing sessions/users are not retroactively inferred: values remain “Not recorded” until a successful login after rollout. Activity is throttled to at most one database write per creator/minute during creator portal page visits. Sign-in audit events store the timestamp and category labels only.
+
+Privacy controls: device information is an allowlisted coarse classification (phone/tablet/desktop/unknown, broad browser family, broad OS family) derived transiently from the request User-Agent. The raw User-Agent string, IP address and location are never written to these creator analytics, sessions or audit events. Device classification may be approximate and a client can alter its own User-Agent; do not use it as identity proof or an access-control decision. Analytics are visible to admins only. `/privacy` was updated to explain collection and purpose.
+
 ## Onboarding correction — 28 October 2026
 
 Owner reported the separate post-creation DP upload was difficult to discover and requested password visibility while setting it. A prominent optional DP picker/preview now appears BEFORE username in the new account form. The existing CSRF-protected form opts into a minimal create-only JSON response only when a photo is selected; the browser then uses the existing protected binary photo route. No password fields are returned. Photo-upload failures land at the already-created Manage account with an explicit warning; lost create responses block automatic resubmission and instruct the admin to check existing partners. No-JS/no-photo forms still use native303. Admin password Show/Hide supports keyboard/ARIA and does not recover historical credentials. No financial schema/accounting/discount change.
@@ -84,6 +98,8 @@ Owner reported the separate post-creation DP upload was difficult to discover an
 Full npmtest passes with83creator checks. New isolated onboarding Chromium journey10checks passes:photo-in-create,preview,initial/reset visibility,blank reset/noecho,privateDP,invalid-photo/duplicate/uncertain-response recovery,noJS303. Existing46check creator-browser regression passes with0findings. All users/photos/passwords in tests are disposable local fixtures; no production account data changed during verification.
 
 ## Changelog
+
+- 2026-10-29: Added admin-only login/activity analytics (timestamp,count,last-active,unexpired session count,coarse device/browser/OS allowlists), minimized collected data to avoid retaining raw UA/IP, and disclosed the collection in the privacy policy. Existing accounts are not retroactively inferred.
 
 - 2026-10-28 onboarding correction: added inline signupDP with preview/one-create flow and guarded photo/uncertain-response recovery; added admin Show/Hide only for newly typed initial/reset passwords;83creator tests/full suite and both browser journeys pass.
 - 2026-10-28 authorized release extension: added private creator DP management, percentage/flat/minimum/cap/expiry/enable coupon controls, actionable buyer coupon failures, consistent private startup snapshot and Sharp0.35.5 security fix. Full-suite and expanded46check browser journey pass; owner explicitly authorized deployment.
