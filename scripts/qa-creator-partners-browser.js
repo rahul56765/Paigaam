@@ -460,10 +460,10 @@ https.get=()=>{throw new Error('External HTTPS GET forbidden in QA');};
       if(inline){const review=page.locator('.pc-inline-checkout');await review.waitFor({state:'visible'});await review.locator('#pc-inline-input').fill('FLAT12551');await review.locator('#pc-inline-apply').click();await page.waitForFunction(()=>document.querySelector('#pc-inline-status').textContent.includes('minimum spend'));return review;}
       const dialog=page.locator('.pc-checkout-dialog');await dialog.waitFor({state:'visible'});if(!(await dialog.locator('details').evaluate(el=>el.open)))await dialog.locator('details summary').click();await dialog.locator('#pc-checkout-input').fill('FLAT12551');await dialog.locator('#pc-checkout-apply').click();await page.waitForFunction(()=>document.querySelector('.pc-checkout-dialog #pc-checkout-status').textContent.includes('minimum spend'));return dialog;
     }
-    async function removeErrorCoupon(review, inline) {
+    async function removeErrorCoupon(review, inline, inlineButtonId) {
       await review.locator('#'+(inline?'pc-inline-remove':'pc-checkout-remove')).click();
       await review.locator('#'+(inline?'pc-inline-remove':'pc-checkout-remove')).waitFor({state:'hidden'});
-      await (inline?review.page().locator('#payPublish'):review.locator('#pc-checkout-continue')).waitFor({state:'visible'});
+      await (inline?review.page().locator('#'+(inlineButtonId||'payPublish')):review.locator('#pc-checkout-continue')).waitFor({state:'visible'});
     }
     let errorPaymentSequence = 0;
     await errorBuyer.exposeFunction('qaCapture', async orderId => {
@@ -498,15 +498,55 @@ https.get=()=>{throw new Error('External HTTPS GET forbidden in QA');};
     await errorBuyer.locator('[name=senderName]').fill('Browser retry');
     const bfStepCount = await errorBuyer.locator('#bfForm .step').count();
     for (let i = 0; i < bfStepCount - 1; i++) await errorBuyer.locator('#next').click();
+    const bfReview = errorBuyer.locator('.pc-inline-checkout'); await bfReview.waitFor({state:'visible'});
+    assert.equal(await errorBuyer.locator('.pc-checkout-dialog').count(),0,'send step keeps coupon controls inline');
+    await bfReview.locator('#pc-inline-input').fill('FLAT12551'); const bfCouponQuote=errorBuyer.waitForResponse(r=>r.url()===base+'/api/creator-coupon/quote'&&r.request().method()==='POST'); await bfReview.locator('#pc-inline-apply').click();
+    const bfQuoteResponse=await bfCouponQuote,bfQuoteBody=await bfQuoteResponse.json();assert.equal(bfQuoteResponse.status(),400);assert.equal(bfQuoteBody.error,'coupon_minimum');
+    await errorBuyer.waitForFunction(()=>{const text=document.querySelector('#pc-inline-status')?.textContent||'';return text&&text!=='Checking coupon…';});
+    assert.match(await errorBuyer.locator('#pc-inline-status').innerText(),/minimum spend/,'unexpected BFday coupon status');
+    assert.equal(await errorBuyer.locator('#publish').isDisabled(),true);
+    assert.match(await bfReview.locator('#pc-inline-price').innerText(),/Today’s price\s+₹499\.00/);
+    await snapshot(errorBuyer,'buyer-bfday-inline-minimum-spend');
+    await removeErrorCoupon(bfReview,true,'publish');
+    await errorBuyer.waitForFunction(()=>document.querySelector('#pc-inline-status').textContent.includes('Coupon removed'));
     const bfPublish = errorBuyer.waitForResponse(r => r.url() === base + '/api/unrejectable/publish' && r.request().method() === 'POST');
-    await errorBuyer.locator('#publish').click();assert.equal((await bfPublish).status(),200);
-    const bfDialog=await applyErrorCoupon(errorBuyer,false);await snapshot(errorBuyer,'buyer-bfday-minimum-spend');
-    assert.equal(await bfDialog.locator('#pc-checkout-continue').isDisabled(),true);
-    await removeErrorCoupon(bfDialog,false);
     const bfVerify=errorBuyer.waitForResponse(r=>r.url()===base+'/api/razorpay/verify'&&r.request().method()==='POST');
-    await bfDialog.locator('#pc-checkout-continue').click();assert.equal((await bfVerify).status(),200);
+    await errorBuyer.locator('#publish').click();assert.equal((await bfPublish).status(),200);assert.equal((await bfVerify).status(),200);
     await errorBuyer.locator('#publishedResult').waitFor({ state: 'visible' });
-    check('actual bfday Lajja below-minimum code is declined at checkout; remove and continue through normal Razorpay');
+    check('actual bfday send step keeps coupon entry and total inline; below-minimum code is declined, removal confirms the price before normal Razorpay');
+    // Anniversary Blue reproduces the reported screen: old /create/anniversary URL, ₹99 sale price, ₹199 regular price.
+    const PriceDatabaseSync=require('node:sqlite').DatabaseSync,priceDb=new PriceDatabaseSync(path.join(dir,'paigaam.db'));
+    const priceUpdate=priceDb.prepare("UPDATE templates SET price=99,list_price=199 WHERE slug='anniversary-blue'").run();priceDb.close();assert.equal(priceUpdate.changes,1,'Anniversary Blue fixture exists locally');
+    const anniversaryCtx=await context('anniversary-inline-coupon'),anniversaryBuyer=await anniversaryCtx.newPage(),couponApi=[];
+    anniversaryBuyer.on('request',r=>{if(r.url().includes('/api/creator-coupon'))couponApi.push(r.url());});
+    await navigate(anniversaryBuyer,'/create/anniversary');assert.equal(new URL(anniversaryBuyer.url()).pathname,'/create/anniversary-blue');
+    assert.equal(await anniversaryBuyer.locator('#pc-inline-checkout').count(),1);assert.equal(await anniversaryBuyer.locator('#pc-inline-checkout').isVisible(),false,'coupon card stays out of earlier steps');assert.equal(couponApi.length,0,'coupon API is untouched before the send step');
+    const anniversaryStepCount=await anniversaryBuyer.locator('#bfForm .step').count();
+    for(let i=0;i<anniversaryStepCount-1;i++){
+      const step=anniversaryBuyer.locator('#bfForm .step').nth(i);await step.waitFor({state:'visible'});
+      for(const field of await step.locator('input:not([type=file]),textarea,select').all()){
+        if(!(await field.isVisible()))continue;const tag=await field.evaluate(e=>e.tagName),type=await field.getAttribute('type'),id=await field.getAttribute('data-field');
+        if(tag==='SELECT'){const options=await field.locator('option').evaluateAll(els=>els.map(e=>e.value).filter(Boolean));if(options.length)await field.selectOption(options[0]);}
+        else if(type==='checkbox'||type==='radio')await field.check();else if(type==='date')await field.fill('2026-12-12');else if(type==='time')await field.fill('18:30');else if(type==='url'||['songUrl','spotifyUrl'].includes(id)){}else if(type!=='hidden'&&type!=='range'&&type!=='color')await field.fill(type==='number'?'7':'Anniversary browser QA');
+      }
+      await anniversaryBuyer.locator('#next').click();
+    }
+    const anniversaryReview=anniversaryBuyer.locator('.pc-inline-checkout');await anniversaryReview.waitFor({state:'visible'});
+    await anniversaryBuyer.waitForFunction(()=>document.querySelector('.pc-inline-checkout #pc-checkout-total')?.textContent.includes('₹99.00'));
+    const offerText=await anniversaryReview.locator('.pc-inline-offer').innerText();assert.match(offerText,/₹99/);assert.match(offerText,/₹199/);assert.match(offerText,/Save ₹100/);
+    assert.ok(couponApi.length>0,'coupon review starts only after arriving on send step');
+    const ordersBeforeAnniversary=fs.readFileSync(calls,'utf8').split('\n').filter(line=>line&&JSON.parse(line).path==='/v1/orders').length;
+    await anniversaryReview.locator('#pc-inline-input').fill('PAIGAAM20');await anniversaryReview.locator('#pc-inline-apply').click();
+    await anniversaryBuyer.waitForFunction(()=>document.querySelector('#pc-inline-status').textContent.includes('Paigaam offer applied'));
+    const anniversaryTotals=await anniversaryReview.locator('#pc-inline-price').innerText();assert.match(anniversaryTotals,/Today’s price\s+₹99\.00/);assert.match(anniversaryTotals,/Coupon savings\s+−₹19\.80/);assert.match(anniversaryTotals,/Total to pay\s+₹79\.20/);assert.match(await anniversaryBuyer.locator('#publish').innerText(),/₹79\.20/);
+    const ordersAfterAnniversaryCoupon=fs.readFileSync(calls,'utf8').split('\n').filter(line=>line&&JSON.parse(line).path==='/v1/orders').length;
+    assert.equal(ordersAfterAnniversaryCoupon,ordersBeforeAnniversary,'coupon apply itself does not create a payment order');
+    await snapshot(anniversaryBuyer,'anniversary-blue-inline-offer');
+    let anniversaryOrder,anniversaryPayment;
+    await anniversaryBuyer.exposeFunction('qaCapture',async orderId=>{const order=fs.readFileSync(calls,'utf8').trim().split('\n').map(JSON.parse).filter(r=>r.path==='/v1/orders').at(-1).body;anniversaryOrder={orderId,...order};anniversaryPayment={id:'pay_browser_anniversary_blue',order_id:orderId,status:'captured',amount:order.amount,currency:order.currency};const fixture=JSON.parse(fs.readFileSync(fixtures,'utf8'));fixture.payments[anniversaryPayment.id]=anniversaryPayment;fs.writeFileSync(fixtures,JSON.stringify(fixture));return{razorpay_order_id:orderId,razorpay_payment_id:anniversaryPayment.id,razorpay_signature:crypto.createHmac('sha256',key).update(orderId+'|'+anniversaryPayment.id).digest('hex')};});
+    const anniversaryPublish=anniversaryBuyer.waitForResponse(r=>r.url()===base+'/api/anniversary-blue/publish'&&r.request().method()==='POST'),anniversaryVerify=anniversaryBuyer.waitForResponse(r=>r.url()===base+'/api/razorpay/verify'&&r.request().method()==='POST');
+    await anniversaryBuyer.locator('#publish').click();assert.equal((await anniversaryPublish).status(),200);assert.equal((await anniversaryVerify).status(),200);await anniversaryBuyer.locator('#publishedResult').waitFor({state:'visible'});assert.equal(anniversaryOrder.amount,7920);assert.equal(await anniversaryBuyer.locator('.pc-checkout-dialog').count(),0);
+    check('reported Anniversary Blue screen now shows inline coupon and prominent ₹99/₹199 offer; PAIGAAM20 confirms ₹79.20 before the mocked Razorpay order',{order:anniversaryOrder.orderId,amountPaise:anniversaryOrder.amount});await anniversaryCtx.close();
     // Negative UI operations intentionally log HTTP 400/401 to the browser console.
     const patterns = report.errors.filter(e => /Pattern attribute value/.test(e.message));
     if (patterns.length) report.findings.push({ type: 'invalid-html-pattern', message: 'Username and coupon pattern use unescaped hyphens rejected by Chromium HTML pattern v-mode; browser validation is bypassed, server validation remains.', samples: [...new Set(patterns.map(e => e.message))] });

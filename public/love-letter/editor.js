@@ -136,6 +136,20 @@
     return draftPending;
   }
 
+  var couponMountPending = null, couponMountedDraft = '';
+  function mountReviewCoupon() {
+    var panel = el('pc-inline-checkout');
+    if (!(Number(spec.price) > 0) || !panel || !window.PaigaamCouponFlow || !window.PaigaamCouponFlow.mountInline) return;
+    if (couponMountPending) return couponMountPending;
+    couponMountPending = ensureDraft().then(function (id) {
+      if (step !== LAST_STEP || document.getElementById('pc-inline-checkout') !== panel || couponMountedDraft === id) return;
+      couponMountedDraft = id;
+      panel.setAttribute('data-product-id', id);
+      return window.PaigaamCouponFlow.mountInline({ panel_id: 'pc-inline-checkout', button_id: 'publish', product_id: id, product_type: 'paigaam', button_suffix: ' & publish this Paigaam' });
+    }).catch(function () { var message = el('pc-inline-status'); if (message) message.textContent = 'Price check unavailable. Check your connection and try again.'; }).finally(function () { couponMountPending = null; });
+    return couponMountPending;
+  }
+
   /** Client-side re-encode: long edge ≤1600px, JPEG q0.82, canvas-flattened. */
   function prepareImage(file) {
     if (!file || ['image/jpeg', 'image/png', 'image/webp'].indexOf(file.type) < 0) return Promise.reject({ code: 'invalid_image' });
@@ -520,7 +534,7 @@
     setError('');
     var heading = steps[step] && steps[step].querySelector('h2');
     if (heading && typeof heading.focus === 'function') heading.focus();
-    if (step === LAST_STEP) renderReview();
+    if (step === LAST_STEP) { renderReview(); mountReviewCoupon(); }
   }
 
   form.addEventListener('submit', function (event) {
@@ -694,7 +708,7 @@
         .then(function () { return request('/api/' + SLUG + '/publish', { id: draftId }); })
         .then(function (body) {
           // Paid template → the server hands us off to the Razorpay checkout.
-          if (body && body.razorpay) { return window.PaigaamPay.open({ order: body }).then(function (pay) { showResult(pay.url); }); }
+          if (body && body.razorpay) { return window.PaigaamPay.open({ order: body, inlineCoupon: true }).then(function (pay) { showResult(pay.url); }); }
           showResult(body.url);
         })
         .catch(function (err) {

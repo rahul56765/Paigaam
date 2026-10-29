@@ -54,11 +54,16 @@ node scripts/test-bfday.js
 
 The generated portable HTML is a design preview: photo crop and song experiments stay only in that tab. Persistent text/list editing and publication belong to Paigaam's integrated wizard. No production Paigaams are created by the preview.
 
+## Checkout presentation
+
+For paid pricing, coupon entry is shown inline on the final “Send it” step only. The current price and larger crossed-out regular price are grouped as one offer, coupon savings and final payable amount update in place, and the send button reflects the quoted amount before Razorpay opens. Earlier customization steps stay coupon-free. The legacy `/create/anniversary` editor path redirects to the canonical `/create/anniversary-blue` route for returning browser tabs.
+
 ## Release status
 
 Release authorized on 2026-10-28. The release adds this template without replacing existing templates, then sets its own catalogue thumbnail through the normal admin workflow. Railway deployment success and live demo/editor/thumbnail checks are required before reporting it live. Physical iOS Safari/Android device validation and a real Spotify account playback check remain separate from automated browser tests. See QA.md for actual test results.
 
 ## Changelog
 
+- 2026-10-30: Paid Anniversary Blue checkout now keeps coupon entry and a live payable-total review on the final Send step; pairs ₹99 sale pricing with the ₹199 regular price; preserves the old `/create/anniversary` route as a redirect to the current editor.
 - 2026-10-28: Owner-authorized production release and catalogue thumbnail setup; release suite rerun against current main e9eb77a877ffa543ab5319c511d7bffb26a07be8, preserving all existing templates.
 - 2026-10-27: Original ten-screen navy-and-white anniversary implementation, complete field schema, list-aware photo editor, music upload/Spotify support, portable review and integration tests.
