@@ -83,9 +83,9 @@ const { png } = require('../tests/bfday-helpers');
       if (photo) {
         assert.ok(text.includes(photo), `${t.slug}: photo still referenced`);
         assert.equal((await fetch(base + photo)).status, 200, `${t.slug}: photo still served`);
-        if (t.slug === 'aangan-vivah') {
+        if (['aangan-vivah', 'lotus-vivah'].includes(t.slug)) {
           // Its optional image is a monogram overlay, not a share-card portrait;
-          // keep the designed courtyard card as og:image while serving the logo in-page.
+          // keep the designed share card as og:image while serving the logo in-page.
           assert.ok(text.includes(photo), `${t.slug}: uploaded logo remains in the monogram page`);
         } else {
           assert.ok(text.includes(base + photo), `${t.slug}: og:image is the photo`);

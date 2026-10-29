@@ -97,6 +97,13 @@ ${base}`;
 }
 
 function fieldHTML(f) {
+  if (f.type === 'audio') {
+    return `<div class="field field--audio" data-type="audio">
+  <span class="label">${escape(f.label)}${reqMark(f)}</span>
+  <div id="f-${escape(f.id)}" data-audio="${escape(f.id)}"></div>
+  <p class="hint">${escape(f.hint || 'MP3, M4A, OGG or WAV, up to 15 MB. An uploaded song takes priority over a song link.')}</p>
+</div>`;
+  }
   if (f.type === 'image') {
     return `<div class="field field--image" data-type="image">
   <span class="label">${escape(f.label)}${reqMark(f)}</span>
@@ -145,7 +152,7 @@ function bfdayCreatePage(t, opts = {}) {
 ${jsonPayload('bfSpec', spec)}
 <link rel="stylesheet" href="/bfday/create.css?v=3">
 <style>:root { --bg: ${escape(theme.bg)}; --ink: ${escape(theme.ink)}; --accent: ${escape(theme.accent)}; --soft: ${escape(theme.soft)}; }${darkThemeOverride(theme)}</style>
-${['love-letter', 'anniversary-blue'].includes(t.slug) ? `<script src="/${S}/crop.js" defer></script><script src="/${S}/editor.js?release=creator-20261028" defer></script>` : '<script src="/bfday/create.js?v=3&release=creator-20261028" defer></script>'}
+${['love-letter', 'anniversary-blue'].includes(t.slug) ? `<script src="/${S}/crop.js" defer></script><script src="/${S}/editor.js?release=creator-20261028" defer></script>` : '<script src="/bfday/create.js?v=4&release=lotus-20261029" defer></script>'}
 <script src="/js/paigaam-pay.js?v=1&release=creator-20261028" defer></script>
 <script src="/js/qr-card.js?v=1" defer></script>
 ${opts.resumeDraft ? `<script src="/js/resume.js?v=1" defer></script>

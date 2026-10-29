@@ -35,6 +35,8 @@ async function draft(slug, data, cookie) {
 function hostileFor(fields) {
   const str = f => HOSTILE.slice(0, f.maxLength || HOSTILE.length) || '<';
   const scalar = f => {
+    if (['pinkColor','yellowColor','greenColor','paperColor','panelColor'].includes(f.id)) return '#A16485';
+    if (f.id === 'musicLink') return 'https://x.example/song.mp3?a=1&b=%3Cscript%3E';
     if (f.id === 'spotifyUrl') return 'https://open.spotify.com/track/11dFghVXANMlKmJXsNCbNl?si=hostile';
     if (f.id === 'songUrl') return 'https://x.example/song.mp3?a=1&b=%3Cscript%3E'; // Music fields accept URLs only, even when uploads require a text control.
     if (f.type === 'text' || f.type === 'textarea') return str(f);

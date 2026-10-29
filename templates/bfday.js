@@ -26,6 +26,7 @@ module.exports = [
   'shubh-vivah',
   'royal-vivah',
   'aangan-vivah',
+  'lotus-vivah',
   'inaam',
   'purana-seekho',
   'jashn',

@@ -72,6 +72,10 @@
     not_found: 'This draft has wandered off. Reload and start again.',
     too_large: 'That photo is too large — try a smaller one.',
     invalid_image: 'That file is not a photo we can use (JPG, PNG or WebP).',
+    invalid_audio: 'Choose a valid MP3, M4A, OGG or WAV song, up to 15 MB.',
+    invalid_colour: 'Use a six-digit colour such as #D94D79, or leave it blank for the original colour.',
+    invalid_music_link: 'Use an HTTPS direct MP3, M4A, OGG or WAV URL, or a YouTube link. Music-service share pages cannot play as background audio.',
+    duplicate_event: 'Each celebration card design can appear once. Choose a different design or remove the duplicate.',
   };
 
   function setError(message) {
@@ -247,6 +251,74 @@
     };
   }
 
+  /** Opt-in uploaded music: store only the server's local URL, never file bytes. */
+  function audioControl(host, f) {
+    var value = '';
+    var player = make('audio');
+    player.controls = true;
+    player.preload = 'none';
+    player.setAttribute('aria-label', f.label);
+    player.style.maxWidth = '100%';
+    var choose = make('button', 'button secondary', 'Upload a song');
+    choose.type = 'button';
+    var remove = make('button', 'button text-button', 'Remove');
+    remove.type = 'button';
+    var file = make('input');
+    file.type = 'file';
+    file.accept = '.mp3,.m4a,.ogg,.wav,audio/mpeg,audio/mp4,audio/ogg,audio/wav';
+    file.hidden = true;
+    file.setAttribute('aria-label', f.label);
+    var note = make('p', 'hint');
+    note.setAttribute('aria-live', 'polite');
+    host.appendChild(player); host.appendChild(choose); host.appendChild(remove); host.appendChild(file); host.appendChild(note);
+    function paint() {
+      player.pause();
+      if (value) player.src = value; else player.removeAttribute('src');
+      player.load();
+      player.hidden = !value; remove.hidden = !value;
+      choose.textContent = value ? 'Replace song' : 'Upload a song';
+    }
+    paint();
+    choose.addEventListener('click', function () { file.click(); });
+    remove.addEventListener('click', function () {
+      value = ''; paint(); note.textContent = ''; changed();
+      if (draftId) saveDraft().catch(function () { /* saveDraft shows the error */ });
+    });
+    file.addEventListener('change', function () {
+      var picked = file.files && file.files[0];
+      file.value = '';
+      if (!picked) return;
+      setError('');
+      if (picked.size > 15 * 1024 * 1024) { setError('That song is too large. Choose a file up to 15 MB.'); return; }
+      var match = /\.(mp3|m4a|ogg|wav)$/i.exec(picked.name);
+      if (!match) { setError('Choose an MP3, M4A, OGG or WAV audio file.'); return; }
+      var mime = { mp3: 'audio/mpeg', m4a: 'audio/mp4', ogg: 'audio/ogg', wav: 'audio/wav' }[match[1].toLowerCase()];
+      choose.disabled = true; remove.disabled = true;
+      note.textContent = 'Uploading song…';
+      ensureDraft().then(function (id) {
+        return fetch('/api/' + SLUG + '/upload-audio?id=' + encodeURIComponent(id), {
+          method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': mime }, body: picked,
+        });
+      }).then(function (response) {
+        return response.json().catch(function () { return {}; }).then(function (body) {
+          if (!response.ok || !body.url) { var err = new Error('upload'); err.code = body.error || 'request_failed'; throw err; }
+          value = body.url; paint(); changed();
+          return saveDraft();
+        });
+      }).then(function () { note.textContent = 'Song added and saved.'; }).catch(function (err) {
+        note.textContent = '';
+        setError(err.code === 'too_large' ? 'That song is too large. Choose a file up to 15 MB.' :
+          err.code === 'invalid_audio' ? 'That file is not valid MP3, M4A, OGG or WAV audio.' :
+          MESSAGES[err.code] || 'That song didn’t save. Check your connection and try again.');
+      }).then(function () { choose.disabled = false; remove.disabled = false; });
+    });
+    return {
+      get: function () { return value; },
+      set: function (v) { value = typeof v === 'string' && /^\/bfday\/uploads\/[a-f0-9]{48}\.(mp3|m4a|ogg|wav)$/.test(v) ? v : ''; paint(); },
+      focus: function () { choose.focus(); },
+    };
+  }
+
   /* ----------------------------------------------------- scalar controls */
 
   /** A client-built scalar control (inside list rows). */
@@ -392,6 +464,11 @@
 
   FIELDS.forEach(function (f) {
     if (f.type === 'list') { controls[f.id] = listControl(f); return; }
+    if (f.type === 'audio') {
+      var audioHost = form.querySelector('[data-audio="' + f.id + '"]');
+      if (audioHost) controls[f.id] = audioControl(audioHost, f);
+      return;
+    }
     if (f.type === 'image') {
       var host = form.querySelector('[data-image="' + f.id + '"]');
       if (host) controls[f.id] = photoControl(host, f, f.label);
@@ -540,6 +617,7 @@
     var rows = [];
     FIELDS.forEach(function (f) {
       var v = data[f.id];
+      if (f.type === 'audio') { rows.push([f.label, v ? 'Your uploaded song ✓' : 'No uploaded song']); return; }
       if (f.type === 'image') { rows.push([f.label, v ? 'Your photo ✓' : 'The designed illustration']); return; }
       if (f.type === 'list') {
         var items = (v || []).filter(function (x) {
