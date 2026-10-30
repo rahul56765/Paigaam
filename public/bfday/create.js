@@ -63,6 +63,9 @@
 
   var MESSAGES = {
     atelier_audio_url: 'Each song’s audio link must use HTTPS without a username or password. Use a direct MP3, WAV or OGG link, or leave it blank.',
+    itinerary_capacity: 'The itinerary fits up to 4 days and 10 entries in total. Remove an entry before adding another.',
+    itinerary_incomplete: 'Add at least one day with a day heading, time, event and venue for every entry.',
+    invalid_music_link: 'Use a direct HTTPS audio file URL or an HTTPS YouTube link.',
     atelier_spotify_url: 'Use an HTTPS playlist link from open.spotify.com, or leave the Spotify field blank.',
     validation: 'Something in there is a little too long or not quite right — check it and try again.',
     limit: 'That is a lot for one day. Try again a bit later.',
@@ -477,6 +480,10 @@
   /* ------------------------------------------------------------ wire up */
 
   FIELDS.forEach(function (f) {
+    if (f.editor === 'nested-itinerary') {
+      controls[f.id] = window.PaigaamItineraryEditor(f, form.querySelector('[data-list="' + f.id + '"]'), form.querySelector('[data-add="' + f.id + '"]'), { make: make, scalarControl: scalarControl, changed: changed });
+      return;
+    }
     if (f.type === 'list') { controls[f.id] = listControl(f); return; }
     if (f.type === 'audio') {
       var audioHost = form.querySelector('[data-audio="' + f.id + '"]');
@@ -546,6 +553,7 @@
     for (var i = 0; i < ids.length; i++) {
       var f = fieldById(ids[i]), c = controls[ids[i]];
       if (!f || !c) continue;
+      if (f.editor === 'nested-itinerary') { var nestedProblem = c.problem(); if (nestedProblem) return nestedProblem; continue; }
       if (f.type !== 'list') {
         if (f.required && !c.get()) return { message: f.label + ' — this one is needed.', focus: c.focus };
         if (f.type === 'url' && c.get() && !/^https?:\/\/\S+$/i.test(c.get())) return { message: f.label + ' — that link should start with https://', focus: c.focus };
@@ -633,6 +641,10 @@
       var v = data[f.id];
       if (f.type === 'audio') { rows.push([f.label, v ? 'Your uploaded song ✓' : 'No uploaded song']); return; }
       if (f.type === 'image') { rows.push([f.label, v ? 'Your photo ✓' : 'The designed illustration']); return; }
+      if (f.editor === 'nested-itinerary') {
+        rows.push([f.label, v.length + ' days · ' + v.reduce(function (n, day) { return n + day.events.length; }, 0) + ' entries on one page']);
+        return;
+      }
       if (f.type === 'list') {
         var items = (v || []).filter(function (x) {
           if (typeof x === 'string') return !!x;
