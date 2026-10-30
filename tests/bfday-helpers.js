@@ -37,6 +37,7 @@ function hostileFor(fields) {
   const scalar = f => {
     if (['pinkColor','yellowColor','greenColor','paperColor','panelColor'].includes(f.id)) return '#A16485';
     if (f.id === 'musicLink') return 'https://x.example/song.mp3?a=1&b=%3Cscript%3E';
+    if (f.type === 'url' && f.id === 'mapsLink') return 'https://www.google.com/maps?q=%3Cscript%3E&a=1&b=%3Cimg%3E'; // Preserve the Maps provider contract while testing hostile query escaping.
     if (f.id === 'spotifyUrl') return 'https://open.spotify.com/track/11dFghVXANMlKmJXsNCbNl?si=hostile';
     if (f.id === 'songUrl') return 'https://x.example/song.mp3?a=1&b=%3Cscript%3E'; // Music fields accept URLs only, even when uploads require a text control.
     if (f.type === 'text' || f.type === 'textarea') return str(f);
