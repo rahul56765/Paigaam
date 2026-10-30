@@ -69,3 +69,8 @@ Browser QA checks full-canvas geometry for narrow, normal, tall, tablet and land
 - Added proportional swipe lighting, tap/keyboard fallback, golden flood, page transitions, navigation, flame loops, leaves and reduced-motion support.
 - Integrated editable copy, optional family photo crop controls, validated Google Maps links and uploaded/direct/YouTube music through the existing family engine.
 - Added focused schema/render/customizer/HTTP lifecycle tests and browser geometry/gesture QA.
+
+### Release preparation · 2026-10-30
+- Catalogue thumbnail is a real browser capture of the lit cover and party card, framed side by side at 1000 × 688 to match the existing catalogue without portrait cropping. It is saved through the template admin thumbnail field, not by changing other catalogue entries.
+- Registered Diwali Deep at the end of the family list so the concurrent Patra Vivah registration is preserved when merging into production main.
+- Production target: Railway paigaam project / production / paigaam-web, domain paigaam.cc.

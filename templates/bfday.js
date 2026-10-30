@@ -27,7 +27,6 @@ module.exports = [
   'royal-vivah',
   'aangan-vivah',
   'lotus-vivah',
-  'diwali-deep',
   'inaam',
   'purana-seekho',
   'jashn',
@@ -39,4 +38,5 @@ module.exports = [
   'birthday-atelier',
   'love-letter',
   'anniversary-blue',
+  'diwali-deep',
 ];
