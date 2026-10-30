@@ -33,6 +33,7 @@
     "wedding-video:setup": "npm --prefix wedding-video ci && npm --prefix wedding-video run build:editor && cd wedding-video && npx remotion browser ensure",
     "test:creators": "node --test tests/creators-*.test.js",
     "test:creators:browser": "node scripts/qa-creator-partners-browser.js",
+    "test:diwali-deep:browser": "node scripts/qa-diwali-deep.js",
     "test:diwali-deep": "node --test tests/bfday-diwali-deep.test.js",
     "test:lotus-vivah": "node --test tests/bfday-lotus-vivah.test.js tests/bfday-audio.test.js"
   },

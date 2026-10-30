@@ -36,6 +36,8 @@ Replace/remove is supported while editing a draft. Published invitations retain 
 
 mapsLink accepts HTTPS Google Maps share/location URLs on known Maps domains. Blank, unsafe or malformed links are hidden in preview and refused on save/publish. No arbitrary schemes, credentials or Google-lookalike suffix domains are accepted. Supported Google country domains are enumerated in schema.js; extend that list when necessary.
 
+Share metadata uses the uploaded family portrait when present, with the designed thumbnail as a fallback.
+
 musicUpload accepts the existing verified MP3/M4A/OGG/WAV uploads (15 MiB). Upload wins over musicLink. Direct HTTPS audio URLs and YouTube links are supported; Spotify/Apple share pages are not audio sources. Native audio play is attempted synchronously on the first cover touch/tap. A visible music control supports pause/retry and reports blocked/unavailable audio without blocking the invitation. YouTube is dependent on provider embed/autoplay availability and may require another tap. The frame source and message origin are restricted to youtube-nocookie.com. Guests without music configured load no media/player.
 
 The published family renderer is shared with the production customizer; the self-contained Hyperagent preview is only a visual/interaction preview, not a second editor or a production deployment.
@@ -50,6 +52,8 @@ Original procedural vector art is in art.js; paint-server IDs are unique across 
 
 Run npm run test:diwali-deep or node --test tests/bfday-diwali-deep.test.js.
 
+Run npm run test:diwali-deep:browser for real local Chromium QA. It starts an isolated temporary server/database and checks six real viewport sizes, actual pointer-driven partial/full lighting, touchscreen tap, keyboard/navigation, uploaded-photo crop, Maps and reduced-motion behavior. Install the pinned Chromium with npx playwright install chromium when needed.
+
 Coverage: loader contract, field placement, demo validity, three-page/inert navigation markup, copy and XSS escaping, optional blank lines, Maps domains and unsafe links, upload references, crop bounds, music precedence, unique SVG IDs, script syntax, customizer controls and an isolated temporary-database HTTP lifecycle including photo replacement/removal, audio upload, preview, media privacy and publish cleanup.
 
 Regression checks: node --test tests/bfday-engine.test.js tests/bfday-lotus-vivah.test.js tests/bfday-audio.test.js.
@@ -59,6 +63,8 @@ Browser QA checks full-canvas geometry for narrow, normal, tall, tablet and land
 ## Changelog
 
 ### 2026-10-30
+- Production build and the complete npm test pipeline pass after dependency/Chromium installation; all 12 dedicated Chromium QA checks pass. Physical-device autoplay and Maps routing remain a final device check.
+- Kept the shared hostile-input fixture within the Maps provider contract and verified uploaded-photo share metadata through the full restart/persistence tests.
 - Added the three-page Diwali Deep template, original engraved vector illustration and responsive contained 9:16 stage.
 - Added proportional swipe lighting, tap/keyboard fallback, golden flood, page transitions, navigation, flame loops, leaves and reduced-motion support.
 - Integrated editable copy, optional family photo crop controls, validated Google Maps links and uploaded/direct/YouTube music through the existing family engine.

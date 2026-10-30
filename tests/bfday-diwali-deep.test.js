@@ -32,7 +32,7 @@ test('Diwali: maps accepts Google share/location URLs only and hides missing lin
   }
 });
 test('Diwali: photo upload, cover crop coordinates and safe placeholder',()=>{
-  has(htmlFor(),'Your family portrait');const h=htmlFor({...config.demo,familyPhoto:upload+'.jpg',photoZoom:175,photoX:10,photoY:90});has(h,'--zoom:1.75;--x:10%;--y:90%');has(h,upload+'.jpg');lacks(h,'Your family portrait');
+  has(htmlFor(),'Your family portrait');const h=htmlFor({...config.demo,familyPhoto:upload+'.jpg',photoZoom:175,photoX:10,photoY:90});has(h,'--zoom:1.75;--x:10%;--y:90%');has(h,upload+'.jpg');has(h,'https://paigaam.cc'+upload+'.jpg');lacks(h,'Your family portrait');
   for(const bad of ['https://evil.test/a.jpg','data:image/png;base64,abc'])assert.throws(()=>schema.validate({...config.demo,familyPhoto:bad}));
   for(const zoom of [99,241])assert.throws(()=>schema.validate({...config.demo,photoZoom:zoom}));
 });
