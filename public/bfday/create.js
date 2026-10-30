@@ -537,6 +537,11 @@
     };
   });
 
+  // Opt-in family frame editor. Other image slots and template flows are unchanged.
+  if (SLUG === 'patra-vivah' && window.PaigaamFamilyEditor) {
+    window.PaigaamFamilyEditor(form, controls);
+  }
+
   function collect() {
     var data = {};
     FIELDS.forEach(function (f) { if (controls[f.id]) data[f.id] = controls[f.id].get(); });

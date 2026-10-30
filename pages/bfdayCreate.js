@@ -163,8 +163,9 @@ function bfdayCreatePage(t, opts = {}) {
 ${jsonPayload('bfSpec', spec)}
 <link rel="stylesheet" href="/bfday/create.css?v=3">
 <style>:root { --bg: ${escape(theme.bg)}; --ink: ${escape(theme.ink)}; --accent: ${escape(theme.accent)}; --soft: ${escape(theme.soft)}; }${darkThemeOverride(theme)}</style>
+${t.slug === 'patra-vivah' ? '<link rel="stylesheet" href="/bfday/family-editor.css?v=1"><script src="/bfday/family-maps.js?v=1" defer></script><script src="/bfday/family-editor.js?v=1" defer></script>' : ''}
 ${t.fields.some(f => f.editor === 'nested-itinerary') ? '<script src="/bfday/itinerary-editor.js?v=1" defer></script>' : ''}
-${['love-letter', 'anniversary-blue'].includes(t.slug) ? `<script src="/${S}/crop.js" defer></script><script src="/${S}/editor.js?release=creator-inline-coupon-20261030" defer></script>` : '<script src="/bfday/create.js?v=6&release=patra-itinerary-20261030" defer></script>'}
+${['love-letter', 'anniversary-blue'].includes(t.slug) ? `<script src="/${S}/crop.js" defer></script><script src="/${S}/editor.js?release=creator-inline-coupon-20261030" defer></script>` : '<script src="/bfday/create.js?v=7&release=patra-family-20261030" defer></script>'}
 <script src="/js/paigaam-pay.js?v=2&release=checkout-coupon-inline-create-20261030" defer></script>
 <script src="/js/qr-card.js?v=1" defer></script>
 ${opts.resumeDraft ? `<script src="/js/resume.js?v=1" defer></script>

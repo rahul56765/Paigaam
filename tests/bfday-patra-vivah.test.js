@@ -12,10 +12,10 @@ const demo = () => structuredClone(config.demo);
 const upload = ext => '/bfday/uploads/' + 'a'.repeat(48) + '.' + ext;
 const entry = n => ({ time: '2:00 PM', event: 'Event ' + n, venue: 'Venue ' + n });
 
-test('Patra Vivah config: discoverable, three pages, strict demo, all fields placed exactly once', () => {
+test('Patra Vivah config: discoverable, four pages, strict demo, all fields placed exactly once', () => {
   assert.ok(require('../templates/bfday').includes(config.slug));
   assert.doesNotThrow(() => schema.validate(demo()));
-  assert.deepEqual(config.sections, ['cover', 'save', 'itinerary']);
+  assert.deepEqual(config.sections, ['cover', 'save', 'itinerary', 'family']);
   assert.equal(config.demo.saveDate, '2026-08-22');
   assert.equal(config.demo.saveHeading, 'Save the Date');
   assert.equal(config.demo.itineraryHeading, 'Wedding Itinerary');
@@ -107,7 +107,7 @@ test('Patra Vivah audio: opt-in uploads, HTTPS direct audio and strictly parsed 
   assert.throws(() => schema.validate({ ...demo(), musicUpload: 'https://cdn.example/song.mp3' }));
   const data = schema.validate({ ...demo(), couplePhoto: upload('png'), monogramLogo: upload('webp') });
   assert.deepEqual(fields.imagesIn(schema.FIELDS, data), [upload('png'), upload('webp')]);
-  assert.equal(fields.maxImages(schema.FIELDS), 2);
+  assert.equal(fields.maxImages(schema.FIELDS), 3);
 });
 
 test('Patra Vivah nested editor is strictly opt-in; other templates still reject nested list declarations', () => {

@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const root = path.join(__dirname, '..');
-const files = ['cloth.webp', 'envelope.webp', 'feet.webp', 'garland-left.webp', 'garland-right.webp', 'itinerary-leaves.webp', 'save-leaves-right.webp', 'save-leaves.webp', 'thumbnail.webp'];
+const files = ['cloth.webp', 'envelope.webp', 'feet.webp', 'garland-left.webp', 'garland-right.webp', 'itinerary-leaves.webp', 'save-leaves-right.webp', 'save-leaves.webp', 'thumbnail.webp', 'opening-poster.webp', 'opening.mp4'];
 const target = path.join(root, 'assets', 'patra-vivah');
 fs.mkdirSync(target, { recursive: true });
 const manifest = {};

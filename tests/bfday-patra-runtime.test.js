@@ -31,30 +31,32 @@ function client({ reduced = false, width = 800, height = 400, audioEnabled = fal
     querySelector() { return null; } querySelectorAll() { return []; }
   }
   const app = new Node(), stage = new Node(), card = new Node(), prev = new Node(), next = new Node(), counter = new Node(), open = new Node(), motion = new Node(), doc = new Node(), win = new Node(), reduce = new Node();
-  const pages = Array.from({ length: 3 }, () => new Node()), dots = pages.map((_,i) => { const n = new Node(); n.dataset.pvGo = String(i); return n; });
-  const music = new Node(), musicButton = new Node(), status = new Node(), audio = new Node();
+  const pages = Array.from({ length: 4 }, () => new Node()), dots = pages.map((_,i) => { const n = new Node(); n.dataset.pvGo = String(i); return n; });
+  const music = new Node(), musicButton = new Node(), status = new Node(), audio = new Node(), video = new Node(), light = new Node(), coverStatus = new Node();
+  let videoPlays=0;video.currentTime=0;video.play=()=>{videoPlays++;return Promise.resolve();};video.pause=()=>{};
   let plays = 0; audio.play = () => { plays++; return Promise.resolve(); }; audio.pause = () => audio.fire('pause');
   music.querySelector = s => s === 'button' ? musicButton : status;
-  const selectors = { '[data-pv-prev]': prev,'[data-pv-next]': next,'[data-pv-current]': counter,'[data-pv-open]': open,'[data-pv-motion]': motion,'[data-pv-music]': audioEnabled ? music : null };
+  const selectors = { '[data-pv-prev]': prev,'[data-pv-next]': next,'[data-pv-current]': counter,'[data-pv-open]': open,'[data-pv-motion]': motion,'[data-pv-music]': audioEnabled ? music : null, '.pv-white-light':light, '.pv-cover-status':coverStatus };
   app.querySelector = s => selectors[s] || null; app.querySelectorAll = () => dots; card.querySelectorAll = () => pages;
   stage.clientWidth = width; stage.clientHeight = height;
-  doc.getElementById = id => ({pvApp:app,pvStage:stage,pvCard:card,pvAudio:audioEnabled ? audio : null})[id];
+  doc.getElementById = id => ({pvApp:app,pvStage:stage,pvCard:card,pvAudio:audioEnabled ? audio : null,pvOpeningVideo:video})[id];
   reduce.matches = reduced; win.matchMedia = () => reduce;
-  let id = 0; const timers = new Map();
-  vm.runInNewContext(fs.readFileSync(path.join(root,'public/patra-vivah/patra.js'),'utf8'), { document:doc,window:win,setTimeout: (fn,ms) => { timers.set(++id,{fn,ms}); return id; },clearTimeout: id => timers.delete(id),requestAnimationFrame: fn => { fn(); return 1; } });
+  let id = 0; const timers = new Map(), frames = new Map();
+  vm.runInNewContext(fs.readFileSync(path.join(root,'public/patra-vivah/patra.js'),'utf8'), { document:doc,window:win,setTimeout: (fn,ms) => { timers.set(++id,{fn,ms}); return id; },clearTimeout: id => timers.delete(id),requestAnimationFrame: fn => { frames.set(++id,fn);return id; },cancelAnimationFrame:id=>frames.delete(id) });
   const tick = () => { const [id,item] = timers.entries().next().value || []; if (item) { timers.delete(id); item.fn(); } };
-  return { app,stage,card,pages,dots,prev,next,counter,open,doc,reduce,timers,tick,audio,musicButton,status, plays: () => plays };
+  const stepFrame = () => {const callbacks=[...frames.values()];frames.clear();callbacks.forEach(fn=>fn());};
+  return { app,stage,card,pages,dots,prev,next,counter,open,doc,reduce,timers,tick,audio,musicButton,status,video,light,coverStatus,stepFrame,videoPlays:()=>videoPlays,plays:()=>plays };
 }
 
 
-test('Patra runtime: exactly three pages and accessible initial navigation for any valid itinerary', () => {
+test('Patra runtime: exactly four pages and accessible initial navigation for any valid itinerary', () => {
   for (const days of [demo().days, [{ heading: 'One day', events: [demo().days[0].events[0]] }]]) {
     const html = htmlFor({ ...demo(), days });
-    assert.deepEqual(kinds(html), ['cover', 'save', 'itinerary']);
-    assert.equal((html.match(/data-pv-go="/g) || []).length, 3);
+    assert.deepEqual(kinds(html), ['cover', 'save', 'itinerary', 'family']);
+    assert.equal((html.match(/data-pv-go="/g) || []).length, 4);
     assert.equal((html.match(/aria-hidden="false"/g) || []).length, 1);
-    assert.equal((html.match(/aria-hidden="true" inert/g) || []).length, 2);
-    contains(html, 'data-pv-current>1</span> / 3');
+    assert.equal((html.match(/aria-hidden="true" inert/g) || []).length, 3);
+    contains(html, 'data-pv-current>1</span> / 4');
     contains(html, 'aria-live="polite"');
     contains(html, 'data-pv-prev aria-label="Previous page" disabled');
     contains(html, 'type="button" class="pv-open"');
@@ -106,38 +108,31 @@ test('Patra runtime: optional logo and photo coexist and disappear completely wh
   excludes(htmlFor(), 'class="pv-media'); excludes(htmlFor(), 'pv-has-media');
 });
 
-test('Patra runtime: bounded 2.65-second opening locks clicks, dots, keyboard and swipe until fully settled', () => {
-  const c = client(); assert.equal(c.prev.disabled, true); assert.equal(c.counter.textContent, '1');
-  c.open.fire('click');
-  assert.equal(c.app.classList.contains('pv-opening'), true); assert.equal(c.open.disabled, true);
-  assert.equal([...c.timers.values()][0].ms, 1950);
-  c.next.fire('click'); c.dots[2].fire('click');
-  c.doc.fire('keydown', { target: { matches: () => false }, key: 'ArrowRight', preventDefault() {} });
-  c.stage.fire('pointerdown', { target: { closest: () => false }, clientX: 200, clientY: 80, pointerId: 1 });
-  c.stage.fire('pointerup', { clientX: 100, clientY: 82, pointerId: 1 });
-  assert.equal(c.timers.size, 1); assert.equal(c.counter.textContent, '1');
-  c.tick(); assert.equal(c.counter.textContent, '2');
-  assert.equal(c.pages[0].inert, true); assert.equal(c.pages[1].inert, false);
-  assert.equal(c.pages[1].attrs['aria-hidden'], 'false'); assert.equal(c.dots[1].attrs['aria-current'], 'page');
-  assert.equal([...c.timers.values()][0].ms, 700);
-  c.next.fire('click'); assert.equal(c.counter.textContent, '2');
-  c.tick(); assert.equal(c.app.classList.contains('pv-opening'), false);
-  c.next.fire('click'); assert.equal(c.counter.textContent, '3'); assert.equal(c.next.disabled, true);
-  c.tick(); c.next.fire('click'); assert.equal(c.counter.textContent, '3');
-  c.prev.fire('click'); assert.equal(c.counter.textContent, '2');
+test('Patra runtime: decoded video drives the opening, white light and navigation lock instead of a wall-clock jump', () => {
+  const c=client();c.open.fire('click');assert.equal(c.videoPlays(),1);assert.equal(c.open.disabled,true);assert.equal(c.counter.textContent,'1');
+  assert.equal([...c.timers.values()][0].ms,15000,'only a stalled-media watchdog is armed');
+  c.next.fire('click');c.dots[3].fire('click');c.open.fire('click');assert.equal(c.videoPlays(),1);assert.equal(c.counter.textContent,'1');
+  c.video.fire('playing');assert.equal(c.app.classList.contains('pv-video-playing'),true);
+  c.video.currentTime=3;c.stepFrame();assert.equal(c.light.style.opacity,'0');assert.equal(c.counter.textContent,'1');
+  c.video.currentTime=4.1;c.stepFrame();assert.ok(+c.light.style.opacity>0&&+c.light.style.opacity<1);
+  c.video.currentTime=4.44;c.stepFrame();assert.equal(c.light.style.opacity,'1');assert.equal([...c.timers.values()][0].ms,160);
+  c.tick();assert.equal(c.counter.textContent,'2');assert.equal(c.pages[1].inert,false);assert.equal(c.pages[0].inert,true);
+  c.next.fire('click');assert.equal(c.counter.textContent,'2');c.stepFrame();assert.equal(c.light.style.opacity,'0');
+  assert.equal([...c.timers.values()][0].ms,850);c.tick();assert.equal(c.app.classList.contains('pv-opening'),false);
+  c.next.fire('click');assert.equal(c.counter.textContent,'3');assert.equal(c.next.disabled,false);c.tick();
+  c.next.fire('click');assert.equal(c.counter.textContent,'4');assert.equal(c.next.disabled,true);c.tick();c.next.fire('click');assert.equal(c.counter.textContent,'4');
+  c.prev.fire('click');assert.equal(c.counter.textContent,'3');
 });
 
-test('Patra runtime: direct itinerary dot opening has correct destination and reduced-motion timers are zero', () => {
-  const c = client({ reduced: true }); c.dots[2].fire('click');
-  assert.equal([...c.timers.values()][0].ms, 0); c.tick(); assert.equal(c.counter.textContent, '3');
-  assert.equal([...c.timers.values()][0].ms, 0); c.tick();
-  c.doc.fire('keydown', { target: { matches: () => true }, key: 'ArrowLeft', preventDefault() { throw Error('must ignore form input'); } });
-  assert.equal(c.counter.textContent, '3');
-  c.doc.fire('keydown', { target: { matches: () => false }, key: 'ArrowLeft', preventDefault() {} });
-  assert.equal(c.counter.textContent, '2'); c.tick();
-  c.stage.fire('pointerdown', { target: { closest: () => false }, clientX: 100, clientY: 80, pointerId: 1 });
-  c.stage.fire('pointerup', { clientX: 200, clientY: 82, pointerId: 1 });
-  assert.equal(c.counter.textContent, '1');
+test('Patra runtime: reduced motion skips video and uses four-page dots, keyboard and swipe without opening delays',()=>{
+ const c=client({reduced:true});c.dots[3].fire('click');assert.equal(c.counter.textContent,'4');assert.equal(c.videoPlays(),0);assert.equal(c.timers.size,0);
+ c.doc.fire('keydown',{target:{matches:()=>true},key:'ArrowLeft',preventDefault(){throw Error('must ignore input');}});assert.equal(c.counter.textContent,'4');
+ c.doc.fire('keydown',{target:{matches:()=>false},key:'ArrowLeft',preventDefault(){}});assert.equal(c.counter.textContent,'3');c.tick();
+ c.stage.fire('pointerdown',{target:{closest:()=>false},clientX:100,clientY:80,pointerId:1});c.stage.fire('pointerup',{clientX:200,clientY:82,pointerId:1});assert.equal(c.counter.textContent,'2');
+});
+
+test('Patra runtime: media errors and stalled playback use a soft white fallback and never leave guests stuck',()=>{
+ for(const mode of ['error','stall']){const c=client();c.open.fire('click');if(mode==='error')c.video.fire('error');else c.tick();assert.equal(c.light.style.opacity,'1');assert.ok(c.coverStatus.textContent.includes('Continuing'));c.tick();assert.equal(c.counter.textContent,'2');c.tick();assert.equal(c.app.classList.contains('pv-opening'),false);}
 });
 
 test('Patra runtime: first cover gesture starts native audio synchronously; pause/retry/error controls remain usable', async () => {
@@ -178,7 +173,7 @@ test('Patra runtime: every packed illustration matches manifest and missing/corr
   const module = { exports: {} };
   vm.runInNewContext(fs.readFileSync(source, 'utf8'), { module, exports: module.exports, __dirname: path.dirname(source), require: name => name === 'node:fs' ? fakeFs : require(name), Buffer });
   const { assets, ensurePatraVivahAssets } = module.exports;
-  assert.equal(assets.length, Object.keys(manifest).length); assert.equal(assets.length, 9);
+  assert.equal(assets.length, Object.keys(manifest).length); assert.equal(assets.length, 11);
   for (const a of assets) {
     assert.equal(crypto.createHash('sha256').update(Buffer.from(a.data, 'base64')).digest('hex'), manifest[a.path]);
     assert.ok(a.path.startsWith('patra-vivah/')); assert.equal(path.basename(a.path), a.path.slice('patra-vivah/'.length));
@@ -227,13 +222,18 @@ test('Patra runtime: isolated HTTP draft/save/image+audio upload/private preview
   r = await post(prefix+'/draft',cookie,{customer_data:demo()}); assert.equal(r.status,200); const other = await r.json();
   assert.equal((await post(prefix+'/draft',cookie,{id:other.id,customer_data:{...demo(),musicUpload:song}})).status,403);
   assert.equal((await post(prefix+'/draft',cookie,{id:other.id,customer_data:{...demo(),monogramLogo:logo}})).status,403);
-  const data = { ...demo(), days:demo().days.slice().reverse(), musicUpload:song, musicLink:'https://youtu.be/dQw4w9WgXcQ',monogramLogo:logo };
+  assert.equal((await post(prefix+'/draft',cookie,{id:other.id,customer_data:{...demo(),familyPhoto:logo}})).status,403);
+  const data = { ...demo(), days:demo().days.slice().reverse(), musicUpload:song, musicLink:'https://youtu.be/dQw4w9WgXcQ',monogramLogo:logo, familyPhoto:logo, familyPhotoZoom:175, familyPhotoX:10, familyPhotoY:90, familyMapsLink:'https://maps.google.com/?q=Venue', familyMapsLabel:'Find the family venue' };
   r = await post(prefix+'/draft',cookie,{id:draft.id,customer_data:data}); assert.equal(r.status,200);
   assert.equal(q.paigaamById(draft.id).customer_data.musicUpload,song);
   assert.deepEqual(q.paigaamById(draft.id).customer_data.days,data.days);
+  assert.equal(q.paigaamById(draft.id).customer_data.familyPhoto,logo);
+  assert.equal(q.paigaamById(draft.id).customer_data.familyPhotoZoom,175);
   r = await fetch(base+draft.previewUrl,{headers:{cookie}}); assert.equal(r.status,200); const preview = await r.text();
-  assert.deepEqual(kinds(preview),['cover','save','itinerary']);
+  assert.deepEqual(kinds(preview),['cover','save','itinerary','family']);
   contains(preview,'class="bf-previewbadge"');
+  contains(preview,'--family-zoom:1.75;--family-x:10%;--family-y:90%');
+  contains(preview,'Find the family venue');
   assert.ok(preview.indexOf(data.days[0].heading) < preview.indexOf(data.days[2].heading)); contains(preview,song); contains(preview,logo); excludes(preview,'data-youtube=');
   r = await post(prefix+'/publish',cookie,{id:draft.id}); assert.equal(r.status,200); const pub = await r.json();
   const published = q.paigaamById(draft.id); assert.equal(published.status,'published');

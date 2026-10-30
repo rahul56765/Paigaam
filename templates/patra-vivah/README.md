@@ -1,72 +1,81 @@
 # Patra Vivah
 
-A new, isolated Paigaam wedding invitation with exactly three 9:16 cards: banana-leaf envelope → Save the Date → Wedding Itinerary. Built against main 09268e9ad04325a1961e211bcc444eb782cae510. No existing invitation is replaced.
+A reference-guided Paigaam wedding invitation with four complete 9:16 cards: tap-to-open banana-leaf cover → Save the Date → Wedding Itinerary → Family Welcome. Isolated member of the existing family engine. This feature remains on PR75, not merged or deployed.
 
-## Design and artwork
+## Revision scope and preservation
 
-The three supplied flattened JPG references guide the composition. Page two's banana leaves and red/golden-yellow knotted cloth, and page three's feet, tied cloth, marigold garlands and lower-right banana leaves are extracted as separate transparent painted layers. Reference lettering, tabletop, envelope backdrop and watermark are not included. The cover is a newly generated straight-on flat painted illustration matching the reference envelope, not a photograph. Its card, left/right leaf flaps and editable SVG gold cord/bow/tassel are independent layers. Fine artwork edges and fonts are close reference-guided recreations; this is not a claim of pixel-identical original editable source art.
+The 2026-10-30 second brief changes only the cover and appends Family Welcome. The approved Save the Date and Itinerary markup is byte-identical to the first delivered version, including original words, painted artwork, independent leaf sways, arch glow/travelling light, cloth/garland motion, sequential text, schedule editor and music behavior. The original scoped stylesheet remains an unchanged prefix; revision rules target only the new cover/family page. Automated preservation hashes guard both approved content cards.
 
-Only the supplied decorative motifs are used. Optional uploaded photo/logo areas are absent unless selected. The default demo uses reference-style names and a seven-entry, three-day schedule, with internally consistent August 2026 dates.
+## Reference-video cover
 
-## Layout and motion
+The user supplied a 720 × 1280, 24 fps video. To preserve its precise leaf design, bow-untying and opening motion, opening.mp4 uses the actual 0–4.5 second envelope section, encoded as a contained H.264/YUV420p fast-start MP4 without the source soundtrack. The matching first-frame poster prevents a poster/play jump. No new generated opening is substituted. The later kalash scene is not shown: a soft white overlay becomes fully opaque while the leaves open, before that scene appears, and the player pauses near 4.43 seconds. White then fades over the unchanged Save the Date. The sequence normally takes roughly 5.4 seconds including the crossfade; the video motion itself is not sped up.
 
-The complete 720 × 1280 design canvas is scaled uniformly to fit the stage. Navigation and device safe-area space are reserved outside it. No object-fit cover is used on the page canvas. Narrow, tall, short and landscape screens show all borders and art, with surrounding space where necessary. This is contain/letterbox behavior, never a forced full-bleed crop.
+The cover never autoplays before a tap. Its full-page button retains editable tap-to-open text. Native customer music starts synchronously in the first tap handler; the opening video is muted and inline so it cannot compete with the chosen song. Video currentTime, not a wall-clock transition, drives the white light. Buffering cannot silently skip the opening. Repeated taps/navigation are locked until settled. Media rejection/error or a 15-second stalled-media watchdog gives a soft message and white transition to the invitation rather than leaving a guest stuck. Reduced motion skips the video and decorative movement. Replay after returning to the cover resets to the same poster and first frame.
 
-Text is live escaped HTML in separate reserved zones. A bounded binary fit runs at layout and font readiness. Long names, custom headings and dense schedules shrink within their own areas rather than being truncated, clipped or painted over the illustrations. Input lengths and itinerary size are finite: up to four days and ten events total. The usual three-day/seven-event layout remains most legible. Very dense maximum-length content necessarily has smaller text; arbitrary content cannot remain large on every phone within a fixed three-page format.
+The cover retains the supplied video's appearance and background. It does not reintroduce the earlier illustration or unrelated photo props. Whole-card object-fit is contain, not cover.
 
-The first cover tap synchronously attempts song playback, gently loosens the bow, swings independently clipped banana-leaf flaps on their outer hinges with perspective, then grows a white light over the opening and crossfades to page two. The normal sequence is 1,950 ms before the destination becomes current plus 700 ms to finish the light/fade, totaling 2.65 seconds. Rapid repeated input is locked. Previous/next arrows, page dots, keyboard arrows and horizontal swipe navigate a soft fade/slide.
+## Artwork, layout and motion
 
-Four leaf regions on each side sway at independent timings. The red/gold pointed arch has a perpetual subtle glow and a short travelling edge light. Cloth and garlands move very slightly. Seven tiny, low-opacity yellow petals fall slowly along the page margins on both content pages, avoiding the text column. Text and schedule rows reveal sequentially. Hidden-page and hidden-tab decorative animations pause. Reduced motion removes decorative movement and opening delays. Current page is announced; inactive pages are inert. A no-JavaScript visual fallback exposes scrollable cards, with a separate semantic no-script text copy for assistive technology.
+Page two uses separately extracted painted banana leaves and red/golden-yellow knotted cloth. Page three retains the supplied feet, tied cloth, marigold garlands and lower-right leaves. Reference lettering, tabletop, envelope backdrop and watermark are excluded from those painted layers. Fonts and some borders are close recreations, not a claim of original editable source artwork.
 
-## Editing contract
+Every card lives on a fixed 720 × 1280 canvas scaled uniformly to the available stage. Navigation and device safe areas stay outside it. Narrow, short, landscape and desktop screens show the entire design with surrounding space where needed. Live escaped text fits inside reserved zones after layout/fonts are ready. No text clipping conceals overflow.
 
-Editable top-level fields: brideName, groomName, coupleJoiner, coverHint, saveHeading, saveDate, itineraryHeading, couplePhoto, monogramLogo, musicUpload, musicLink, days.
+Four leaf regions per side have independent breeze timing. The pointed red/gold arch glows and carries a travelling highlight. Cloth/garlands move slightly. The same seven tiny yellow margin petals continue on Save the Date, Itinerary and Family Welcome. Current page is announced, inactive cards are inert, and arrows/dots/swipe/keyboard now navigate four pages. Hidden-page/tab decorative animation pauses. A no-JavaScript visual and semantic text fallback remains.
 
-The optional images use contain, preserving the entire uploaded logo/photo, with transparent PNG/WebP support. No image is added by default.
+## Existing itinerary customization
 
-Nested schedule format:
+All original field IDs/defaults and nested editor behavior are retained. Schedule contract:
 
 ```json
-{
-  "days": [{
-    "heading": "SATURDAY | August 22, 2026",
-    "events": [{
-      "time": "4:00 PM",
-      "event": "Wedding Ceremony",
-      "venue": "Silver Meadow Inn"
-    }]
-  }]
-}
+{"days":[{"heading":"SATURDAY | August 22, 2026","events":[{"time":"4:00 PM","event":"Wedding Ceremony","venue":"Silver Meadow Inn"}]}]}
 ```
 
-The opt-in nested-itinerary editor provides add/remove/reorder at both levels and reports aggregate capacity. Limits: 4 days, 10 total events, heading 44 characters, time 16, event name 44, venue 80. Strict publication requires at least one complete day/event. Draft modes retain valid partial input without inventing rows; invalid inputs are rejected or sanitized according to the existing family-mode contract. Generic list handling changes only for explicitly declared nested-itinerary fields; other templates continue rejecting nested declarations.
+Add/remove/reorder both days and events. Maximum four days and ten total entries; heading 44, time 16, event 44, venue 80 characters. Publication requires a complete day/event. Seven entries is the comfortable reference-style default; maximum-density content necessarily shrinks on narrow phones. Unlimited large text is not possible inside a fixed four-card format.
 
-## Music and uploads
+## Family Welcome customization
 
-The existing family engine supplies creator ownership, origin checks, MIME/header verification, persistent file storage, private draft serving and publication. Music uploads accept MP3, M4A, OGG or WAV up to 15 MiB. Uploaded music takes priority over a URL. HTTPS direct audio URLs and supported HTTPS YouTube URLs are accepted; Spotify/Apple Music share pages are not audio files and are rejected. Invalid/lookalike hosts and embedded credentials are rejected. Unusual valid YouTube links are canonicalized before use by the legacy parser.
+Family Welcome is the fourth invitation page and its own creator step before Music. It reuses the exact cream background, red/gold pointed arch, fonts, glow/travelling light, sequential reveals and yellow petals—no unrelated decorations.
 
-Native audio starts from the first cover gesture. YouTube is a lazy embed: actual playback depends on provider embedding/autoplay policy and may need a further tap. A play/pause/retry control and status message are available. No provider song is downloaded. Use music you have the right to share.
+- familyPhoto: optional creator-owned upload, tap-to-pick gallery frame with replace/remove.
+- familyPhotoZoom: 100–250%; familyPhotoX and familyPhotoY: 0–100%. Sliders control a non-destructive 5:4 image window. The stored uploaded image is not overwritten by crop changes. The creator and guest use the same object-fit, object-position and transform-origin rules. Image cropping is intentional inside the photo frame only; the complete invitation is never cropped.
+- regardsHeading: default “With warm regards”, editable, script font.
+- familyName: default “Deshpande Family”, editable.
+- familyWelcome: default “Welcome”, editable.
+- familyVenue and familyAddress: editable venue and multiline address.
+- familyMapsLink: optional editable plain text with advisory format validation, not an arbitrary navigation URL.
+- familyMapsLabel: editable button text, default “Open in Google Maps”.
 
-## Files and routes
+With a photo, text fits in a safe zone below the frame. Removing it removes the frame and expands/recenters the welcome area—guests do not see an unfinished upload prompt. Only the creator sees the tap-to-upload control. The demo uses a sample venue/address consistent with its sample itinerary; no family photo is fabricated.
 
-- templates/patra-vivah/config.js, schema.js, render.js
-- public/patra-vivah/patra.css and patra.js
-- public/bfday/itinerary-editor.js (loaded only for the opt-in editor)
-- assets/patra-vivah/manifest.json and nine checksummed base64 art files
-- lib/bfday/assets-patra-vivah.js restores missing/corrupt art on family startup
-- scripts/pack-patra-vivah-assets.js regenerates the text pack after artwork edits
-- tests/bfday-patra-vivah.test.js and tests/bfday-patra-runtime.test.js
+A valid supported HTTPS Google Maps URL makes both venue/address and button clickable, opening the app/browser according to device behavior. New-tab links use noopener/noreferrer. Blank links produce no button. Malformed, unsupported, credentialed, script or lookalike-host links stay editable but never become hrefs; the editor and guest page show a gentle warning. Validation checks URL structure/approved hosts only; it never fetches links and cannot verify a real-world venue's correctness. Supported hosts are bounded Google Maps hosts including google.com, google.co.in, maps.google.com, maps.app.goo.gl and goo.gl/maps.
 
-After deployment, the existing family engine will expose the template detail, demo and creator routes for slug patra-vivah. No new environment variables, dependencies, deployment settings or storage volume are required. At initial delivery this feature is a reviewable branch/PR and interactive demo artifact, not a production deployment.
+## Media and security
+
+Existing couple photo/logo and song controls remain unchanged. Shared engine ownership, origin, MIME/header verification, private drafts, persistent storage and publication checks apply to the family image. Music uploads accept MP3/M4A/OGG/WAV up to 15 MiB; upload overrides a direct HTTPS song URL/YouTube link. YouTube is provider-dependent and can require another tap. Spotify/Apple share pages are not playable audio URLs. Use music/media you have rights to share.
+
+## Files and asset restoration
+
+- templates/patra-vivah: config.js, schema.js, render.js, README.md, QA.md.
+- public/patra-vivah: scoped patra.css/patra.js and contained opening media/art.
+- public/bfday/itinerary-editor.js: existing opt-in nested editor.
+- public/bfday/family-editor.js and family-editor.css: Patra-only crop preview and soft Maps status.
+- public/bfday/family-maps.js: shared server/browser parsing-only URL validator.
+- assets/patra-vivah: eleven checksummed base64 media/art assets. Original unused flat envelope is retained for reversibility; opening poster/video and refreshed thumbnail are packed too.
+- lib/bfday/assets-patra-vivah.js restores missing/corrupt files on family startup.
+- scripts/pack-patra-vivah-assets.js regenerates the manifest/text pack after media edits.
+
+No new dependencies, lockfile, environment variables, deployment configuration or storage volume. Existing streamFile supports MP4 byte ranges/HEAD and fast-start playback. New scoped CSS/runtime use v2; shared creator cache is bumped for the Family Welcome hook. No changes to the separate wedding-video feature.
 
 ## Verification and release gate
 
-See QA.md. The container's npm install is blocked with HTTP 403 fetching pinned sharp 0.35.5. Built-in-only unit/integration tests run, but the full application build and full live-server family runner cannot be certified here. Run the normal dependency install/build and release smoke tests in CI or the approved deployment environment before merging. Do not weaken or replace the pinned dependency to make this environment pass.
+See QA.md. The prior sandbox dependency install returned HTTP 403 for pinned sharp 0.35.5. Built-in Node unit/integration tests and the hosted real-browser invitation run without replacing dependencies; the full app build/full server runner remain a release gate. Run normal CI install/build and release smoke tests before merging. Do not change pins to mask this environment limitation.
 
 ## Changelog
 
-### 2026-10-30
-- Added the isolated three-card reference-guided template and layered art pack.
-- Added nested day/event editing, finite capacity validation, optional contained photo/logo and first-tap music.
-- Added 2.65-second perspective envelope opening, continuous gentle decorative motion, reduced-motion and accessible fallback behavior.
-- Added focused render/schema/editor/runtime/artwork/HTTP lifecycle regression coverage and browser containment checks.
+### 2026-10-30 — requested revision
+- Replaced only the cover with the supplied video opening, matching poster, decoded-time white transition, first-tap music, buffering/error fallback and reduced motion.
+- Appended Family Welcome with matching arch/type/petals, non-destructive gallery photo crop controls, editable closing/venue/address and safe Google Maps behavior.
+- Updated navigation to four cards and added preservation, maps, crop, media, layout and lifecycle regressions.
+
+### 2026-10-30 — initial delivery
+- Added the original three-card reference-guided template, transparent artwork pack, nested itinerary editor, optional couple/logo images and music. Delivered as draft PR75 and an interactive preview, not a production deployment.

@@ -1,5 +1,6 @@
 'use strict';
 const config = require('./config');
+const { parseFamilyMapLink, familyMapState } = require('../../public/bfday/family-maps');
 const base = require('../../lib/bfday/fields').makeSchema(config);
 const { bgmParse } = require('../../lib/bfday/bgm');
 const MAX_DAYS = 4, MAX_EVENTS = 10;
@@ -53,4 +54,4 @@ function validate(data, opts = {}) {
   }
   return clean;
 }
-module.exports = { ...base, validate, playableLink, MAX_DAYS, MAX_EVENTS };
+module.exports = { ...base, validate, playableLink, parseFamilyMapLink, familyMapState, MAX_DAYS, MAX_EVENTS };
