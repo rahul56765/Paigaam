@@ -1,4 +1,4 @@
-# Patra Vivah — four-page revision QA (2026-10-30)
+# Patra Vivah — clean-video and visible-editor QA (2026-10-30)
 
 ## Scope / preservation
 
@@ -7,10 +7,10 @@ Only the cover was replaced and Family Welcome appended. Automated hashes assert
 ## Automated tests
 
 ```sh
-node --test tests/bfday-patra-vivah.test.js tests/bfday-patra-runtime.test.js tests/bfday-patra-family-editor.test.js tests/bfday-patra-family-render.test.js tests/bfday-lotus-vivah.test.js tests/bfday-aangan-vivah.test.js tests/bfday-audio.test.js tests/bfday-engine.test.js tests/bfday-studio.test.js
+node --test tests/bfday-patra-vivah.test.js tests/bfday-patra-runtime.test.js tests/bfday-patra-family-editor.test.js tests/bfday-patra-family-render.test.js tests/bfday-patra-demo-editor.test.js tests/bfday-lotus-vivah.test.js tests/bfday-aangan-vivah.test.js tests/bfday-audio.test.js tests/bfday-engine.test.js tests/bfday-studio.test.js
 ```
 
-Result: **130/130 passed, zero skips**. git diff --check passed.
+Result: **136/136 passed, zero skips**. git diff --check passed.
 
 Coverage:
 - Four-page registry/render/navigation/inert/aria state, exactly one creator placement per field.
@@ -42,7 +42,24 @@ The earlier approved content pages passed 32 analogous default/long-heading/max-
 
 ## Media details
 
-Source upload: VID_20261030_160600_225.mp4, 720×1280 at24fps, 10.0267s. Delivered opening is only0–4.5s, muted, YUV420p H.264, fast-start, 1,048,788bytes. Video currentTime drives the overlay from3.85s to full white at4.35s; playback pauses around4.43s before transitioning to the approved content. A160ms white hold plus850ms settle window completes the sequence in roughly5.4s at normal playback. Original motion is not sped up. The later kalash scene is not presented.
+Current source upload: VID_20261030_170835_744.mp4, 720×1280 at24fps, 10.0267s. Delivered opening is only0–4.5s, muted, YUV420p H.264, fast-start, 1,267,667bytes. Video currentTime drives the overlay from3.85s to full white at4.35s; playback pauses around4.43s before transitioning to the approved content. A160ms white hold plus850ms settle window completes the sequence in roughly5.4s at normal playback. Original motion is not sped up. The later kalash scene is not presented.
+
+## Current fix: visible editor and clean cover
+
+The previous artifact had no editing panel because it intentionally rendered only the guest view. The opt-in public demo/artifact now visibly exposes “Edit Family Welcome”. Authenticated creator controls are still present and unchanged; guests and normal creator iframes have no demo controls.
+
+New source is the supplied watermark-free replacement, not the earlier file. Eighteen samples of the formerly marked lower-right corner from the delivered opening were visually inspected; no logo/watermark was visible. The poster is regenerated from its exact first frame. New opening-clean.mp4 and opening-clean-poster.webp URLs prevent old-cache reuse. The current manifest excludes the old video/poster; their base64 files are deleted and startup removes the two old generated public files. Historical Git commits/thread attachments are not rewritten.
+
+Real browser interaction tested:
+- Clicked “Edit Family Welcome”; the editor and gallery picker were visible.
+- Used the real browser file input to select a synthetic 1600×1200 PNG crop target (no fabricated family/person photo). Live card and editor showed the image with object-fit:cover, no stretching.
+- Filled the Maps URL field through the real UI; both address and button received the correct HTTPS URL.
+- A real 390×844 nested browser viewport played the clean muted inline video from a ready matching poster at time0, finished near4.4409s of4.5s without decoder error, and reached Save the Date.
+- The mobile viewport used the actual file-input change/FileReader/decode path; zoom185%, X20%, Y80% rendered matrix1.85 and object-position20%80%. Remove and replace succeeded. A valid link created the href, a lookalike host showed editor+guest warnings with no href, and blank input hid the button.
+- Actual iframe window sizes320×568,360×640,390×844,430×932,844×390 and768×1024 all passed complete-card9:16 containment, text fit, photo clearance and editing-panel bounds. Unlike earlier region-only checks, iframe tests exercise real CSS viewport breakpoints. These are Chromium responsive checks, not physical iOS/Android device certification.
+- Hosted artifactv6 render health passed with no console errors or failed requests.
+
+Demo state is browser-local and explicitly labelled, not a server upload/save. No API call, provider fetch, localStorage write or production publish is performed by the local demo editor.
 
 ## Release gates / limitations
 

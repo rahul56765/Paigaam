@@ -19,7 +19,7 @@ module.exports = {
   slug: 'patra-vivah', family: 'bfday', name: 'Patra Vivah', category: 'Wedding', price: 0, currency: 'INR', version: 1,
   editable: true, backgroundMusic: false, displayField: 'brideName',
   description: 'A banana-leaf wedding invitation in exactly four portrait pages: a botanical cover, Save the Date, your complete wedding itinerary and Family Welcome.',
-  thumbnail_url: '/patra-vivah/thumbnail.webp', ogImage: '/patra-vivah/thumbnail.webp',
+  thumbnail_url: '/patra-vivah/opening-clean-poster.webp', ogImage: '/patra-vivah/opening-clean-poster.webp',
   fields: [
     { ...text('brideName', 'Bride’s name', undefined, 40), required: true, placeholder: 'Ananya' },
     { ...text('groomName', 'Groom’s name', undefined, 40), required: true, placeholder: 'Arjun' },

@@ -8,7 +8,7 @@ The 2026-10-30 second brief changes only the cover and appends Family Welcome. T
 
 ## Reference-video cover
 
-The user supplied a 720 × 1280, 24 fps video. To preserve its precise leaf design, bow-untying and opening motion, opening.mp4 uses the actual 0–4.5 second envelope section, encoded as a contained H.264/YUV420p fast-start MP4 without the source soundtrack. The matching first-frame poster prevents a poster/play jump. No new generated opening is substituted. The later kalash scene is not shown: a soft white overlay becomes fully opaque while the leaves open, before that scene appears, and the player pauses near 4.43 seconds. White then fades over the unchanged Save the Date. The sequence normally takes roughly 5.4 seconds including the crossfade; the video motion itself is not sped up.
+The current source is the user’s replacement watermark-free VID_20261030_170835_744.mp4: 720 × 1280, 24 fps and 10.0267 seconds. The superseded watermarked video and poster are removed from the current pack; startup also deletes their old generated public files. To preserve its precise leaf design, bow-untying and opening motion, opening-clean.mp4 uses the actual 0–4.5 second envelope section, encoded as a contained H.264/YUV420p fast-start MP4 without the source soundtrack. The matching first-frame poster prevents a poster/play jump. No new generated opening is substituted. The later kalash scene is not shown: a soft white overlay becomes fully opaque while the leaves open, before that scene appears, and the player pauses near 4.43 seconds. White then fades over the unchanged Save the Date. The sequence normally takes roughly 5.4 seconds including the crossfade; the video motion itself is not sped up.
 
 The cover never autoplays before a tap. Its full-page button retains editable tap-to-open text. Native customer music starts synchronously in the first tap handler; the opening video is muted and inline so it cannot compete with the chosen song. Video currentTime, not a wall-clock transition, drives the white light. Buffering cannot silently skip the opening. Repeated taps/navigation are locked until settled. Media rejection/error or a 15-second stalled-media watchdog gives a soft message and white transition to the invitation rather than leaving a guest stuck. Reduced motion skips the video and decorative movement. Replay after returning to the cover resets to the same poster and first frame.
 
@@ -49,6 +49,14 @@ With a photo, text fits in a safe zone below the frame. Removing it removes the 
 
 A valid supported HTTPS Google Maps URL makes both venue/address and button clickable, opening the app/browser according to device behavior. New-tab links use noopener/noreferrer. Blank links produce no button. Malformed, unsupported, credentialed, script or lookalike-host links stay editable but never become hrefs; the editor and guest page show a gentle warning. Validation checks URL structure/approved hosts only; it never fetches links and cannot verify a real-world venue's correctness. Supported hosts are bounded Google Maps hosts including google.com, google.co.in, maps.google.com, maps.app.goo.gl and goo.gl/maps.
 
+## Visible Family editor in demos
+
+The earlier shared artifact was a guest-only render, so its photo/Maps editing options were not visible there even though the creator step existed. The public Patra demo and thread artifact now explicitly opt into a visible “Edit Family Welcome” panel containing the gallery picker, crop/zoom/X/Y controls, all closing/venue/address text and Maps URL/button label together.
+
+The demo supports real browser file selection, sharp non-stretched 5:4 photo preview, drag plus sliders, replace/remove, and live Maps validation/address/button updates. A photo placeholder is shown only while editing; closing the editor returns the complete guest design. Desktop uses a side panel; mobile splits the viewport into a complete scaled card above a scrollable panel. “Done · full preview” restores full-size viewing. Published guest invitations and normal creator preview iframes never include this demo panel. Existing authenticated Paigaam creator uploads, saves and publication remain unchanged.
+
+Demo edits are deliberately browser-local, are not uploaded or saved remotely, and reset on reload. The panel says this explicitly. Public demo route opts in only for Patra; no other template receives this UI. There are no network/API writes or localStorage persistence in the demo controller.
+
 ## Media and security
 
 Existing couple photo/logo and song controls remain unchanged. Shared engine ownership, origin, MIME/header verification, private drafts, persistent storage and publication checks apply to the family image. Music uploads accept MP3/M4A/OGG/WAV up to 15 MiB; upload overrides a direct HTTPS song URL/YouTube link. YouTube is provider-dependent and can require another tap. Spotify/Apple share pages are not playable audio URLs. Use music/media you have rights to share.
@@ -56,21 +64,28 @@ Existing couple photo/logo and song controls remain unchanged. Shared engine own
 ## Files and asset restoration
 
 - templates/patra-vivah: config.js, schema.js, render.js, README.md, QA.md.
-- public/patra-vivah: scoped patra.css/patra.js and contained opening media/art.
+- public/patra-vivah: scoped patra.css/patra.js, clean opening media/art and opt-in demo-editor.js/css.
+- templates/patra-vivah/demo-editor.js: escaped demo-panel markup built from the same declared fields.
 - public/bfday/itinerary-editor.js: existing opt-in nested editor.
 - public/bfday/family-editor.js and family-editor.css: Patra-only crop preview and soft Maps status.
 - public/bfday/family-maps.js: shared server/browser parsing-only URL validator.
-- assets/patra-vivah: eleven checksummed base64 media/art assets. Original unused flat envelope is retained for reversibility; opening poster/video and refreshed thumbnail are packed too.
+- assets/patra-vivah: eleven checksummed base64 media/art assets. Original unused flat envelope is retained for reversibility; clean opening poster/video and refreshed thumbnail are packed too. Superseded opening.mp4 and opening-poster.webp are absent from the current pack; the asset healer also prunes only those two retired public paths.
 - lib/bfday/assets-patra-vivah.js restores missing/corrupt files on family startup.
 - scripts/pack-patra-vivah-assets.js regenerates the manifest/text pack after media edits.
 
-No new dependencies, lockfile, environment variables, deployment configuration or storage volume. Existing streamFile supports MP4 byte ranges/HEAD and fast-start playback. New scoped CSS/runtime use v2; shared creator cache is bumped for the Family Welcome hook. No changes to the separate wedding-video feature.
+No new dependencies, lockfile, environment variables, deployment configuration or storage volume. Existing streamFile supports MP4 byte ranges/HEAD and fast-start playback. New scoped CSS/runtime use v3 and clean media uses distinct URLs to avoid a cached watermarked cover; shared creator cache is bumped for the Family Welcome hook. No changes to the separate wedding-video feature.
 
 ## Verification and release gate
 
 See QA.md. The prior sandbox dependency install returned HTTP 403 for pinned sharp 0.35.5. Built-in Node unit/integration tests and the hosted real-browser invitation run without replacing dependencies; the full app build/full server runner remain a release gate. Run normal CI install/build and release smoke tests before merging. Do not change pins to mask this environment limitation.
 
 ## Changelog
+
+### 2026-10-30 — clean video and visible editor fix
+- Replaced the cover with the newly supplied clean source; regenerated its exact first-frame poster and thumbnail, with cache-distinct clean media URLs and complete retirement of the old video/poster.
+- Kept the same 4.5-second envelope clip and decoded-time white/crossfade behavior because the replacement has the same duration and motion timing.
+- Exposed the Family Welcome controls in public demo/artifact previews, with local gallery upload, live 5:4 crop, drag/zoom/move/replace/remove and Maps editing, while keeping published guests free of editor controls.
+- Added actual mobile-width iframe browser playback/editor testing and automated opt-in, security, media-retirement and regression checks.
 
 ### 2026-10-30 — requested revision
 - Replaced only the cover with the supplied video opening, matching poster, decoded-time white transition, first-tap music, buffering/error fallback and reduced motion.

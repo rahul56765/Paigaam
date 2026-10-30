@@ -20,9 +20,9 @@ test('Patra revision retains every approved content-card CSS rule as an unchange
 });
 test('Patra cover uses contained, muted inline source video, matching poster, no autoplay and four navigation dots',()=>{
  const h=html({});assert.ok(h.includes('id="pvOpeningVideo"'));assert.ok(h.includes('muted playsinline webkit-playsinline'));
- assert.ok(h.includes('src="/patra-vivah/opening.mp4" type="video/mp4"'));assert.ok(!h.includes('<video autoplay'));
+ assert.ok(h.includes('src="/patra-vivah/opening-clean.mp4" type="video/mp4"'));assert.ok(!h.includes('<video autoplay'));
  assert.equal((h.match(/data-pv-go="/g)||[]).length,4);assert.ok(h.includes('data-pv-current>1</span> / 4'));
- assert.ok(h.includes('src="/patra-vivah/opening-poster.webp"'));assert.ok(!h.includes('pv-flap-left'));
+ assert.ok(h.includes('src="/patra-vivah/opening-clean-poster.webp"'));assert.ok(!h.includes('pv-flap-left'));
 });
 test('Patra family photo crop is owned, bounded, independently adjustable and fully removable',()=>{
  const data={...config.demo,familyPhoto:upload,familyPhotoZoom:220,familyPhotoX:17,familyPhotoY:83};
@@ -46,7 +46,7 @@ test('Patra family copy is escaped, line breaks retained, all headings and butto
 });
 test('Patra opening media is fast-start H.264 MP4 with real HTTP byte-range and HEAD support',async t=>{
  const http=require('node:http'),{streamFile}=require('../lib/streamFile');
- const file=path.join(__dirname,'../public/patra-vivah/opening.mp4');const bytes=fs.readFileSync(file);
+ const file=path.join(__dirname,'../public/patra-vivah/opening-clean.mp4');const bytes=fs.readFileSync(file);
  assert.ok(bytes.subarray(0,64).includes(Buffer.from('ftyp')));assert.ok(bytes.indexOf(Buffer.from('moov'))<bytes.indexOf(Buffer.from('mdat')));
  const server=http.createServer((req,res)=>streamFile(req,res,file,'video/mp4'));
  await new Promise(r=>server.listen(0,'127.0.0.1',r));t.after(async()=>{server.closeAllConnections();await new Promise(r=>server.close(r));});

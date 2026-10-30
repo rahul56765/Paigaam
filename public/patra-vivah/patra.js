@@ -77,6 +77,7 @@ stage.addEventListener('pointercancel',function(){touch=null;});
   window.addEventListener('message',function(e){if(!frame||e.source!==frame.contentWindow||e.origin!=='https://www.youtube-nocookie.com')return;var d;try{d=typeof e.data==='string'?JSON.parse(e.data):e.data;}catch(_){return;}if(d){var state=d.event==='onStateChange'?d.info:d.info&&d.info.playerState;if(typeof state==='number'){musicState(state===1);if(playing)status.textContent='';}}});
   document.addEventListener('visibilitychange',function(){app.classList.toggle('pv-paused',document.hidden);if(document.hidden&&audio&&playing)audio.pause();});
 pages.forEach(function(p){p.querySelectorAll('.pv-reveal').forEach(function(n,i){n.style.setProperty('--line',i);});});
+window.addEventListener('pv:edit-family',function(){if(app.dataset.editorPreview!=='true'||openingPending||app.classList.contains('pv-opening'))return;clearTimeout(timer);locked=false;index=pages.length-1;app.classList.add('pv-has-opened');sync();queueLayout();});
 window.addEventListener('resize',queueLayout);if(window.visualViewport)window.visualViewport.addEventListener('resize',queueLayout);
 if(window.ResizeObserver)new ResizeObserver(queueLayout).observe(stage);
 if(document.fonts)document.fonts.ready.then(queueLayout);

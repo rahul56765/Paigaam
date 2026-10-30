@@ -168,17 +168,20 @@ test('Patra runtime: every packed illustration matches manifest and missing/corr
       return fs.readFileSync(file, encoding);
     },
     mkdirSync() {},
+    unlinkSync(file) { if (!files.has(file)) { const e=new Error('ENOENT');e.code='ENOENT';throw e; } files.delete(file); },
     writeFileSync(file, data) { files.set(file, Buffer.from(data)); writes.push(file); },
   };
   const module = { exports: {} };
   vm.runInNewContext(fs.readFileSync(source, 'utf8'), { module, exports: module.exports, __dirname: path.dirname(source), require: name => name === 'node:fs' ? fakeFs : require(name), Buffer });
-  const { assets, ensurePatraVivahAssets } = module.exports;
+  const { assets, retiredCover, ensurePatraVivahAssets } = module.exports;
+  for(const retired of retiredCover) files.set(path.join(root,'public',retired),Buffer.from('old watermarked cover'));
   assert.equal(assets.length, Object.keys(manifest).length); assert.equal(assets.length, 11);
   for (const a of assets) {
     assert.equal(crypto.createHash('sha256').update(Buffer.from(a.data, 'base64')).digest('hex'), manifest[a.path]);
     assert.ok(a.path.startsWith('patra-vivah/')); assert.equal(path.basename(a.path), a.path.slice('patra-vivah/'.length));
   }
   assert.equal(ensurePatraVivahAssets().length, assets.length); assert.equal(ensurePatraVivahAssets().length, 0);
+  for(const retired of retiredCover) assert.equal(files.has(path.join(root,'public',retired)),false);
   const damaged = path.join(root, 'public', assets[0].path); files.set(damaged, Buffer.from('corrupt'));
   assert.equal(ensurePatraVivahAssets().length, 1); assert.equal(ensurePatraVivahAssets().length, 0);
   assert.equal(crypto.createHash('sha256').update(files.get(damaged)).digest('hex'), assets[0].sha256);
@@ -205,6 +208,8 @@ test('Patra runtime: isolated HTTP draft/save/image+audio upload/private preview
   await new Promise(r => server.listen(0,'127.0.0.1',r)); base = 'http://127.0.0.1:' + server.address().port;
   const post = (p,cookie,data,type='application/json') => fetch(base+p,{method:'POST',headers:{'content-type':type,...(cookie ? {cookie} : {})},body:type === 'application/json' ? JSON.stringify(data) : data});
   const prefix = '/api/patra-vivah';
+  const demoResponse=await fetch(base+'/patra-vivah/demo');assert.equal(demoResponse.status,200);
+  const demoHTML=await demoResponse.text();contains(demoHTML,'Edit Family Welcome');contains(demoHTML,'id="pvDemoPhoto"');contains(demoHTML,'data-pv-edit="familyMapsLink"');
   let r = await post(prefix+'/draft',null,{customer_data:demo()}); assert.equal(r.status,200);
   const cookie = r.headers.get('set-cookie').split(';')[0]; const draft = await r.json();
   assert.equal((await fetch(base+draft.previewUrl)).status,403);
@@ -232,6 +237,7 @@ test('Patra runtime: isolated HTTP draft/save/image+audio upload/private preview
   r = await fetch(base+draft.previewUrl,{headers:{cookie}}); assert.equal(r.status,200); const preview = await r.text();
   assert.deepEqual(kinds(preview),['cover','save','itinerary','family']);
   contains(preview,'class="bf-previewbadge"');
+  excludes(preview,'id="pvDemoEditor"');
   contains(preview,'--family-zoom:1.75;--family-x:10%;--family-y:90%');
   contains(preview,'Find the family venue');
   assert.ok(preview.indexOf(data.days[0].heading) < preview.indexOf(data.days[2].heading)); contains(preview,song); contains(preview,logo); excludes(preview,'data-youtube=');
