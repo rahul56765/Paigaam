@@ -79,6 +79,12 @@
     invalid_colour: 'Use a six-digit colour such as #D94D79, or leave it blank for the original colour.',
     invalid_music_link: 'Use an HTTPS direct MP3, M4A, OGG or WAV URL, or a YouTube link. Music-service share pages cannot play as background audio.',
     duplicate_event: 'Each celebration card design can appear once. Choose a different design or remove the duplicate.',
+    invalid_wedding_time: 'Use a wedding time in 24-hour HH:MM format.',
+    invalid_event_time: 'Use event times in 24-hour HH:MM format.',
+    event_name_and_timing_required: 'For each event, enter a name and choose which date and time to use.',
+    event_datetime_required: 'For each event with custom timing, enter both its date and time.',
+    invalid_rsvp_phone: 'Check the RSVP phone number.',
+    invalid_rsvp_email: 'Check the RSVP email address.',
   };
 
   function setError(message) {
@@ -111,6 +117,7 @@
   /* ------------------------------------------------------------- photos */
 
   var draftPending = null;
+  var photoUploadsPending = 0;
 
   function ensureDraft() {
     if (draftId) return Promise.resolve(draftId);
@@ -187,6 +194,13 @@
   /** A photo picker: thumbnail, choose/replace, remove. Value = upload URL or ''. */
   function photoControl(host, f, labelText) {
     var value = '';
+    var revision = 0;
+    var activeUpload = null;
+    function finishUpload(job) {
+      if (job && job.pending) { job.pending = false; photoUploadsPending--; }
+      if (activeUpload === job) activeUpload = null;
+    }
+    function invalidateUpload() { revision++; finishUpload(activeUpload); }
     host.textContent = '';
     host.classList.add('bf-photo');
     var thumb = make('div', 'bf-photo__thumb');
@@ -226,44 +240,53 @@
       thumb.classList.add('bf-photo__thumb--pickable');
       thumb.setAttribute('role', 'button');
       thumb.setAttribute('tabindex', '0');
-      thumb.setAttribute('aria-label', 'Tap the logo preview to choose or replace it');
+      thumb.setAttribute('aria-label', 'Tap the ' + mediaName + ' preview to choose or replace it');
       thumb.addEventListener('click', pickFile);
       thumb.addEventListener('keydown', function (event) {
         if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); pickFile(); }
       });
     }
-    remove.addEventListener('click', function () { value = ''; paint(''); note.textContent = ''; changed(); });
+    remove.addEventListener('click', function () { invalidateUpload(); choose.disabled = false; value = ''; paint(''); note.textContent = ''; changed(); });
     file.addEventListener('change', function () {
       var picked = file.files && file.files[0];
       file.value = '';
       if (!picked) return;
       setError('');
+      invalidateUpload();
+      var current = revision;
+      var job = activeUpload = { pending: true };
+      photoUploadsPending++;
       choose.disabled = true;
       note.textContent = 'Preparing your ' + mediaName + '…';
       var local = null;
       prepareImage(picked, f.preserveTransparency).then(function (blob) {
+        if (current !== revision) return null;
         local = URL.createObjectURL(blob);
         paint(local);
         note.textContent = 'Uploading…';
         return uploadBlob(blob);
       }).then(function (url) {
+        if (current !== revision || !url) return;
         value = url;
         paint(url);
         note.textContent = 'Added.';
         changed();
       }).catch(function (err) {
+        if (current !== revision) return;
         paint(value);
         note.textContent = '';
         setError(MESSAGES[err && err.code] || 'That photo didn’t upload. Check your connection and try again.');
       }).then(function () {
-        choose.disabled = false;
+        finishUpload(job);
+        if (current === revision) choose.disabled = false;
         if (local) setTimeout(function () { URL.revokeObjectURL(local); }, 4000);
       });
     });
 
     return {
       get: function () { return value; },
-      set: function (v) { value = typeof v === 'string' ? v : ''; paint(value); },
+      set: function (v) { invalidateUpload(); choose.disabled = false; note.textContent = ''; value = typeof v === 'string' ? v : ''; paint(value); },
+      dispose: invalidateUpload,
       focus: function () { choose.focus(); },
     };
   }
@@ -348,7 +371,7 @@
       wrap.appendChild(cap); wrap.appendChild(host);
       var photo = photoControl(host, f, labelText);
       if (initial) photo.set(initial);
-      return { el: wrap, get: photo.get, focus: photo.focus };
+      return { el: wrap, get: photo.get, set: photo.set, dispose: photo.dispose, focus: photo.focus };
     }
     var label = make('label', '', labelText);
     label.setAttribute('for', id);
@@ -387,6 +410,12 @@
     var host = form.querySelector('[data-list="' + f.id + '"]');
     var addBtn = form.querySelector('[data-add="' + f.id + '"]');
     var rows = [];
+
+    function disposeRow(row) {
+      Object.keys(row.parts).forEach(function (key) {
+        if (row.parts[key].dispose) row.parts[key].dispose();
+      });
+    }
 
     function renumber() {
       rows.forEach(function (row, i) {
@@ -427,7 +456,7 @@
       remove.addEventListener('click', function () {
         var i = rows.indexOf(row);
         if (i < 0 || rows.length <= Math.max(1, f.minItems)) return;
-        rows.splice(i, 1); host.removeChild(node); renumber(); changed();
+        rows.splice(i, 1); disposeRow(row); host.removeChild(node); renumber(); changed();
         var next = rows[Math.min(i, rows.length - 1)];
         if (next) next.remove.focus(); else if (addBtn) addBtn.focus();
       });
@@ -462,15 +491,12 @@
       },
       set: function (v) {
         if (!Array.isArray(v)) return;
-        rows.slice().forEach(function (row) { row.remove.click(); });
-        v.forEach(function (item) {
-          addRow(item, false);
-          if (item && typeof item === 'object') {
-            var row = rows[rows.length - 1];
-            Object.keys(item).forEach(function (k) { if (row.parts[k] && row.parts[k].set) row.parts[k].set(item[k]); });
-          }
-        });
-        while (rows.length < f.minItems) addRow(null, false);
+        // Remove directly: the UI intentionally disallows removing the last
+        // row, and clicking disabled buttons leaves old rows in restored data.
+        rows.forEach(function (row) { disposeRow(row); host.removeChild(row.node); });
+        rows.length = 0;
+        v.slice(0, f.maxItems).forEach(function (item) { addRow(item, false); });
+        while (rows.length < Math.max(1, f.minItems)) addRow(null, false);
         renumber(); changed();
       },
       focus: function () { if (addBtn) addBtn.focus(); },
@@ -564,7 +590,12 @@
         if (f.type === 'url' && c.get() && !/^https?:\/\/\S+$/i.test(c.get())) return { message: f.label + ' — that link should start with https://', focus: c.focus };
         continue;
       }
-      if (!f.shape) continue;
+      if (!f.shape) {
+        var scalarCount = c.get().filter(function (v) { return v !== '' && v != null; }).length;
+        if (scalarCount && scalarCount < f.minItems) return { message: f.label + ' needs at least ' + f.minItems + ' filled in.', focus: c.focus };
+        continue;
+      }
+      var filledCount = 0;
       for (var r = 0; r < c.rows.length; r++) {
         var row = c.rows[r], filled = false, missing = null;
         for (var s = 0; s < f.shape.length; s++) {
@@ -572,7 +603,9 @@
           if (v) filled = true; else if (sub.required && !missing) missing = sub;
         }
         if (filled && missing) return { message: f.itemLabel + ' ' + (r + 1) + ' needs “' + missing.label + '” (or remove it).', focus: row.parts[missing.id].focus };
+        if (filled) filledCount++;
       }
+      if (filledCount && filledCount < f.minItems) return { message: f.label + ' needs at least ' + f.minItems + ' filled in.', focus: c.focus };
     }
     return null;
   }
@@ -586,7 +619,7 @@
   }
 
   function validateAll() {
-    for (var i = 1; i < LAST_STEP; i++) {
+    for (var i = 0; i < LAST_STEP; i++) {
       var problem = problemIn(i);
       if (problem) { show(i); setError(problem.message); if (problem.focus) problem.focus(); return false; }
     }
@@ -749,6 +782,7 @@
 
   if (previewBtn) {
     previewBtn.addEventListener('click', function () {
+      if (photoUploadsPending) { setError('Please wait for your photo upload to finish.'); return; }
       if (!validateAll()) return;
       previewBtn.disabled = true;
       saveDraft().then(function () {
@@ -780,6 +814,8 @@
 
   if (publishBtn) {
     publishBtn.addEventListener('click', function () {
+      if (photoUploadsPending) { setError('Please wait for your photo upload to finish.'); return; }
+      if (!validateAll()) return;
       publishBtn.disabled = true;
       say('Publishing…');
       saveDraft() // one tap: the latest typing goes with it
