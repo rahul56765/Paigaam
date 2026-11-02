@@ -17,7 +17,9 @@ const { png } = require('../tests/bfday-helpers');
   const socket = net.createServer(); socket.listen(0, '127.0.0.1'); await once(socket, 'listening');
   const port = socket.address().port; await new Promise(r => socket.close(r));
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'paigaam-bfday-test-')), base = 'http://127.0.0.1:' + port;
-  const env = { ...process.env, PORT: String(port), HOST: '127.0.0.1', BASE_URL: base, DATA_DIR: dir, BFDAY_TEST_FIXTURE: '1' };
+  // The family server never contacts a real payment gateway; the paid checkout
+  // suite starts its own isolated server and explicitly enables its fake gateway.
+  const env = { ...process.env, PORT: String(port), HOST: '127.0.0.1', BASE_URL: base, DATA_DIR: dir, BFDAY_TEST_FIXTURE: '1', RAZORPAY_ENABLED: '0' };
   let server;
 
   async function start() {
@@ -45,7 +47,8 @@ const { png } = require('../tests/bfday-helpers');
     const [code] = await once(test, 'exit');
     if (code !== 0) throw new Error('Boyfriend Day test suite failed');
 
-    // Every published member must survive the process that made it — photos too.
+    // Free published members must survive the process that made them — photos too.
+    // Divya is paid, so verify its owner draft persists rather than publishing it.
     const made = [];
     for (const t of family.list) {
       const data = { ...t.config.demo };
@@ -63,6 +66,10 @@ const { png } = require('../tests/bfday-helpers');
         r = await post(`/api/${t.slug}/draft`, cookie, { id, customer_data: { ...data, [image.id]: photo } });
         assert.equal(r.status, 200, t.slug + ' draft with photo');
       }
+      if (t.slug === 'divya-vivah') {
+        made.push({ t, cookie, pending: { previewUrl: `/${t.slug}/preview/${id}` }, name: nameField ? data[nameField.id] : null });
+        continue;
+      }
       r = await post(`/api/${t.slug}/publish`, cookie, { id });
       assert.equal(r.status, 200, t.slug + ' publish');
       const pub = await r.json();
@@ -76,6 +83,14 @@ const { png } = require('../tests/bfday-helpers');
     await stop(); await start();
 
     for (const { t, pub, photo, cookie, pending, name } of made) {
+      if (t.slug === 'divya-vivah') {
+        const own = await fetch(base + pending.previewUrl, { headers: { cookie } });
+        assert.equal(own.status, 200, `${t.slug}: draft ownership survives restart`);
+        if (name) assert.ok((await own.text()).includes(name), `${t.slug}: draft text survives restart`);
+        assert.equal((await fetch(base + pending.previewUrl)).status, 403, `${t.slug}: draft remains private after restart`);
+        console.log(`Restart persistence: ${t.slug} owner draft survives`);
+        continue;
+      }
       const alive = await fetch(base + '/p/' + pub.slug);
       assert.equal(alive.status, 200, `${t.slug}: published page survives restart`);
       const text = await alive.text();
@@ -83,7 +98,10 @@ const { png } = require('../tests/bfday-helpers');
       if (photo) {
         assert.ok(text.includes(photo), `${t.slug}: photo still referenced`);
         assert.equal((await fetch(base + photo)).status, 200, `${t.slug}: photo still served`);
-        if (['aangan-vivah', 'lotus-vivah'].includes(t.slug)) {
+        if (t.slug === 'patra-vivah') {
+          // Patra's couple photo is in the invitation; its designed card is the share image.
+          assert.ok(text.includes(`<meta property="og:image" content="${base + t.config.ogImage}">`), `${t.slug}: designed og:image survives restart`);
+        } else if (['aangan-vivah', 'lotus-vivah'].includes(t.slug)) {
           // Its optional image is a monogram overlay, not a share-card portrait;
           // keep the designed share card as og:image while serving the logo in-page.
           assert.ok(text.includes(photo), `${t.slug}: uploaded logo remains in the monogram page`);

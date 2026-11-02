@@ -33,3 +33,9 @@ public/shaadi-paigaam/art/
 public/shaadi-paigaam/music/
 public/shaadi-paigaam/fonts/
 public/aangan-vivah/*.webp
+
+# Divya Vivah generated media and licensed fonts
+public/divya-vivah/*.webp
+public/divya-vivah/*.jpg
+public/divya-vivah/*.mp4
+public/divya-vivah/fonts/*.ttf
