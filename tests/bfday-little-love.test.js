@@ -472,3 +472,34 @@ test('regression: a late YouTube onReady must not restart playback after navigat
   c.win.emit('message', { source: iframe.contentWindow, origin: 'https://www.youtube-nocookie.com', data: { event: 'onReady' } });
   assert.ok(!c.messages.slice(before).some(m => m.data.func === 'playVideo'), 'onReady after pause/navigation must preserve the stopped state');
 });
+
+for (const [providerState, label] of [[0, 'completion'], [2, 'pause in the embedded player']]) {
+  test(`regression: one click replays YouTube after ${label}`, () => {
+    const c = client({ youtube: true });
+    const button = c.doc.lists['[data-play="song"]'][0];
+    button.click(); const iframe = c.host.child;
+    const send = data => c.win.emit('message', { source: iframe.contentWindow, origin: 'https://www.youtube-nocookie.com', data });
+    send({ event: 'onReady' });
+    send({ event: 'onStateChange', info: 1 });
+    send({ event: 'onStateChange', info: providerState });
+    assert.equal(button.getAttribute('aria-pressed'), 'false');
+    button.click();
+    assert.equal(c.messages.at(-1).data.func, 'playVideo', 'the displayed Play action must not send pauseVideo');
+  });
+}
+
+test('regression: embedded play resumes after a provider pause but late playback cannot undo navigation cancellation', () => {
+  const c = client({ youtube: true });
+  c.doc.lists['[data-play="song"]'][0].click(); const iframe = c.host.child;
+  const send = data => c.win.emit('message', { source: iframe.contentWindow, origin: 'https://www.youtube-nocookie.com', data });
+  send({ event: 'onReady' }); send({ event: 'onStateChange', info: 1 });
+  send({ event: 'onStateChange', info: 2 });
+  const before = c.messages.length;
+  send({ event: 'onStateChange', info: 1 });
+  assert.equal(c.disc.getAttribute('aria-pressed'), 'true');
+  assert.ok(!c.messages.slice(before).some(m => m.data.func === 'pauseVideo'));
+  c.next.click(); const cancelled = c.messages.length;
+  send({ event: 'onStateChange', info: 1 });
+  assert.ok(c.messages.slice(cancelled).some(m => m.data.func === 'pauseVideo'));
+  assert.equal(c.disc.getAttribute('aria-pressed'), 'false');
+});

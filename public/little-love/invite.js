@@ -123,7 +123,7 @@
   }
   document.querySelectorAll('[data-track]').forEach(function (button) { button.addEventListener('click', function () { pickTrack(Number(button.dataset.track), true); }); });
   document.querySelectorAll('[data-track-step]').forEach(function (button) { button.disabled = playlist.length < 2; button.addEventListener('click', function () { pickTrack(trackIndex + Number(button.dataset.trackStep), true); }); });
-  var iframe = null, ytReady = false, ytPlaying = false, ytWanted = false, ytDuration = 0, ytTime = 0, ytTimeout = 0;
+  var iframe = null, ytReady = false, ytPlaying = false, ytWanted = false, ytBlocked = false, ytDuration = 0, ytTime = 0, ytTimeout = 0;
   function clock(seconds) { seconds = Number.isFinite(seconds) ? Math.max(0, Math.floor(seconds)) : 0; return Math.floor(seconds / 60) + ':' + String(seconds % 60).padStart(2, '0'); }
   function mediaFor(kind) { return kind === 'memory' ? memory : (youtubeCard.dataset.youtube ? null : song); }
   function state(kind, playing) {
@@ -147,11 +147,11 @@
   function pauseAll(except) {
     if (memory && except !== 'memory') memory.pause();
     if (song && except !== 'song') song.pause();
-    if (except !== 'song' && iframe) { ytWanted = false; command('pauseVideo'); ytPlaying = false; state('song', false); }
+    if (except !== 'song' && iframe) { ytWanted = false; ytBlocked = true; command('pauseVideo'); ytPlaying = false; state('song', false); }
   }
   function startYouTube() {
-    if (iframe) { ytWanted = !ytWanted; command(ytWanted ? 'playVideo' : 'pauseVideo'); return; }
-    ytWanted = true;
+    if (iframe) { ytWanted = !ytPlaying && !ytWanted; ytBlocked = !ytWanted; command(ytWanted ? 'playVideo' : 'pauseVideo'); return; }
+    ytWanted = true; ytBlocked = false;
     iframe = document.createElement('iframe'); iframe.title = 'Your song — YouTube player'; iframe.allow = 'autoplay; encrypted-media'; iframe.referrerPolicy = 'strict-origin-when-cross-origin';
     iframe.src = 'https://www.youtube-nocookie.com/embed/' + youtubeCard.dataset.youtube + '?enablejsapi=1&playsinline=1&autoplay=1&origin=' + encodeURIComponent(location.origin);
     iframe.addEventListener('load', function () { iframe.contentWindow.postMessage(JSON.stringify({ event: 'listening', id: 'llYouTube' }), 'https://www.youtube-nocookie.com'); command('addEventListener', ['onStateChange']); command('addEventListener', ['onError']); });
@@ -189,10 +189,17 @@
     if (!iframe || event.source !== iframe.contentWindow || event.origin !== 'https://www.youtube-nocookie.com') return;
     var d; try { d = typeof event.data === 'string' ? JSON.parse(event.data) : event.data; } catch (_) { return; }
     if (!d) return;
-    if (d.event === 'onReady') { ytReady = true; command(ytWanted && !document.hidden ? 'playVideo' : 'pauseVideo'); }
+    if (d.event === 'onReady') { ytReady = true; command(ytWanted && !ytBlocked && !document.hidden ? 'playVideo' : 'pauseVideo'); }
     var info = d.info;
     var playerState = d.event === 'onStateChange' ? info : info && info.playerState;
-    if (typeof playerState === 'number') { ytPlaying = playerState === 1; state('song', ytPlaying); if (ytPlaying && (!ytWanted || document.hidden)) { command('pauseVideo'); ytPlaying = false; state('song', false); } if (ytPlaying) { clearTimeout(ytTimeout); status.textContent = ''; } }
+    if (typeof playerState === 'number') {
+      ytPlaying = playerState === 1;
+      // Completion/provider pause reset the next Play action, not the navigation safety latch.
+      if (ytReady && (playerState === 0 || playerState === 2)) ytWanted = false;
+      if (ytPlaying && (ytBlocked || document.hidden)) { command('pauseVideo'); ytPlaying = false; }
+      else if (ytPlaying) { ytReady = true; ytWanted = true; clearTimeout(ytTimeout); status.textContent = ''; }
+      state('song', ytPlaying);
+    }
     if (info && typeof info === 'object') { if (Number.isFinite(info.duration)) ytDuration = info.duration; if (Number.isFinite(info.currentTime)) ytTime = info.currentTime; time('song', ytTime, ytDuration); }
     if (d.event === 'onError') { state('song', false); status.textContent = 'This YouTube video cannot be played here. Ask the sender to choose an embeddable video or direct audio link.'; }
   });

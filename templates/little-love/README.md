@@ -51,13 +51,15 @@ Commands:
 
 Verified locally on 2026-11-02 with Node 24.22.1:
 
-- 137/137 tests passed across Little Love, its actual family HTTP lifecycle, shared family contract, Aangan Vivah, Lotus Vivah, template studio, shared audio and Diwali Deep.
+- 141/141 tests passed across Little Love, its actual family HTTP lifecycle, shared family contract, Aangan Vivah, Lotus Vivah, template studio, shared audio and Diwali Deep.
 - All 10 packed assets restore and verify by SHA-256 in a clean directory; corrupt/missing generated media heal correctly.
-- Eleven Chromium 145 browser scenarios passed using the real family routes, renderer, shared editor and a disposable SQLite DB. These include live preview, autosave, voice-note upload, free publish and published rendering; native MP3 playback and seeking; playlist selection; both transition types; all pages at 390×844, 320×640, 768×1024 and 844×390; full 900-character letters; keyboard/swipe/replay; reduced motion; and no-script fallback. No uncaught browser JS errors were seen.
+- Thirteen Chromium 145 browser scenarios passed using the real family routes, renderer, shared editor and a disposable SQLite DB. These include live preview, autosave, voice-note upload, free publish and published rendering; native MP3 playback and seeking; playlist selection; both transition types; all pages at 390×844, 320×640, 768×1024 and 844×390; full 900-character letters; keyboard/swipe/replay; reduced motion; and no-script fallback. No uncaught browser JS errors were seen.
 - Run the browser checks with python3 scripts/qa-little-love.py (developer-only Python Playwright 1.58.0 and downloaded Chromium). This launches only tests/fixtures/little-love-browser.cjs on localhost with a new temporary database, not a new production app. Test screenshots and results are written to the ignored test-output/little-love directory. Additional playlist audio delivery is controlled in-browser test data, not proof of third-party hosting availability.
 
 Limits: npm ci and a full server boot could not complete because the sandbox returned E403 for registry.npmjs.org; network approval was requested. No dependency versions or lockfile were changed. The full application dependency install, complete npm test suite, actual third-party YouTube availability, real payment and Railway production deployment are not verified. Do not interpret scoped family/browser tests as production deployment.
 
 ## Changelog
+
+- 2026-11-02 (audit follow-up): separated provider playback state from navigation cancellation, fixing one-click YouTube replay after completion or an embedded-player pause. Added exact provider-selection and replay regressions; direct MP3 paths containing YouTube-like text remain native. Provider network tests are controlled, not proof of live third-party availability.
 
 - 2026-11-02: added the five-page reference-led scrapbook as an isolated reusable family member, original art/local fonts, voice-note/song playback, playlist popover, two transition types and responsive accessibility support. No existing templates or production data are changed.

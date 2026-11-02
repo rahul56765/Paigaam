@@ -80,3 +80,16 @@ test('Little Love: exact YouTube IDs and mobile-host playlist links share one se
   assert.equal(payload[1].youtubeId, id);
   assert.equal(payload[0].youtubeId, '');
 });
+
+test('Little Love: a direct MP3 with YouTube-like path text never changes provider when selected', () => {
+  const schema = require('../templates/little-love/schema');
+  const url = 'https://example.com/youtu.be/abcdefghijk.mp3';
+  assert.equal(schema.playableLink(url), true);
+  assert.equal(schema.youtubeId(url), '');
+  const html = require('../templates/little-love/render').render({ customer_data: { ...config.demo, musicLink: url, playlist: [{ title: 'Same direct audio', url }] } });
+  const payload = JSON.parse(html.match(/id="llPlaylistData">([^<]+)<\/script>/)[1]);
+  assert.deepEqual(payload.map(p => p.youtubeId), ['', '']);
+  assert.ok(payload.every(p => p.url === url));
+  assert.match(html, /id="llSongAudio" src="https:\/\/example.com\/youtu.be\/abcdefghijk.mp3"/);
+  assert.doesNotMatch(html, /data-youtube="/);
+});
