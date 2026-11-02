@@ -80,6 +80,10 @@ Three templates ship seeded: **Noor** (wedding, editorial uppercase), **Meher** 
 
 Concepts stay separate: **Template** (reusable design) → **Paigaam** (personalized instance) → **Order** (purchase).
 
+## Little Love
+
+Little Love is a five-page chocolate-brown interactive love scrapbook in the existing template family. When this code is deployed, it is available at `/templates/little-love`, `/little-love/demo` and `/create/little-love`, with existing draft/upload/preview/publishing flows. It preserves the supplied reference's bouquet, letter, memories/voice note, song and doodle pages, with original replacement art. Assets and local fonts are restored by `node scripts/prepare-little-love.js`; focused tests run with `npm run test:little-love`. See `templates/little-love/README.md`, `REFERENCE.md` and `FIDELITY.md` for implementation, verification scope and differences. No merge, deployment or real payment is implied by these routes.
+
 ## Divya Vivah
 
 The Marathi, Hindi and English Divya Vivah invitation is available through `/create/divya-vivah` when this version is deployed. Its configured initial price for a newly seeded template is **₹99**. Existing database prices are owner-managed and are not overwritten on startup, so an existing Divya Vivah listing must be checked separately before launch. Paid publication uses the existing Razorpay checkout and requires configured payments; no successful live payment or deployment is claimed. Assets are restored and verified by `node scripts/prepare-divya-vivah.js`. See `templates/divya-vivah/README.md` for details and verification limits.
