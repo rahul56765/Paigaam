@@ -146,3 +146,9 @@ test('Unicode emoji truncation and lone surrogates cannot break any preview or d
  const d=demo();d.events[0].venueAddress='\udfff';assert.doesNotThrow(()=>page(d));
  assert.equal(schema.validate({...demo(),venueName:'\ud800'},{mode:'draft'}).venueName,'�');
 });
+
+test('published share metadata uses the customer portrait, then gallery, then designed card',()=>{
+ const d={...demo(),couplePhoto:upload};has(page(d),'<meta property="og:image" content="https://paigaam.cc'+upload+'">');
+ d.couplePhoto='';has(page(d),'<meta property="og:image" content="https://paigaam.cc'+d.gallery[0].photo+'">');
+ d.gallery=[];has(page(d),'<meta property="og:image" content="https://paigaam.cc/vaidehi/thumbnail.webp">');
+});

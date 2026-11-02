@@ -2,7 +2,7 @@
 
 ## Passed
 
-99 Node checks across:
+100 focused Node checks across:
 
 - tests/bfday-vaidehi.test.js
 - tests/bfday-vaidehi-api.test.js
@@ -24,7 +24,7 @@
 
 The local API tests use PAIGAAM's unmodified real bfdayRoutes with a temporary SQLite database: editor route and fields, changed preview, draft save, invalid input response, owner-only preview, actual image/audio uploads, private media access control, local publish, rendered published invitation, and public access only to referenced media.
 
-The isolated QA adapter does not exercise unrelated creator-photo routes, the full admin/gallery shell, paid checkout or external production hosting. Production /p rendering uses the existing family dispatch; the QA adapter checks the same renderer and the real publication operation, not an independently implemented publish flow.
+The initial isolated QA adapter did not exercise unrelated creator-photo routes, the full admin/gallery shell, paid checkout or external production hosting. Subsequent full-server and root-suite verification is recorded below. Production /p rendering uses the existing family dispatch; the QA adapter checks the same renderer and the real publication operation, not an independently implemented publish flow.
 
 node scripts/prepare-vaidehi.js --verify: 13 checksum-verified assets restored. git diff --check: clean.
 
@@ -36,11 +36,15 @@ node scripts/prepare-vaidehi.js --verify: 13 checksum-verified assets restored. 
 - Removed server-emitted aria-hidden from inactive photographs so no-JS CSS does not visually expose inaccessible images. JavaScript manages active-photo accessibility only when it runs.
 - Visual inspection found a timer/section CSS class collision; timer styles are now scoped to vv-timer, with an explicit geometry regression assertion.
 
-## Environment limits — not passed
+## Initial environment limits — resolved after npm access approval
 
-npm ci failed with HTTP 403 downloading existing npm dependencies. Network access was requested. npm run build was attempted; Ganapati/wedding-video preparation ran, then the existing magazine-face preparation stopped because @mediapipe/tasks-vision was unavailable. Starting the full root server stopped on missing sharp, an existing creator-photo dependency. No dependency versions or unrelated modules were changed to work around this.
+The initial npm install received HTTP 403. After the user approved registry.npmjs.org access, npm ci completed successfully (0 vulnerabilities) and npm run build passed every existing preparation step plus Vaidehi. Dependency versions were not changed. The pinned Node Playwright Chromium was also installed for the root regression suite.
 
-Python Playwright/Chromium was available after installation and supported the browser checks above. These checks do not imply a green full-platform npm build. No merge, production deployment, real payment, WhatsApp send or email send was performed.
+The full npm test command now passes, including the shared family APIs, escaping, publication and restart-persistence tests. Its generic hostile-data fixture was extended specifically for Vaidehi to retain valid machine-readable times/UTC offsets while injecting hostile text into event names and venue fields. Production validators were not weakened. The restart test exposed and verified a fix to share metadata: the couple portrait is preferred for og:image, then the first gallery photo, then the designed thumbnail. A focused metadata regression test was added.
+
+The actual root server.js now starts successfully with a separate temporary local database. All 127 browser assertions were rerun against that server, not just the isolated adapter, and passed. /templates/vaidehi, /create/vaidehi and /vaidehi/demo each returned HTTP 200. The full-platform build blocker reported in the initial review is resolved.
+
+No merge, production deployment, real payment, WhatsApp send or email send was performed. Paid checkout and external hosting are still outside this verification.
 
 ## Remaining visual differences
 

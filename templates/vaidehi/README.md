@@ -51,3 +51,5 @@ Deployment should use PAIGAAM's normal build and server. The isolated QA adapter
 ## Changelog
 
 - 2026-11-03: Added isolated Vaidehi family template, reference-guided original artwork, six-step customisation, local QR generation, inherited dates/venues/countdown, gallery and lightbox, compact expandable itinerary, optional uploaded audio, local fonts, reduced-motion/no-JS handling and focused tests. Prepared for review; no merge/deployment implied.
+
+- 2026-11-03 follow-up: approved npm access resolved the installation/build blocker; full npm test now passes. Rechecked 127 browser assertions through the actual root server. Added valid constrained-field values to the generic hostile-copy test fixture and fixed customer portrait/gallery Open Graph image precedence. No merge/deployment performed.

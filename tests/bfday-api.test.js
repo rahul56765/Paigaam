@@ -229,6 +229,17 @@ for (const t of family.list) {
     }];
     // Divya's machine-readable time is constrained, unlike free-form invitation copy.
     if (S === 'divya-vivah') hostile.weddingTime = demo.weddingTime;
+    // Vaidehi has machine-readable times and UTC offsets too. Keep those
+    // valid while testing hostile copy in every rendered event/venue field.
+    if (S === 'vaidehi') {
+      hostile.weddingTime = demo.weddingTime;
+      hostile.countdownTime = demo.weddingTime;
+      hostile.utcOffset = demo.utcOffset;
+      hostile.events = demo.events.map(event => ({
+        ...event, name: HOSTILE.slice(0, 100),
+        venueName: HOSTILE.slice(0, 150), venueAddress: HOSTILE,
+      }));
+    }
     const a = await draft(S, hostile);
     const pages = [(await request(a.previewUrl, { cookie: a.cookie })).text];
     const pub = await request(`/api/${S}/publish`, { method: 'POST', cookie: a.cookie, body: { id: a.id } });

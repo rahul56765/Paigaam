@@ -56,7 +56,7 @@ function render(paigaam={}, opts={}) {
   const title=[d.groomName,d.brideName].filter(Boolean).join(' & ') || 'Your wedding invitation';
   const links=[['cover','Invitation'],['details','Wedding details'],['moments','Our moments'],['welcome','Friends and family'],['blessings','Blessings and venue'],['schedule','Wedding schedule'],['countdown','Countdown']];
   return `<!DOCTYPE html><html lang="en" class="vv-html"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-${head({paigaam,opts,title:title+' · Vaidehi',description:[d.date.full,d.venueName].filter(Boolean).join(' · ') || config.description,themeColor:'#f8f5e9',image:config.ogImage})}
+${head({paigaam,opts,title:title+' · Vaidehi',description:[d.date.full,d.venueName].filter(Boolean).join(' · ') || config.description,themeColor:'#f8f5e9',image:d.couplePhoto || (d.gallery[0] && d.gallery[0].photo) || config.ogImage})}
 <link rel="preload" as="font" type="font/ttf" crossorigin href="${A}fonts/cormorant.ttf"><link rel="preload" as="font" type="font/ttf" crossorigin href="${A}fonts/great-vibes.ttf"><link rel="preload" as="image" href="${A}couple-art.webp">
 <link rel="stylesheet" href="${A}invite.css?v=1"><script defer src="${A}invite.js?v=1"></script></head>
 <body class="vv-body" data-preview="${!!opts.isPreview}"><a class="vv-skip" href="#vv-cover">Skip to invitation</a>
