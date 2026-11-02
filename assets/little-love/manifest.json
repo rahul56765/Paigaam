@@ -1,0 +1,62 @@
+[
+  {
+    "file": "tulips.webp",
+    "packed": "tulips.webp.b64",
+    "size": 74136,
+    "sha256": "91bd0ce3d9cf0a3c3c2d55f8731d5acb323e933df84071c7ba2739a759042188"
+  },
+  {
+    "file": "penguins.webp",
+    "packed": "penguins.webp.b64",
+    "size": 24308,
+    "sha256": "fb72241ce18455dfb3e1d2ad53d7a233bc6c21f07c1dbd4e7dd976730abb4161"
+  },
+  {
+    "file": "matcha-cat.webp",
+    "packed": "matcha-cat.webp.b64",
+    "size": 25142,
+    "sha256": "de20f957e9aa84f2f57a067deebf4c6d9a42848b452fa4696133f995c2749189"
+  },
+  {
+    "file": "bow-cat.webp",
+    "packed": "bow-cat.webp.b64",
+    "size": 17988,
+    "sha256": "e91e7239f74036548ea0306593cf4bf8651c57595e3b42e13364ba34562e9cd6"
+  },
+  {
+    "file": "mini-bouquet.webp",
+    "packed": "mini-bouquet.webp.b64",
+    "size": 23602,
+    "sha256": "a0840f0044f993318fd80b299bd2901608f04ad1e7b2ecbedec968aa64858987"
+  },
+  {
+    "file": "song-cover.webp",
+    "packed": "song-cover.webp.b64",
+    "size": 90236,
+    "sha256": "1e0e00d0d9e2223f8c0285d87a89b2187e65a521d0b0c05be043155efb91f803"
+  },
+  {
+    "file": "thumbnail.webp",
+    "packed": "thumbnail.webp.b64",
+    "size": 20340,
+    "sha256": "0f4bf91d23e1387b014f14d31a149b27eae79c238de3d5e36693cec21b74738a"
+  },
+  {
+    "file": "little-melody.mp3",
+    "packed": "little-melody.mp3.b64",
+    "size": 289062,
+    "sha256": "09edd2d6e74fd4a92ccd1efc55f5ea96dd3005fca80d7fc53e5c86fcf00c7f3d"
+  },
+  {
+    "file": "fonts/pixelify.ttf",
+    "packed": "fonts--pixelify.ttf.b64",
+    "size": 49840,
+    "sha256": "616f3be4921e2e79ad58fc15fcfd0b3c3508a615811b1a518130d623030764e9"
+  },
+  {
+    "file": "fonts/homemade-apple.ttf",
+    "packed": "fonts--homemade-apple.ttf.b64",
+    "size": 108704,
+    "sha256": "9a97d4447953ab43ac279a8ea94a90749e809221586608b2ddd86b5159b5fa11"
+  }
+]

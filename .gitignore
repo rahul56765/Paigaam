@@ -39,3 +39,8 @@ public/divya-vivah/*.webp
 public/divya-vivah/*.jpg
 public/divya-vivah/*.mp4
 public/divya-vivah/fonts/*.ttf
+
+# Little Love media restored from the SHA-256 packed manifest
+public/little-love/*.webp
+public/little-love/*.mp3
+public/little-love/fonts/*.ttf

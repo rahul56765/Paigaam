@@ -65,6 +65,9 @@ before(async () => {
   assert.equal(config.price, 99); assert.equal(config.currency, 'INR');
   // Same registry config passed to seed on a fresh DB, not a claimed existing deployment price.
   q.templateInsert({ ...config, status: 'published' });
+  const littleLove = family.bySlug('little-love').config;
+  assert.equal(littleLove.price, 99); assert.equal(littleLove.currency, 'INR');
+  q.templateInsert({ ...littleLove, status: 'published' });
   const other = family.bySlug('royal-vivah').config;
   q.templateInsert({ ...other, price: 149, status: 'published' });
   const publishSource = slice('function slugifyNames(', '/* ---------------- seed');
@@ -183,4 +186,48 @@ test('another paid bfday template retains legacy order and draft behavior', asyn
   const generic = await post('/api/razorpay/order', { id: d.id });
   assert.equal(generic.status, 200, JSON.stringify(generic.body));
   assert.equal(generic.body.amount, 14900);
+});
+
+test('Little Love ₹99: strict validation, ownership and bypass protection before checkout', async () => {
+  const t = family.bySlug('little-love'); const start = calls.length;
+  for (const field of ['senderName', 'recipientName']) {
+    const d = await draft({ ...t.config.demo, [field]: '' }, t.slug);
+    const r = await post('/api/little-love/publish', { id: d.id }, d.cookie);
+    assert.equal(r.status, 400, field); assert.equal(r.body.error, 'validation');
+    assert.equal(q.paigaamById(d.id).status, 'draft');
+  }
+  const d = await draft(t.config.demo, t.slug);
+  assert.equal((await post('/api/little-love/publish', { id: d.id })).status, 403);
+  assert.equal((await post('/api/free-publish', { id: d.id }, d.cookie)).status, 403);
+  assert.equal((await post('/api/razorpay/order', { id: d.id }, d.cookie)).status, 403);
+  assert.equal(calls.length, start, 'invalid/unauthorized requests never hit the gateway');
+  q.paigaamUpdate(d.id, { customer_data: { ...t.config.demo, portrait: '/bfday/uploads/' + 'a'.repeat(48) + '.jpg' } });
+  assert.equal((await post('/api/little-love/publish', { id: d.id }, d.cookie)).status, 403, 'unowned uploads blocked before checkout');
+  assert.equal(calls.length, start);
+});
+
+test('Little Love ₹99: in-flight locking, captured-payment verification and publication with mocked gateway', async () => {
+  const t = family.bySlug('little-love'); const d = await draft(t.config.demo, t.slug);
+  let started; const waitStarted = new Promise(resolve => { started = resolve; }); heldStarted = started; held = true;
+  const pending = post('/api/little-love/publish', { id: d.id }, d.cookie);
+  await waitStarted;
+  assert.equal((await post('/api/little-love/publish', { id: d.id }, d.cookie)).status, 429);
+  assert.equal((await post('/api/little-love/draft', { id: d.id, customer_data: { ...t.config.demo, senderName: '' } }, d.cookie)).status, 429);
+  held = false; deliverHeld(); const checkout = await pending;
+  assert.equal(checkout.status, 200, JSON.stringify(checkout.body));
+  assert.equal(checkout.body.razorpay, true); assert.equal(checkout.body.amount, 9900); assert.equal(checkout.body.currency, 'INR');
+  assert.equal(calls.at(-1).body.amount, 9900); assert.equal(q.paigaamById(d.id).status, 'payment_pending');
+  assert.equal((await post('/api/little-love/draft', { id: d.id, customer_data: { ...t.config.demo, recipientName: '' } }, d.cookie)).status, 400);
+  assert.equal((await post('/api/little-love/draft', { id: d.id, customer_data: { ...t.config.demo, senderName: 'My beloved' } }, d.cookie)).status, 200);
+  const order = checkout.body.orderId, payment = 'pay_little_love_local';
+  payments.set(payment, { id: payment, order_id: order, status: 'authorized', amount: 9900, currency: 'INR' });
+  const proof = { razorpay_order_id: order, razorpay_payment_id: payment, razorpay_signature: signature(order, payment) };
+  assert.equal((await post('/api/razorpay/verify', proof)).status, 409);
+  assert.equal(q.paigaamById(d.id).status, 'payment_pending');
+  payments.get(payment).status = 'captured'; const result = await post('/api/razorpay/verify', proof);
+  assert.equal(result.status, 200, JSON.stringify(result.body));
+  const pg = q.paigaamById(d.id); assert.equal(pg.status, 'published'); assert.equal(pg.payment_status, 'paid');
+  assert.equal(pg.customer_data.senderName, 'My beloved'); assert.ok(pg.slug);
+  assert.equal(q.orderByRazorpayOrderId(order).status, 'paid');
+  assert.equal((await post('/api/little-love/draft', { id: d.id, customer_data: t.config.demo }, d.cookie)).status, 403);
 });

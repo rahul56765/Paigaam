@@ -36,6 +36,7 @@ for (const t of family.list) {
   const S = t.slug;
   const demo = t.config.demo;
   const name = firstText(t);
+  const paidOffline = ['divya-vivah', 'little-love'].includes(S);
 
   test(`${S} · routes: wizard, demo, detail page, thumbnail, gallery card, assets`, async () => {
     const create = await request('/create/' + S);
@@ -68,7 +69,7 @@ for (const t of family.list) {
     }
   });
 
-  test(`${S} · API: ${S === 'divya-vivah' ? 'draft → owner preview → paid publishing offline' : 'draft → owner preview → publish → live page with OG → QR; publish is idempotent'}`, async () => {
+  test(`${S} · API: ${paidOffline ? 'draft → owner preview → paid publishing offline' : 'draft → owner preview → publish → live page with OG → QR; publish is idempotent'}`, async () => {
     const a = await draft(S, demo);
     assert.match(a.cookie, /^paigaam_creator=[a-f0-9]{64}$/);
     const own = await request(a.previewUrl, { cookie: a.cookie });
@@ -80,7 +81,7 @@ for (const t of family.list) {
     assert.match(redirect.headers.get('location'), new RegExp(`/${S}/preview/${a.id}$`));
 
     const pub = await request(`/api/${S}/publish`, { method: 'POST', cookie: a.cookie, body: { id: a.id } });
-    if (S === 'divya-vivah') {
+    if (paidOffline) {
       assert.equal(t.config.price, 99);
       assert.equal(t.config.currency, 'INR');
       assert.equal(pub.status, 503, pub.text);
@@ -220,12 +221,18 @@ for (const t of family.list) {
         events: day.events.map(event => ({ ...event, event: HOSTILE.slice(0, 44), venue: HOSTILE.slice(0, 80) })),
       }));
     }
+    // Little Love's playlist accepts playable audio/video, not generic webpage URLs.
+    // Keep malicious text/query content while preserving the media URL contract.
+    if (S === 'little-love') hostile.playlist = [{
+      title: HOSTILE.slice(0, 65),
+      url: 'https://x.example/song.mp3?a=1&b=%3Cscript%3E',
+    }];
     // Divya's machine-readable time is constrained, unlike free-form invitation copy.
     if (S === 'divya-vivah') hostile.weddingTime = demo.weddingTime;
     const a = await draft(S, hostile);
     const pages = [(await request(a.previewUrl, { cookie: a.cookie })).text];
     const pub = await request(`/api/${S}/publish`, { method: 'POST', cookie: a.cookie, body: { id: a.id } });
-    if (S === 'divya-vivah') {
+    if (paidOffline) {
       assert.equal(pub.status, 503, pub.text);
       assert.equal(pub.json.error, 'payments_offline');
       // Audit live-mode rendering too, without claiming an unpaid page is published.
@@ -268,7 +275,7 @@ for (const t of family.list) {
   });
 
   const cap = maxImages(t.fields);
-  test(`${S} · photos: ${cap ? 'upload → owner-only until published → public, replaced photos swept' : 'this template takes none — uploads refused'}`, async () => {
+  test(`${S} · photos: ${cap ? (paidOffline ? 'upload → private owner draft; paid publication offline' : 'upload → owner-only until published → public, replaced photos swept') : 'this template takes none — uploads refused'}`, async () => {
     const a = await draft(S, demo);
     const up = (cookie, raw = png(), type = 'image/png', id = a.id) => request(`/api/${S}/upload?id=${encodeURIComponent(id)}`, { method: 'POST', cookie, raw, type });
     if (!cap) {
@@ -302,10 +309,21 @@ for (const t of family.list) {
     const b = await draft(S, demo);
     assert.equal((await request(`/api/${S}/draft`, { method: 'POST', cookie: b.cookie, body: { id: b.id, customer_data: smuggle } })).status, 403);
 
-    // Use the second photo, publish: it becomes public and the og:image; the replaced first photo is swept.
+    // Save the second photo before attempting publication.
     const saved = await request(`/api/${S}/draft`, { method: 'POST', cookie: a.cookie, body: { id: a.id, customer_data: withImage(t, demo, second.json.url) } });
     assert.equal(saved.status, 200, saved.text);
     const pub = await request(`/api/${S}/publish`, { method: 'POST', cookie: a.cookie, body: { id: a.id } });
+    if (paidOffline) {
+      assert.equal(pub.status, 503, pub.text);
+      assert.equal(pub.json.error, 'payments_offline');
+      assert.equal((await request(second.json.url, { cookie: a.cookie })).status, 200, 'saved photo remains accessible to owner');
+      assert.equal((await request(second.json.url)).status, 404, 'unpaid photo stays private');
+      assert.equal((await request(first.json.url, { cookie: a.cookie })).status, 200, 'unpaid publish does not sweep replaced photo');
+      // No payment is settled here: public visibility and publish-time sweeping
+      // cannot be exercised against this offline gateway.
+      return;
+    }
+    // A free publish makes the photo public and sweeps the replaced first photo.
     assert.equal(pub.status, 200, pub.text);
     const live = await request('/p/' + pub.json.slug);
     assert.ok(live.text.includes(second.json.url), 'the photo renders on the live page');

@@ -419,8 +419,8 @@ const server = http.createServer((req, res) => creatorTracking.runRequest(req, r
       const body = JSON.parse(await readBody(req) || '{}');
       const pg = q.paigaamById(body.id);
       if (!pg) return json(res, 404, { error: 'not_found' });
-      // Divya checkout must use its owner-checked, strictly validated endpoint.
-      if (pg.template_slug === 'divya-vivah') return json(res, 403, { error: 'use_template_endpoint' });
+      // Divya and Little Love must use their owner-checked, strictly validated checkout endpoints.
+      if (pg.template_slug === 'divya-vivah' || pg.template_slug === 'little-love') return json(res, 403, { error: 'use_template_endpoint' });
       if (Number(pg.template_price) <= 0) return json(res, 400, { error: 'not_paid' });
       if (pg.payment_status === 'paid') {
         const pub = pg.status === 'published' ? pg : publishPaigaam(pg);

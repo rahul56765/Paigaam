@@ -13,6 +13,7 @@
 module.exports = [
   'sealed-with-a-kiss',
   'polaroid-scrapbook',
+  'little-love',
   'scratch-reasons',
   'unrejectable',
   'our-wrapped',

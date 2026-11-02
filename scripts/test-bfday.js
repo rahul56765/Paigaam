@@ -48,7 +48,7 @@ const { png } = require('../tests/bfday-helpers');
     if (code !== 0) throw new Error('Boyfriend Day test suite failed');
 
     // Free published members must survive the process that made them — photos too.
-    // Divya is paid, so verify its owner draft persists rather than publishing it.
+    // Paid Divya and Little Love retain private owner drafts rather than publishing offline.
     const made = [];
     for (const t of family.list) {
       const data = { ...t.config.demo };
@@ -66,8 +66,11 @@ const { png } = require('../tests/bfday-helpers');
         r = await post(`/api/${t.slug}/draft`, cookie, { id, customer_data: { ...data, [image.id]: photo } });
         assert.equal(r.status, 200, t.slug + ' draft with photo');
       }
-      if (t.slug === 'divya-vivah') {
-        made.push({ t, cookie, pending: { previewUrl: `/${t.slug}/preview/${id}` }, name: nameField ? data[nameField.id] : null });
+      if (['divya-vivah', 'little-love'].includes(t.slug)) {
+        r = await post(`/api/${t.slug}/publish`, cookie, { id });
+        assert.equal(r.status, 503, t.slug + ' paid publish offline');
+        assert.equal((await r.json()).error, 'payments_offline');
+        made.push({ t, cookie, photo, pending: { previewUrl: `/${t.slug}/preview/${id}` }, name: nameField ? data[nameField.id] : null });
         continue;
       }
       r = await post(`/api/${t.slug}/publish`, cookie, { id });
@@ -83,11 +86,15 @@ const { png } = require('../tests/bfday-helpers');
     await stop(); await start();
 
     for (const { t, pub, photo, cookie, pending, name } of made) {
-      if (t.slug === 'divya-vivah') {
+      if (['divya-vivah', 'little-love'].includes(t.slug)) {
         const own = await fetch(base + pending.previewUrl, { headers: { cookie } });
         assert.equal(own.status, 200, `${t.slug}: draft ownership survives restart`);
         if (name) assert.ok((await own.text()).includes(name), `${t.slug}: draft text survives restart`);
         assert.equal((await fetch(base + pending.previewUrl)).status, 403, `${t.slug}: draft remains private after restart`);
+        if (photo) {
+          assert.equal((await fetch(base + photo, { headers: { cookie } })).status, 200, `${t.slug}: owner photo survives restart`);
+          assert.equal((await fetch(base + photo)).status, 404, `${t.slug}: draft photo remains private after restart`);
+        }
         console.log(`Restart persistence: ${t.slug} owner draft survives`);
         continue;
       }
