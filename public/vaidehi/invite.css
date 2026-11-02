@@ -217,3 +217,40 @@ to{transform:rotate(.8deg)}
 
 
 .vv-section{font-size:4cqw}
+
+/* Uploaded-reference cover revision. These overrides never target later panels. */
+.vv-cover{min-height:150cqw;padding-bottom:22cqw;background:#faf4e8 url('cover-paper.webp') repeat;background-size:38cqw auto}
+.vv-cover:after{background:none}
+.vv-cover .vv-cover-attire{width:100%;height:auto;margin:0;mix-blend-mode:normal;mask-image:none;position:relative;z-index:1}
+.vv-cover .vv-garland{width:17.424242%;height:104.166667cqw;object-fit:fill;filter:none;animation:none;z-index:2}
+.vv-cover .vv-garland--left{left:0}
+.vv-cover .vv-garland--right{right:0}
+.vv-cover .vv-cover-copy{width:72%;margin:3cqw auto 0;z-index:3}
+.vv-cover .vv-cover-copy>.vv-script{font-size:6.8cqw}
+.vv-cover .vv-names{font-size:7.4cqw;line-height:1.03;gap:1.4cqw}
+.vv-cover .vv-names em{font-size:5.8cqw}
+.vv-cover-leaf{position:absolute;bottom:0;height:auto;z-index:1;pointer-events:none}
+.vv-cover-leaf--left{left:0;width:29.829545%}
+.vv-cover-leaf--right{right:0;width:28.787879%}
+.vv-cover-roses{position:absolute;inset:0;pointer-events:none;z-index:1}
+.vv-cover-roses img{position:absolute;left:var(--rose-x);top:var(--rose-y);width:2.3cqw;height:auto;transform:rotate(var(--rose-turn));opacity:.88}
+/* Ten tiny textured florets, not a particle engine. The central text lane is
+   masked clear, and the overlay cannot intercept touch, focus or link clicks. */
+.vv-petal-layer{position:fixed;top:0;bottom:0;left:50%;width:min(100%,680px);transform:translateX(-50%);overflow:hidden;pointer-events:none;z-index:24;contain:layout paint;mask-image:linear-gradient(90deg,#000 0 5%,transparent 8% 92%,#000 95% 100%)}
+.vv-locked .vv-petal-layer{visibility:hidden}
+.vv-petal-fall{position:absolute;top:-25px;left:var(--petal-x);width:var(--petal-width);height:var(--petal-height);opacity:0;animation:vv-petal-descend var(--petal-time) linear var(--petal-delay) infinite;will-change:transform,opacity}
+.vv-petal-fall i{display:block;width:100%;height:100%;background:url('marigold-petal.webp') center/contain no-repeat;transform-origin:50% 60%;animation:vv-petal-flutter calc(var(--petal-time)*.38) ease-in-out var(--petal-delay) infinite alternate;will-change:transform}
+.vv-petals-paused .vv-petal-fall,.vv-petals-paused .vv-petal-fall i{animation-play-state:paused}
+@keyframes vv-petal-descend{
+  0%{transform:translate3d(0,-20px,0);opacity:0}
+  7%{opacity:.58}
+  48%{transform:translate3d(calc(var(--petal-drift)*-.35),48svh,0);opacity:.64}
+  92%{opacity:.5}
+  100%{transform:translate3d(var(--petal-drift),calc(100svh + 40px),0);opacity:0}
+}
+@keyframes vv-petal-flutter{
+  0%{transform:rotate(var(--petal-turn)) rotateY(-28deg)}
+  45%{transform:rotate(calc(var(--petal-turn) + 72deg)) rotateY(32deg)}
+  100%{transform:rotate(calc(var(--petal-turn) + 165deg)) rotateY(-18deg)}
+}
+@media(prefers-reduced-motion:reduce){.vv-petal-layer{display:none}.vv-petal-fall,.vv-petal-fall i{animation:none}}

@@ -4,6 +4,10 @@
   const $ = (s, root = document) => root.querySelector(s);
   const $$ = (s, root = document) => Array.from(root.querySelectorAll(s));
   const body = document.body;
+  // Decorative CSS petals sleep in background tabs; reduced motion is CSS-only.
+  const pausePetals = () => body.classList.toggle('vv-petals-paused', document.hidden);
+  pausePetals();
+  document.addEventListener('visibilitychange', pausePetals);
   const main = $('#vv-invitation');
   if (!main) return;
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');

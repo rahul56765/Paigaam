@@ -2,7 +2,7 @@
 
 ## Passed
 
-100 focused Node checks across:
+103 focused Node checks across:
 
 - tests/bfday-vaidehi.test.js
 - tests/bfday-vaidehi-api.test.js
@@ -10,7 +10,7 @@
 - tests/bfday-lotus-vivah.test.js
 - tests/bfday-audio.test.js
 
-127 real Chromium browser assertions through scripts/qa-vaidehi-browser.py:
+138 real Chromium browser assertions through scripts/qa-vaidehi-browser.py:
 
 - Layout checks at 320, 390, 430, 768 and 1366px. All seven scroll panels visited; no horizontal overflow or clipped headings.
 - All eight required stages: opening plus cover, details, moments, welcome, blessings/venue/QR, schedule, countdown.
@@ -26,7 +26,7 @@ The local API tests use PAIGAAM's unmodified real bfdayRoutes with a temporary S
 
 The initial isolated QA adapter did not exercise unrelated creator-photo routes, the full admin/gallery shell, paid checkout or external production hosting. Subsequent full-server and root-suite verification is recorded below. Production /p rendering uses the existing family dispatch; the QA adapter checks the same renderer and the real publication operation, not an independently implemented publish flow.
 
-node scripts/prepare-vaidehi.js --verify: 13 checksum-verified assets restored. git diff --check: clean.
+node scripts/prepare-vaidehi.js --verify: 23 checksum-verified assets restored. git diff --check: clean.
 
 ## Independent review fixes
 
@@ -49,3 +49,11 @@ No merge, production deployment, real payment, WhatsApp send or email send was p
 ## Remaining visual differences
 
 New artwork and generated fictional sample photos; close-substitute fonts; source top illustration/opening not fully visible; extra accessible controls; larger dense QR for reliable scanning; long full names wrap more than the short names in the recording. The sample countdown uses the illustrated joined hands seen in the clip; a customer can upload a wedding photograph instead. Review the actual interactive preview before approving a merge.
+
+## Cover-only revision verification
+
+Full npm run build and npm test passed after the cover/petal changes. All 138 browser checks passed against the actual root server using its isolated local database. Additional checks verify real continuous CSS movement, varied durations, no pointer interception, an accessibility-hidden decoration layer, central text masking, background-tab pause/resume and reduced-motion removal. The names/date still change correctly through customer_data.
+
+Six later panel HTML snapshots (details, moments, welcome, blessings/venue, schedule and countdown) are SHA-256 identical before/after this cover revision. A separate in-thread before/after browser comparison also found identical computed styles and relative element geometry in those panels with the intended petal overlay hidden. Raster screenshot pixels are not claimed identical, because the new cover height changes subpixel document placement. No data model, editor fields, gallery, navigation, QR, countdown, venue or music logic was redesigned.
+
+The cover asset is now directly derived from the supplied still rather than a generated approximation. Text remains live HTML; the blank paper patch is the only repeating cover background. The review thumbnail was refreshed.

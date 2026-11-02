@@ -122,7 +122,7 @@ test('local font licenses, no-JS content, reduced-motion and keyboard controls s
 });
 test('packed assets restore byte-for-byte, verify checksums and have unique sample paths',()=>{
  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'vaidehi-assets-'));
- try {const prepare=require('../scripts/prepare-vaidehi').prepare;assert.equal(prepare({outputDir:dir,demoDir:path.join(dir,'demo')}),13);assert.equal(prepare({outputDir:dir,demoDir:path.join(dir,'demo'),verifyOnly:true}),13);
+ try {const prepare=require('../scripts/prepare-vaidehi').prepare;assert.equal(prepare({outputDir:dir,demoDir:path.join(dir,'demo')}),23);assert.equal(prepare({outputDir:dir,demoDir:path.join(dir,'demo'),verifyOnly:true}),23);
  const manifest=require('../assets/vaidehi/manifest.json');for(const a of manifest){const b=fs.readFileSync(path.join(dir,a.file));assert.equal(crypto.createHash('sha256').update(b).digest('hex'),a.sha256);}
  fs.writeFileSync(path.join(dir,'hands.webp'),'broken');assert.throws(()=>prepare({outputDir:dir,demoDir:path.join(dir,'demo'),verifyOnly:true}));
  } finally {fs.rmSync(dir,{recursive:true,force:true});}
@@ -151,4 +151,28 @@ test('published share metadata uses the customer portrait, then gallery, then de
  const d={...demo(),couplePhoto:upload};has(page(d),'<meta property="og:image" content="https://paigaam.cc'+upload+'">');
  d.couplePhoto='';has(page(d),'<meta property="og:image" content="https://paigaam.cc'+d.gallery[0].photo+'">');
  d.gallery=[];has(page(d),'<meta property="og:image" content="https://paigaam.cc/vaidehi/thumbnail.webp">');
+});
+
+test('uploaded cover uses separate attire, garlands, leaves, rose and paper assets with live editable text',()=>{
+ const s=page();const cover=s.match(/<section id="vv-cover"[\s\S]*?<\/section>/)[0];
+ for(const asset of ['cover-attire.webp','cover-garland-left.webp','cover-garland-right.webp','cover-leaves-left.webp','cover-leaves-right.webp','cover-rose-1.webp'])has(cover,asset);
+ not(cover,'couple-art.webp');not(cover,'src="/vaidehi/leaves.webp"');
+ has(cover,'Save the Date');has(cover,'Rohan Malhotra');has(cover,'Kiara Shah');has(cover,'<strong>18</strong>');
+ const css=fs.readFileSync(path.resolve(__dirname,'../public/vaidehi/invite.css'),'utf8');has(css,"url('cover-paper.webp')");
+ const changed=page({...demo(),groomName:'Dev Rao',brideName:'Mira Sen',weddingDate:'2028-05-06'}).match(/<section id="vv-cover"[\s\S]*?<\/section>/)[0];
+ has(changed,'Dev Rao');has(changed,'Mira Sen');has(changed,'<strong>6</strong>');not(changed,'Rohan Malhotra');
+});
+test('gentle real CSS petals are bounded, decorative, text-safe and reduced-motion aware',()=>{
+ const s=page();has(s,'class="vv-petal-layer" aria-hidden="true" inert');assert.equal((s.match(/class="vv-petal-fall"/g)||[]).length,10);
+ const css=fs.readFileSync(path.resolve(__dirname,'../public/vaidehi/invite.css'),'utf8');
+ for(const x of ['@keyframes vv-petal-descend','@keyframes vv-petal-flutter',"url('marigold-petal.webp')",'transparent 8% 92%','.vv-petal-layer{display:none}','animation-play-state:paused'])has(css,x);
+ const layer=css.match(/\.vv-petal-layer\{[^}]+\}/)[0];has(layer,'pointer-events:none');has(layer,'position:fixed');
+ const js=fs.readFileSync(path.resolve(__dirname,'../public/vaidehi/invite.js'),'utf8');has(js,"document.addEventListener('visibilitychange', pausePetals)");
+});
+test('every later invitation panel remains byte-identical to before the cover-only revision',()=>{
+ const expected=require('./fixtures/vaidehi-preserved-sections.json');const s=render({customer_data:demo()});
+ for(const [name,hash] of Object.entries(expected)){
+  const html=s.match(new RegExp('<section id="vv-'+name+'"[\\s\\S]*?<\\/section>'))[0];
+  assert.equal(crypto.createHash('sha256').update(html).digest('hex'),hash,name+' changed outside cover scope');
+ }
 });

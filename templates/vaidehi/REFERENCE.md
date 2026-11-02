@@ -17,3 +17,9 @@ Input: Video-1764.mp4, 720×1280, 30fps, 24.0667 seconds. A handheld camera film
 The brief's PAIGAAM loading/opening screen is implemented, but no opening sequence is visible in the clip. Exact source fonts, artwork, easing and uncropped opening composition cannot be recovered from this filmed excerpt. New reference-guided original artwork and locally hosted Cormorant Garamond/Great Vibes are used. No claim of pixel identity is made. No original personal information is reused.
 
 Polaroids, temple panel, illustration placement, cream/gold/green palette, paper, section order and continuous scrolling are preserved. No design-direction alternative, new colorway, dark theme, new app, or unrelated platform redesign is introduced. The small navigation rail, gallery controls, accessible lightbox and event detail disclosure provide the requested working interactions.
+
+## Subsequent uploaded still — first cover only
+
+The user then supplied a 1056×1489 text-free watercolor cover. Its waist-down ivory/gold dhoti, red/gold sari, central red wedding knot, yellow marigold/white-jasmine side chains, green banana corners, cream paper and scattered red rose petals supersede the initial generated cover art. Separate assets were extracted from this supplied image; the rest of the invitation keeps its original implementation. Cormorant/Great Vibes names and dates remain actual editable HTML, not part of the artwork.
+
+Ten small marigold florets use texture sampled from the supplied yellow flower, animated with CSS transforms/opacity. Fall times vary from 22 to 32 seconds, with varied negative delays, slight lateral drift and independent flutter/rotation. A transparent central mask keeps important text clear; the overlay ignores interaction and accessibility navigation. Reduced-motion users see no falling petals; background tabs pause them. This decorative overlay is the only intentional visual addition across later panels.
