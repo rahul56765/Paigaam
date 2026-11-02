@@ -62,6 +62,9 @@
   }
 
   var MESSAGES = {
+    event_schedule_required: 'Add a date and HH:mm time for each custom event, or choose Follow main wedding / Follow reception.',
+    invalid_utc_offset: 'Use a signed UTC offset such as +05:30 (between −14:00 and +14:00).',
+    invalid_time: 'Use 24-hour HH:mm times, such as 06:45 or 19:00.',
     atelier_audio_url: 'Each song’s audio link must use HTTPS without a username or password. Use a direct MP3, WAV or OGG link, or leave it blank.',
     itinerary_capacity: 'The itinerary fits up to 4 days and 10 entries in total. Remove an entry before adding another.',
     itinerary_incomplete: 'Add at least one day with a day heading, time, event and venue for every entry.',
@@ -387,13 +390,16 @@
     var host = form.querySelector('[data-list="' + f.id + '"]');
     var addBtn = form.querySelector('[data-add="' + f.id + '"]');
     var rows = [];
+    // This template explicitly permits truly empty event and photo lists.
+    // Keep the established single-blank-row behaviour for every existing design.
+    var minRows = SLUG === 'sita-kalyanam' ? f.minItems : Math.max(1, f.minItems);
 
     function renumber() {
       rows.forEach(function (row, i) {
         row.num.textContent = f.itemLabel + ' ' + (i + 1);
         row.up.disabled = i === 0;
         row.down.disabled = i === rows.length - 1;
-        row.remove.disabled = rows.length <= Math.max(1, f.minItems);
+        row.remove.disabled = rows.length <= minRows;
       });
       if (addBtn) addBtn.disabled = rows.length >= f.maxItems;
     }
@@ -426,7 +432,7 @@
       down.addEventListener('click', function () { move(row, 1); });
       remove.addEventListener('click', function () {
         var i = rows.indexOf(row);
-        if (i < 0 || rows.length <= Math.max(1, f.minItems)) return;
+        if (i < 0 || rows.length <= minRows) return;
         rows.splice(i, 1); host.removeChild(node); renumber(); changed();
         var next = rows[Math.min(i, rows.length - 1)];
         if (next) next.remove.focus(); else if (addBtn) addBtn.focus();
@@ -446,7 +452,7 @@
       (delta < 0 ? row.up : row.down).focus();
     }
 
-    (f.default && f.default.length ? f.default : [null]).forEach(function (v) { addRow(v, false); });
+    (f.default && f.default.length ? f.default : (minRows ? [null] : [])).forEach(function (v) { addRow(v, false); });
     while (rows.length < f.minItems) addRow(null, false);
     if (addBtn) addBtn.addEventListener('click', function () { addRow(null, true); changed(); });
 
@@ -462,7 +468,12 @@
       },
       set: function (v) {
         if (!Array.isArray(v)) return;
-        rows.slice().forEach(function (row) { row.remove.click(); });
+        if (SLUG === 'sita-kalyanam') {
+          rows.forEach(function (row) { host.removeChild(row.node); });
+          rows.length = 0;
+        } else {
+          rows.slice().forEach(function (row) { row.remove.click(); });
+        }
         v.forEach(function (item) {
           addRow(item, false);
           if (item && typeof item === 'object') {
@@ -572,6 +583,10 @@
           if (v) filled = true; else if (sub.required && !missing) missing = sub;
         }
         if (filled && missing) return { message: f.itemLabel + ' ' + (r + 1) + ' needs “' + missing.label + '” (or remove it).', focus: row.parts[missing.id].focus };
+        if (SLUG === 'sita-kalyanam' && f.id === 'events' && filled && (row.parts.schedule.get() || 'custom') === 'custom') {
+          if (!row.parts.date.get()) return { message: 'Event ' + (r + 1) + ' needs a custom date, or choose a linked schedule.', focus: row.parts.date.focus };
+          if (!/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(row.parts.time.get())) return { message: 'Event ' + (r + 1) + ' needs a 24-hour HH:mm time, or choose a linked schedule.', focus: row.parts.time.focus };
+        }
       }
     }
     return null;
