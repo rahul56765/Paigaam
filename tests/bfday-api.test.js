@@ -68,7 +68,7 @@ for (const t of family.list) {
     }
   });
 
-  test(`${S} · API: draft → owner preview → publish → live page with OG → QR; publish is idempotent`, async () => {
+  test(`${S} · API: ${S === 'divya-vivah' ? 'draft → owner preview → paid publishing offline' : 'draft → owner preview → publish → live page with OG → QR; publish is idempotent'}`, async () => {
     const a = await draft(S, demo);
     assert.match(a.cookie, /^paigaam_creator=[a-f0-9]{64}$/);
     const own = await request(a.previewUrl, { cookie: a.cookie });
@@ -80,6 +80,15 @@ for (const t of family.list) {
     assert.match(redirect.headers.get('location'), new RegExp(`/${S}/preview/${a.id}$`));
 
     const pub = await request(`/api/${S}/publish`, { method: 'POST', cookie: a.cookie, body: { id: a.id } });
+    if (S === 'divya-vivah') {
+      assert.equal(t.config.price, 99);
+      assert.equal(t.config.currency, 'INR');
+      assert.equal(pub.status, 503, pub.text);
+      assert.equal(pub.json.error, 'payments_offline');
+      assert.equal((await request(a.previewUrl, { cookie: a.cookie })).status, 200);
+      // Checkout and settlement are exercised with a mocked gateway in bfday-paid-checkout.test.js.
+      return;
+    }
     assert.equal(pub.status, 200, pub.text);
     assert.match(pub.json.slug, new RegExp(`^${S}-[a-f0-9]{18}$`));
     const live = await request('/p/' + pub.json.slug);
@@ -203,11 +212,28 @@ for (const t of family.list) {
         venue: HOSTILE.slice(0, 110), dressCode: HOSTILE.slice(0, 70),
       }));
     }
+    // Patra requires nested days with at least one complete event per day.
+    // Preserve its itinerary structure and times, injecting hostile editable copy.
+    if (S === 'patra-vivah') {
+      hostile.days = demo.days.map(day => ({
+        ...day, heading: HOSTILE.slice(0, 44),
+        events: day.events.map(event => ({ ...event, event: HOSTILE.slice(0, 44), venue: HOSTILE.slice(0, 80) })),
+      }));
+    }
+    // Divya's machine-readable time is constrained, unlike free-form invitation copy.
+    if (S === 'divya-vivah') hostile.weddingTime = demo.weddingTime;
     const a = await draft(S, hostile);
     const pages = [(await request(a.previewUrl, { cookie: a.cookie })).text];
     const pub = await request(`/api/${S}/publish`, { method: 'POST', cookie: a.cookie, body: { id: a.id } });
-    assert.equal(pub.status, 200, pub.text);
-    pages.push((await request('/p/' + pub.json.slug)).text);
+    if (S === 'divya-vivah') {
+      assert.equal(pub.status, 503, pub.text);
+      assert.equal(pub.json.error, 'payments_offline');
+      // Audit live-mode rendering too, without claiming an unpaid page is published.
+      pages.push(t.render({ customer_data: t.schema.validate(hostile, { mode: 'strict' }) }, { baseUrl: require('./bfday-helpers').BASE, isPreview: false }));
+    } else {
+      assert.equal(pub.status, 200, pub.text);
+      pages.push((await request('/p/' + pub.json.slug)).text);
+    }
     pages.push((await request(`/${S}/preview-frame`, { method: 'POST', body: { customer_data: hostile } })).text);
     for (const html of pages) {
       assert.doesNotMatch(html, /<script>alert|<img src=x|"><script>/);

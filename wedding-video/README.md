@@ -156,7 +156,17 @@ node scripts/stills.mjs 9 17 26                      # quick visual checks
    tested so far, but worth checking on a phone.
 8. **Fonts and art.** Font and illustration differences from the reference are listed in `FIDELITY.md`.
 
+## Divya Vivah launch preparation
+
+The separate Divya Vivah web invitation is prepared locally at a configured initial price of ₹99 for newly seeded listings; existing database prices remain owner-managed. Its owner-checked paid order route now strictly validates Divya data and upload ownership, blocks concurrent Divya order/edit races within one process, and requires valid payment-pending edits; the generic order route is blocked for Divya only. Existing bfday templates retain their previous flows. The shared settlement path does not revalidate legacy orders, and the lock is not distributed. Checkout tests use mocked gateway traffic only; no real or Razorpay test-mode payment or actual gateway integration was tested. This work has not been merged remotely or deployed and does not change the Remotion video renderer. See `templates/divya-vivah/README.md` for test results and limitations.
+
 ## Changelog
+
+- **2026-11-02 (checkout safeguards)** Scoped new paid checkout validation, in-process order/edit protection and the generic-order guard to Divya Vivah only; mocked checkout coverage includes an existing paid family's unchanged behavior. No real payment was tested and the Remotion feature is unchanged.
+
+- **2026-10-25 (language option)** Divya Vivah now adds guest Marathi/Hindi/English selection and independently editable translations. Its approved artwork, fixed opening film and card geometry are unchanged. This remains separate from the Remotion wedding-video feature; no renderer, render-job, route or deployment configuration changed.
+
+- **2026-10-25** Added the separate Divya Vivah interactive Marathi web invitation (`templates/divya-vivah`, `/create/divya-vivah`) to the shared template family. It uses a fixed supplied tap-to-open film and editable HTML, countdown and Maps; it does not use or alter this Remotion renderer, routes, jobs or existing invitation data. Its asset preparation is appended to the root build/postinstall scripts. See `templates/divya-vivah/README.md` for fidelity and testing limits.
 
 - **2026-10-11** The Paigaam admin panel adds mobile-friendly navigation to the video editor; the existing `/wedding-video` route and video-generation behavior are unchanged.
 - **2026-10-10** Deployed to production (PR #19). Story scenes replace per-customer generation. The
