@@ -1,0 +1,80 @@
+[
+  {
+    "file": "couple-art.webp",
+    "packed": "couple-art.webp.b64",
+    "size": 126090,
+    "sha256": "e5847df075ceac25364687f6fc5a8bd8f22f340593f00a47d982ec58b309b7d9"
+  },
+  {
+    "file": "temple.webp",
+    "packed": "temple.webp.b64",
+    "size": 179856,
+    "sha256": "28e62ee23c3758b9ffaebf9daf9d1a90c915f54a9c3ab06be1580317a4d2a8e6"
+  },
+  {
+    "file": "hands.webp",
+    "packed": "hands.webp.b64",
+    "size": 182970,
+    "sha256": "bc86c0971a28a3f1db6ae019d7d18b936f664a9bd4bc84f322685ddd1ba248c0"
+  },
+  {
+    "file": "garden.webp",
+    "packed": "garden.webp.b64",
+    "size": 117678,
+    "sha256": "a2d320a8bdc02a626d1abf81abbe5cad3a9d10d1b73636c2c7367ed6524d81f8"
+  },
+  {
+    "file": "garland.webp",
+    "packed": "garland.webp.b64",
+    "size": 10344,
+    "sha256": "e2867db86b96ef33cd6ed202d6729ed9cf74cfa1bdfd866109c80d4d1e99ed16"
+  },
+  {
+    "file": "leaves.webp",
+    "packed": "leaves.webp.b64",
+    "size": 80530,
+    "sha256": "b2a3262bb804ace5115a34dbda72b8ce27b24a09df606be0f30f9104bdc0c9f5"
+  },
+  {
+    "file": "demo-1.webp",
+    "packed": "demo-1.webp.b64",
+    "size": 75650,
+    "sha256": "871865e044e4e9e91536e78b131f7caff99b64d9baf8543ea2c67489afd1f1c5"
+  },
+  {
+    "file": "demo-2.webp",
+    "packed": "demo-2.webp.b64",
+    "size": 113086,
+    "sha256": "70ab2c4293f36f80103e05da1764f0851c64608be45331a462754c5a72f3009d"
+  },
+  {
+    "file": "demo-3.webp",
+    "packed": "demo-3.webp.b64",
+    "size": 109812,
+    "sha256": "ad305e26599b66fb421de6955a667e2841a4422fdce9a955b423d929ab05923f"
+  },
+  {
+    "file": "demo-4.webp",
+    "packed": "demo-4.webp.b64",
+    "size": 93960,
+    "sha256": "02a608f842436984e892e534ebbaaae24ed6c8e9e7af7ba1971dd5497e6bfd62"
+  },
+  {
+    "file": "fonts/cormorant.ttf",
+    "packed": "fonts--cormorant.ttf.b64",
+    "size": 1195560,
+    "sha256": "b20b7d9626dd956b2c5e558692ad328b1f19e3275e2782db4fa07670d83f35e0"
+  },
+  {
+    "file": "fonts/great-vibes.ttf",
+    "packed": "fonts--great-vibes.ttf.b64",
+    "size": 457588,
+    "sha256": "8d509802186f1b51572531ecf313e8098f9a5bfdfaca93f0c9b34467f9982d15"
+  },
+  {
+    "file": "thumbnail.webp",
+    "packed": "thumbnail.webp.b64",
+    "size": 31850,
+    "sha256": "ed3f0cc9b4465281814e10b345831e33c9e78e82d10946004e23246400bdd42b"
+  }
+]

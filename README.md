@@ -80,6 +80,10 @@ Three templates ship seeded: **Noor** (wedding, editorial uppercase), **Meher** 
 
 Concepts stay separate: **Template** (reusable design) → **Paigaam** (personalized instance) → **Order** (purchase).
 
+## Vaidehi
+
+Vaidehi is a reference-guided, continuous-scroll Indian wedding invitation in the existing template family. Once deployed, use /templates/vaidehi, /vaidehi/demo and /create/vaidehi. It includes configurable names/families, wedding-relative event dates, photographs, a locally generated venue QR, optional uploaded audio and a timezone-aware countdown. Assets restore through node scripts/prepare-vaidehi.js. Run npm run test:vaidehi; see templates/vaidehi/README.md, REFERENCE.md and QA.md for integration, fidelity differences and verification limits. No merge or production deployment is implied.
+
 ## Little Love
 
 Little Love is a five-page chocolate-brown interactive love scrapbook in the existing template family. When this code is deployed, it is available at `/templates/little-love`, `/little-love/demo` and `/create/little-love`, with existing draft/upload/preview/publishing flows. It preserves the supplied reference's bouquet, letter, memories/voice note, song and doodle pages, with original replacement art. Assets and local fonts are restored by `node scripts/prepare-little-love.js`; focused tests run with `npm run test:little-love`. See `templates/little-love/README.md`, `REFERENCE.md` and `FIDELITY.md` for implementation, verification scope and differences. No merge, deployment or real payment is implied by these routes.
