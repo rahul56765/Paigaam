@@ -4,24 +4,43 @@
   const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
   const envelope = one('[data-envelope]');
   const open = one('[data-open]');
-  if (open) open.addEventListener('click', () => {
+  const invitation = one('#invitation');
+  const goToInvitation = () => {
+    if (!invitation) return;
+    // Move focus without letting focus() or scrollIntoView() scroll an embedding
+    // page as well as this invitation. Compute the destination in our own window.
+    try { invitation.focus({preventScroll:true}); } catch (_) { invitation.focus(); }
+    const top = invitation.getBoundingClientRect().top + window.scrollY;
+    window.scrollTo({top, behavior:reduced.matches ? 'auto' : 'smooth'});
+  };
+  if (open && envelope && invitation) open.addEventListener('click', () => {
     envelope.classList.add('is-open');
-    open.disabled = true;
-    const go = () => { const target = one('#invitation'); target.scrollIntoView({behavior:reduced.matches?'auto':'smooth'}); };
-    setTimeout(go, reduced.matches ? 0 : 600);
+    open.setAttribute('aria-expanded', 'true');
+    open.tabIndex = -1; // The faded seal should not remain in the tab order.
+    goToInvitation();
+  });
+  const skip = one('.ss-cover__skip');
+  if (skip && invitation) skip.addEventListener('click', ev => {
+    ev.preventDefault();
+    goToInvitation();
   });
   const countdown = one('[data-countdown]');
   if (countdown) {
+    // The server supplies an ISO instant derived from the wedding's IST date/time.
+    // Date.now() is absolute, so this works regardless of the guest's timezone.
     const target = Date.parse(countdown.dataset.countdown);
-    const tick = () => {
-      const remaining = Math.max(0, Math.floor((target-Date.now())/1000));
-      const values = {days:Math.floor(remaining/86400), hours:Math.floor(remaining/3600)%24, minutes:Math.floor(remaining/60)%60, seconds:remaining%60};
-      Object.entries(values).forEach(([k,v]) => { const node = one(`[data-unit="${k}"]`, countdown); if (node) node.textContent = String(v).padStart(2,'0'); });
-      const ended = one('[data-count-ended]');
-      if (ended) ended.hidden = remaining > 0;
-      if (!remaining) clearInterval(timer);
-    };
-    const timer = setInterval(tick, 1000); tick();
+    if (Number.isFinite(target)) {
+      const ended = one('[data-count-ended]'), caption = one('[data-count-caption]');
+      const tick = () => {
+        const remaining = Math.max(0, Math.ceil((target-Date.now())/1000));
+        const values = {days:Math.floor(remaining/86400), hours:Math.floor(remaining/3600)%24, minutes:Math.floor(remaining/60)%60, seconds:remaining%60};
+        Object.entries(values).forEach(([k,v]) => { const node = one(`[data-unit="${k}"]`, countdown); if (node) node.textContent = String(v).padStart(2,'0'); });
+        if (ended) ended.hidden = remaining > 0;
+        if (caption) caption.hidden = remaining === 0;
+        if (!remaining) clearInterval(timer);
+      };
+      const timer = setInterval(tick, 1000); tick();
+    }
   }
   const scratch = one('[data-scratch]'), canvas = one('[data-scratch-canvas]'), reveal = one('[data-reveal]');
   if (scratch && canvas && reveal) {

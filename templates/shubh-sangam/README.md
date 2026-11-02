@@ -33,3 +33,7 @@ These checks cover validation, render contracts, list-editor regressions and art
 ## Release blockers
 
 This is a draft, not a production-ready release. End-to-end customer draft, image/audio upload, save/resume, publication and real payment testing have not been completed. Full integration tests were blocked by an HTTP 403 downloading sharp. If an administrator changes the price above zero, the shared paid checkout path does not currently perform Shubh Sangam's strict schema validation before creating an order; do not enable paid sales until that is fixed and tested. The WhatsApp RSVP is a guest-initiated handoff, not a stored response form. The reconstruction uses original generated approximation artwork, not the reference source artwork; the envelope motifs and event card layout still differ visibly from the filmed reference. The demo omits RSVP contact and couple photographs because real contact and photographs were not provided. Demo directions search a fictional address and are not verified.
+
+## Preview interaction updates
+
+The seal displays only the small functional word TAP, never couple initials. Mehendi and Reception use distinct illustrated assets. The highlighted details and countdown use the editable wedding data.

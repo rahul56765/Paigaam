@@ -38,11 +38,19 @@ test('packed art heals missing and corrupt files idempotently', () => {
     fs.cpSync(path.join(root,'lib','bfday','assets-shubh-sangam.js'), path.join(temp,'lib','bfday','assets-shubh-sangam.js'));
     fs.cpSync(path.join(root,'assets','shubh-sangam'),path.join(temp,'assets','shubh-sangam'),{recursive:true});
     const {assets, ensureShubhSangamAssets} = require(path.join(temp,'lib','bfday','assets-shubh-sangam.js'));
-    assert.equal(assets.length, 6);
-    assert.equal(ensureShubhSangamAssets().length, 6);
+    assert.equal(assets.length, 8);
+    assert.equal(ensureShubhSangamAssets().length, 8);
     assert.equal(ensureShubhSangamAssets().length, 0);
     fs.writeFileSync(path.join(temp,'public',assets[0].path), 'corrupt');
     assert.deepEqual(ensureShubhSangamAssets(), [assets[0].path]);
     assert.equal(ensureShubhSangamAssets().length, 0);
   } finally { fs.rmSync(temp,{recursive:true,force:true}); }
+});
+
+test('Mehendi and Reception have their own event artwork', () => {
+  const html = render({customer_data:config.demo});
+  const cards = [...html.matchAll(/<article class="ss-event ss-event--(\w+)">([\s\S]*?)<\/article>/g)];
+  assert.deepEqual(cards.map(m => m[1]), ['haldi','mehendi','sangeet','mandap','reception']);
+  assert.match(cards[1][2], /mehendi\.webp/);
+  assert.match(cards[4][2], /reception\.webp/);
 });
