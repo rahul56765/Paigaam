@@ -1,0 +1,15 @@
+'use strict';
+const test=require('node:test');
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const path=require('node:path');
+const vm=require('node:vm');
+const source=fs.readFileSync(path.join(__dirname,'../public/bfday/create.js'),'utf8');
+const start=source.indexOf('  function listControl(f)');
+const end=source.indexOf('\n  /*',start);
+function node(){return {children:[],events:{},disabled:false,classList:{add(){}},setAttribute(k,v){this[k]=v;},appendChild(n){if(n.parent)n.parent.removeChild(n);this.children.push(n);n.parent=this;return n;},removeChild(n){this.children.splice(this.children.indexOf(n),1);n.parent=null;},addEventListener(k,fn){this.events[k]=fn;},click(){if(!this.disabled&&this.events.click)this.events.click();},focus(){this.focused=true;}};}
+function setup(slug='sita-kalyanam',defaults=[]){const host=node(),add=node();let changes=0;const context={SLUG:slug,form:{querySelector:s=>s.includes('data-list')?host:add},make:()=>node(),changed:()=>changes++,scalarControl:(f,v)=>{let value=v||'';return {el:node(),get:()=>value,set:x=>{value=x;},focus(){}};}};const fn=vm.runInNewContext(source.slice(start,end)+';listControl',context);const control=fn({id:'events',itemLabel:'Event',minItems:0,maxItems:20,default:defaults,shape:[{id:'name',type:'text'}]});return {host,add,control,changes:()=>changes};}
+const values=c=>JSON.parse(JSON.stringify(c.get()));
+test('Sita Kalyanam editor: zero rows, adding, removing the final event and reordering all work',()=>{const {host,add,control:c}=setup();assert.equal(host.children.length,0);assert.deepEqual(values(c),[]);add.click();assert.equal(c.rows.length,1);c.rows[0].parts.name.set('First');add.click();c.rows[1].parts.name.set('Second');c.rows[1].up.click();assert.deepEqual(values(c),[{name:'Second'},{name:'First'}]);c.rows[1].remove.click();assert.equal(c.rows[0].remove.disabled,false);c.rows[0].remove.click();assert.equal(host.children.length,0);assert.deepEqual(values(c),[]);assert.equal(add.disabled,false);});
+test('Sita Kalyanam editor: saved lists replace instead of duplicating and retain validation row references',()=>{const {control:c,host}=setup('sita-kalyanam',[{name:'Old'}]);const validationRows=c.rows;c.set([{name:'New 1'},{name:'New 2'}]);assert.equal(c.rows,validationRows);assert.equal(c.rows.length,2);assert.equal(host.children.length,2);assert.deepEqual(values(c),[{name:'New 1'},{name:'New 2'}]);c.set([]);assert.equal(c.rows.length,0);assert.deepEqual(values(c),[]);c.set([{name:'Restored'}]);assert.equal(c.rows.length,1);assert.deepEqual(values(c),[{name:'Restored'}]);});
+test('Sita Kalyanam editor: max 20 cards is enforced and existing templates retain their final blank row',()=>{const {add,control:c}=setup();for(let i=0;i<25;i++)add.click();assert.equal(c.rows.length,20);assert.equal(add.disabled,true);const legacy=setup('aangan-vivah');assert.equal(legacy.control.rows.length,1);assert.equal(legacy.control.rows[0].remove.disabled,true);legacy.control.rows[0].remove.click();assert.equal(legacy.control.rows.length,1);});

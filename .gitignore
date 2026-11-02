@@ -44,3 +44,7 @@ public/divya-vivah/fonts/*.ttf
 public/little-love/*.webp
 public/little-love/*.mp3
 public/little-love/fonts/*.ttf
+
+# Sita Kalyanam art and fictional demo photos restored from checksummed text assets
+public/sita-kalyanam/*.webp
+public/assets/bfday-demo/sita-kalyanam-*.webp
