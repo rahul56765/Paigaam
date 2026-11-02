@@ -4,7 +4,7 @@ A reusable Hindu wedding invitation within PAIGAAM's existing bfday family engin
 
 ## Order and interactions
 
-Opening → main cover → family blessings (bride then groom) → muhurtham → events → reception → venue → Our Moments → countdown and closing. The nine sections scroll naturally after a tap; they are not a next/previous slide deck. Opening separates the devotional painting into two animated planes. Reduced-motion preference skips the delay. No-JavaScript access remains a continuous document with an anchor into the cover. Music never blocks opening.
+Opening → main cover → family blessings (bride then groom) → muhurtham → events → reception → venue → Our Moments → countdown and closing. The nine sections scroll naturally after a tap; they are not a next/previous slide deck. Opening uses one continuous, stationary devotional painting with a softly pulsing fingertip halo; the image itself is never split or moved. Reduced-motion preference skips the delay. No-JavaScript access remains a continuous document with an anchor into the cover. Music never blocks opening.
 
 Gallery: horizontal portrait scroll-snap, swipe, arrows, dots and keyboard; click a photograph for a modal viewer with previous/next, Escape and restored focus. Empty galleries keep the section without fake customer photographs. Upload failures display a clear message and disable the broken photo rather than opening an empty viewer. All images have dimension-preserving containers; illustrations remain contain-fit and customer portraits use cover-fit. Natural scrolling keeps longer customer copy readable rather than clipping it into fixed slides. Optional family and venue photos are supported.
 
@@ -42,3 +42,5 @@ See QA.md for actual outcomes and boundaries. Production publish/deployment is s
 ## Changelog
 
 - 2026-11-03 — Added isolated reference-guided nine-section invitation with dynamic customer data, linked event schedules, 20-event editor, family/venue uploads, portrait gallery/lightbox, Maps and QR, optional guest-gesture music, timezone-explicit live countdown, reduced motion and no-JS fallbacks. Added checksummed art recovery and fictional demo photographs. Existing invitation and wedding-video designs left unchanged.
+
+- 2026-11-03 — Corrected the opener: removed clipped, independently moving hand layers and their visible seam; retained the existing artwork as one static image with a subtle, reduced-motion-aware golden fingertip glow. Opening text, layout, branding and artwork remain unchanged.

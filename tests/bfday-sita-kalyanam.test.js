@@ -320,3 +320,18 @@ test('Sita Kalyanam: incomplete custom event schedules can be saved as drafts bu
   assert.throws(()=>schema.validate(d,{mode:'strict'}),/event_schedule_required/);
   assert.equal(schema.resolve(d).events.length,0);
 });
+
+test('Sita Kalyanam: opener uses one unsliced still painting with a subtle aligned reduced-motion glow', () => {
+  const html=htmlFor(), opening=section(html,'opening');
+  assert.match(opening, /class="sk-touch-glow"/);
+  assert.match(opening, /preserveAspectRatio="xMidYMid slice"/);
+  assert.doesNotMatch(opening, /sk-hand--|sk-opening-clouds|clipPath/i);
+  assert.match(opening, /data-sk-open/);
+  for (const text of [config.demo.openingHeading,config.demo.openingMessage,config.demo.openingButton,'PAIGAAM']) contains(opening,text);
+  const css=fs.readFileSync(path.join(root,'public/sita-kalyanam/invitation.css'),'utf8');
+  assert.match(css,/\.sk-opening\{[^}]*url\('\/sita-kalyanam\/opening\.webp'\) center\/cover/);
+  assert.match(css,/\.sk-touch-glow\{[^}]*animation:sk-touch-pulse 7s/);
+  assert.doesNotMatch(css,/sk-hand--|sk-rama-reach|sk-sita-reach/);
+  assert.match(css,/@media\(prefers-reduced-motion:reduce\)/);
+  assert.match(css,/animation:none!important/);
+});

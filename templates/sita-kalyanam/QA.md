@@ -40,3 +40,9 @@ No production merge/deployment is included in this verification. Routes in READM
 ## Visual fidelity
 
 Reference: Video-39617.mp4, 716×1274, 30 fps, 32.37 seconds; a phone-filmed invitation rather than original design files. Matching focuses on section flow, framing, ivory/peach paper, pink/green florals, banana leaves, divine figures, temple motif, restrained serif type, portrait gallery and countdown/red footer. Separate newly generated illustrations are a close recreation, not pixel-identical original source artwork. No footage frames or private people from the reference are shipped. Demo portrait subjects are generated fictional sample people.
+
+## Opening seam correction — 2026-11-03
+
+The original opening.webp is now one stationary CSS background; the former moving clipped halves and clouds replacement have been removed. A soft, slow, reduced-motion-aware SVG radial halo is aligned to the original image coordinates and does not alter the image. The opening copy, button, branding, image asset and cover positioning are unchanged. The existing cover fade remains.
+
+113/113 tests passed in the combined family/new-template regression command above, including an added guard for a single unsliced image, absence of old hand-layer CSS and the glow/reduced-motion rules. Browser review v3: no render health errors or failed requests; visual inspection confirms the angular seam is gone; opening button still transitions to the cover. npm installation/full application build and real-mobile testing remain outstanding as documented above.
