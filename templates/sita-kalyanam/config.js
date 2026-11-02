@@ -78,7 +78,7 @@ const fields = [
 ];
 const step = (title, heading, intro, ids) => ({ title, heading, intro, fields: ids.split(' ') });
 const config = {
-  slug: 'sita-kalyanam', family: 'bfday', name: 'Sita Kalyanam', category: 'Wedding', price: 0, currency: 'INR', version: 1,
+  slug: 'sita-kalyanam', family: 'bfday', name: 'Sita Kalyanam', category: 'Wedding', price: 99, currency: 'INR', version: 1,
   editable: true, backgroundMusic: false, displayField: 'groomName',
   description: 'A sacred Hindu wedding story in nine scrolling sections, with family blessings, an auspicious muhurtham, joyful celebrations and your own photographs.',
   thumbnail_url: '/sita-kalyanam/thumbnail.webp', ogImage: '/sita-kalyanam/thumbnail.webp', fields,

@@ -29,7 +29,7 @@ Music uses the existing family audio upload contract (MP3, M4A, OGG or WAV, 15 M
 - templates/bfday.js registers the isolated template; the central registry picks it up automatically.
 - /sita-kalyanam/demo, /create/sita-kalyanam, /sita-kalyanam/preview-frame, /api/sita-kalyanam/draft, upload, upload-audio and publish are mounted by existing shared routes. Published invitations retain the standard /p/ URL model.
 
-Only a slug-scoped list-editor branch permits zero rows and clean draft list replacement for this template; existing template list behaviour is unchanged. Its editor gets a distinct script cache key. No payment, pricing, creator, deployment or wedding-video behaviour is changed. The config price starts at zero; the existing admin-set database price remains authoritative.
+Only a slug-scoped list-editor branch permits zero rows and clean draft list replacement for this template; existing template list behaviour is unchanged. Its editor gets a distinct script cache key. Paid checkout extends existing protected-template safeguards to Sita Kalyanam only: validated owner-only checkout, locked pending edits, ephemeral storage guard and independent order settlement. Existing creator, deployment and wedding-video behaviour is unchanged. New installs seed this template at ₹99; the existing admin-set database price remains authoritative after seeding. The catalogue thumbnail is 1000 × 688 px and combines the template's opening and cover artwork.
 
 ## Verification
 
@@ -43,4 +43,8 @@ See QA.md for actual outcomes and boundaries. Production publish/deployment is s
 
 - 2026-11-03 — Added isolated reference-guided nine-section invitation with dynamic customer data, linked event schedules, 20-event editor, family/venue uploads, portrait gallery/lightbox, Maps and QR, optional guest-gesture music, timezone-explicit live countdown, reduced motion and no-JS fallbacks. Added checksummed art recovery and fictional demo photographs. Existing invitation and wedding-video designs left unchanged.
 
+- 2026-11-03 — Prepared the template for release at ₹99 with a catalogue-sized thumbnail derived from its opening and cover art. Existing admin pricing remains authoritative after initial seeding.
+
 - 2026-11-03 — Corrected the opener: removed clipped, independently moving hand layers and their visible seam; retained the existing artwork as one static image with a subtle, reduced-motion-aware golden fingertip glow. Opening text, layout, branding and artwork remain unchanged.
+
+- 2026-11-03 — Before ₹99 release, added owner-only strictly validated checkout, a pending-order edit lock, persistent storage guard and independent sibling-order settlement. Added isolated fake-gateway tests; no real charges were made.

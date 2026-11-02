@@ -38,7 +38,7 @@
     "test:lotus-vivah": "node --test tests/bfday-lotus-vivah.test.js tests/bfday-audio.test.js",
     "test:divya-vivah": "node --test tests/divya-vivah.test.js tests/divya-vivah-runtime.test.js tests/divya-vivah-languages.test.js tests/bfday-paid-checkout.test.js",
     "test:little-love": "node --test tests/bfday-little-love.test.js tests/bfday-little-love-api.test.js",
-    "test:sita-kalyanam": "node --test tests/bfday-sita-kalyanam.test.js tests/bfday-sita-kalyanam-api.test.js tests/bfday-sita-kalyanam-editor.test.js"
+    "test:sita-kalyanam": "node --test tests/bfday-sita-kalyanam.test.js tests/bfday-sita-kalyanam-api.test.js tests/bfday-sita-kalyanam-editor.test.js tests/bfday-sita-kalyanam-paid.test.js"
   },
   "engines": {
     "node": ">=22.5.0 <25"
