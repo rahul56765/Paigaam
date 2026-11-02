@@ -36,7 +36,7 @@ for (const t of family.list) {
   const S = t.slug;
   const demo = t.config.demo;
   const name = firstText(t);
-  const paidOffline = ['divya-vivah', 'little-love'].includes(S);
+  const paidOffline = Number(t.config.price) > 0;
 
   test(`${S} · routes: wizard, demo, detail page, thumbnail, gallery card, assets`, async () => {
     const create = await request('/create/' + S);
@@ -229,6 +229,21 @@ for (const t of family.list) {
     }];
     // Divya's machine-readable time is constrained, unlike free-form invitation copy.
     if (S === 'divya-vivah') hostile.weddingTime = demo.weddingTime;
+    if (S === 'sita-kalyanam') {
+      for (const key of ['weddingTime','receptionTime','countdownTime','utcOffset']) hostile[key] = demo[key] || '';
+      hostile.events = demo.events.map(event => ({ ...event, name: HOSTILE.slice(0,100), venue: HOSTILE.slice(0,150), address: HOSTILE }));
+    }
+    // Vaidehi has machine-readable times and UTC offsets too. Keep those
+    // valid while testing hostile copy in every rendered event/venue field.
+    if (S === 'vaidehi') {
+      hostile.weddingTime = demo.weddingTime;
+      hostile.countdownTime = demo.weddingTime;
+      hostile.utcOffset = demo.utcOffset;
+      hostile.events = demo.events.map(event => ({
+        ...event, name: HOSTILE.slice(0, 100),
+        venueName: HOSTILE.slice(0, 150), venueAddress: HOSTILE,
+      }));
+    }
     const a = await draft(S, hostile);
     const pages = [(await request(a.previewUrl, { cookie: a.cookie })).text];
     const pub = await request(`/api/${S}/publish`, { method: 'POST', cookie: a.cookie, body: { id: a.id } });
@@ -236,7 +251,7 @@ for (const t of family.list) {
       assert.equal(pub.status, 503, pub.text);
       assert.equal(pub.json.error, 'payments_offline');
       // Audit live-mode rendering too, without claiming an unpaid page is published.
-      pages.push(t.render({ customer_data: t.schema.validate(hostile, { mode: 'strict' }) }, { baseUrl: require('./bfday-helpers').BASE, isPreview: false }));
+      pages.push(t.render({ customer_data: t.schema.validate(t.schema.validate(hostile, { mode: 'draft' }), { mode: 'strict' }) }, { baseUrl: require('./bfday-helpers').BASE, isPreview: false }));
     } else {
       assert.equal(pub.status, 200, pub.text);
       pages.push((await request('/p/' + pub.json.slug)).text);

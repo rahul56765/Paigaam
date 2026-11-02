@@ -144,9 +144,9 @@ function publishPaigaam(pg) {
     : displayNames(pg.template_slug, pg.customer_data).join('-');
   const slug = pg.slug || uniquePaigaamSlug(slugifyNames(baseName));
   q.paigaamUpdate(pg.id, { slug, status: 'published', payment_status: 'paid', published_at: pg.published_at || new Date().toISOString().replace('T', ' ').slice(0, 19) });
-  // Little Love and Sita Kalyanam captured payments are marked by settlePaidOrder. Do not mark
+  // Little Love, Sita Kalyanam and Vaidehi captured payments are marked by settlePaidOrder. Do not mark
   // another checkout attempt paid merely because it belongs to the same card.
-  if (pg.template_slug !== 'little-love' && pg.template_slug !== 'sita-kalyanam') q.ordersAll().filter(o => o.paigaam_id === pg.id && o.status === 'pending').forEach(o => q.orderUpdate(o.id, 'paid'));
+  if (pg.template_slug !== 'little-love' && pg.template_slug !== 'sita-kalyanam' && pg.template_slug !== 'vaidehi') q.ordersAll().filter(o => o.paigaam_id === pg.id && o.status === 'pending').forEach(o => q.orderUpdate(o.id, 'paid'));
   const out = q.paigaamById(pg.id);
   if (out && out.template_slug === 'shaadi-paigaam') require('./lib/shaadiPaigaamRoutes').afterPaidPublish(out);
   if (out && out.template_slug === suvarnaVivah.SLUG) suvarnaVivah.afterPaidPublish(out);
@@ -422,7 +422,7 @@ const server = http.createServer((req, res) => creatorTracking.runRequest(req, r
       const pg = q.paigaamById(body.id);
       if (!pg) return json(res, 404, { error: 'not_found' });
       // These templates must use their owner-checked, strictly validated checkout endpoints.
-      if (pg.template_slug === 'divya-vivah' || pg.template_slug === 'little-love' || pg.template_slug === 'sita-kalyanam') return json(res, 403, { error: 'use_template_endpoint' });
+      if (pg.template_slug === 'divya-vivah' || pg.template_slug === 'little-love' || pg.template_slug === 'sita-kalyanam' || pg.template_slug === 'vaidehi') return json(res, 403, { error: 'use_template_endpoint' });
       if (Number(pg.template_price) <= 0) return json(res, 400, { error: 'not_paid' });
       if (pg.payment_status === 'paid') {
         const pub = pg.status === 'published' ? pg : publishPaigaam(pg);
