@@ -24,4 +24,4 @@ The video only establishes a landscape desktop composition. Desktop and landscap
 
 ## Commercial launch checks
 
-This is a love-card template, not a wedding/event invitation: the reference contains no date, venue, RSVP or countdown. No wedding sections have been invented. The configured initial price is zero for new listings, consistent with the neighboring love-card family; existing owner-managed prices are untouched. Review pricing in Admin before commercial launch. No production invitation, payment, existing template or customer data is modified by this change.
+This is a love-card template, not a wedding/event invitation: the reference contains no date, venue, RSVP or countdown. No wedding sections have been invented. The configured initial price is ₹99 for new listings; existing owner-managed prices are untouched. Verify the live price after deployment. No production invitation, payment, existing template or customer data is modified by this change.

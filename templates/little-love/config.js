@@ -2,7 +2,7 @@
 const note = 'To My Dearest, I am writing this little note just because you have been on my mind all day long, which is nothing new since you pretty much live there anyway. Every single time I think about your smile, my heart does a tiny happy dance. I cannot wait until the next time I get to see you❤️';
 const photos = [1, 2, 3, 7].map(n => ({ photo: `/assets/bfday-demo/couple-${n}.jpg`, caption: 'a little moment, forever ours' }));
 module.exports = {
-  slug: 'little-love', family: 'bfday', name: 'Little Love', category: 'Love', price: 0, currency: 'INR',
+  slug: 'little-love', family: 'bfday', name: 'Little Love', category: 'Love', price: 99, currency: 'INR',
   description: 'Five chocolate-brown scrapbook pages: a tulip bouquet, your love letter, a photo strip and voice note, a playable song card, and a hand-doodled farewell. Flip through a keepsake made just for them.',
   thumbnail_url: '/little-love/thumbnail.webp', version: 1, editable: true, backgroundMusic: false, displayField: 'senderName',
   fields: [

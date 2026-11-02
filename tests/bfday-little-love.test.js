@@ -42,6 +42,9 @@ test('five wizard steps place every declared field once, and demo is publishable
   assert.equal(config.slug, 'little-love');
   assert.equal(config.family, 'bfday');
   assert.equal(config.editable, true);
+  assert.equal(config.price, 99);
+  assert.equal(config.currency, 'INR');
+  assert.equal(config.thumbnail_url, '/little-love/thumbnail.webp');
   assert.equal(config.backgroundMusic, false);
   assert.equal(config.steps.length, 5);
   const placed = config.steps.flatMap(step => step.fields);

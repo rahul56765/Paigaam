@@ -17,7 +17,8 @@ test('Little Love: real family editor, preview, owner checks, uploads, save and 
   const { db, q } = require('../db');
   const routes = require('../lib/bfdayRoutes');
   const family = require('../lib/bfday/family');
-  q.templateInsert({ name: config.name, slug: config.slug, category: config.category, status: 'published', config });
+  // Explicitly free isolated fixture: production's ₹99 checkout is covered separately with a mocked gateway.
+  q.templateInsert({ name: config.name, slug: config.slug, category: config.category, price: 0, status: 'published', config });
   let base;
   const server = http.createServer(async (req, res) => {
     try {

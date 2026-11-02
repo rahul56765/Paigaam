@@ -8,9 +8,9 @@ A new member of PAIGAAM's existing bfday template family, not a standalone websi
 - Collection/details: /templates and /templates/little-love.
 - Demo: /little-love/demo.
 - Personalisation: /create/little-love, using PAIGAAM's existing five-step field-driven editor and live preview.
-- Existing /api/little-love/draft, preview, upload, audio-upload and publish routes are provided by the family engine; owner checks and upload ownership remain unchanged.
+- Existing /api/little-love/draft, preview, upload, audio-upload and publish routes are provided by the family engine; paid checkout strictly validates required fields and upload ownership before creating an order, with in-process order/edit locking. The generic order endpoint is blocked for Little Love.
 - Published instances use the existing /p/:slug flow. Studio copy editing/cloning follows the existing family contract.
-- Configured initial price: ₹0 for new listings; existing DB prices remain owner-managed. No live price is changed by this branch.
+- Configured initial price: ₹99 for newly seeded listings; existing database prices and thumbnails remain owner-managed and are not overwritten at startup. Verify production listing after deployment.
 
 ## Editable content
 
@@ -54,13 +54,16 @@ Verified locally on 2026-11-02 with Node 24.22.1:
 - 141/141 tests passed across Little Love, its actual family HTTP lifecycle, shared family contract, Aangan Vivah, Lotus Vivah, template studio, shared audio and Diwali Deep.
 - All 10 packed assets restore and verify by SHA-256 in a clean directory; corrupt/missing generated media heal correctly.
 - After registry access was approved, unchanged pinned dependencies installed successfully with npm ci, all post-install assets verified, and npm audit reported zero vulnerabilities. npm run build passed. No dependency versions or lockfile were changed.
-- The complete npm test command passed every configured stage, including the 637-test family suite and Little Love's real process-restart persistence check. Its generic hostile-data fixture now supplies a valid playable media URL for Little Love's playlist while retaining hostile text/query content; production validation was not loosened.
-- Thirteen Chromium 145 browser scenarios passed against the full server.js application with a new disposable SQLite DB, in addition to the earlier scoped-family run. Full-server HTTP smoke checks also returned 200 for the collection/detail/demo/editor and template assets. Browser scenarios include live preview, autosave, voice-note upload, free publish and published rendering; native MP3 playback/seeking; playlist selection; both transitions; all pages at 390×844, 320×640, 768×1024 and 844×390; complete 900-character letters; keyboard/swipe/replay; reduced motion; and no-script fallback. No uncaught browser JS errors were seen.
+- The complete npm test command passed every configured stage after the ₹99 change, including 639 family tests and Little Love's private owner draft and uploaded photo surviving a real server restart. Offline paid-template tests do not claim a public paid invitation.
+- Thirteen Chromium 145 browser scenarios passed against the full server.js application with a new disposable SQLite DB and offline gateway. These include live preview, autosave, voice-note upload, private owner preview, ₹99 checkout and refusal to publish while payments are offline; native MP3 playback/seeking; playlist selection; both transitions; all pages at 390×844, 320×640, 768×1024 and 844×390; complete 900-character letters; keyboard/swipe/replay; reduced motion; and no-script fallback. No uncaught browser JS errors were seen. A separate explicitly free fixture checks the shared free-publication rendering, not the paid production path.
+- Mocked gateway tests verify the ₹99 order (9,900 paise), ownership/strict validation, captured-payment settlement and publication, and the in-process race guard. No actual transaction was made.
 - Run scoped browser checks with python3 scripts/qa-little-love.py, or full-application checks with LITTLE_LOVE_QA_FULL_APP=1 python3 scripts/qa-little-love.py (developer-only Python Playwright 1.58.0 and downloaded Chromium). Both modes use a fresh temporary local database and disable real payment integration. Screenshots/results are written to the ignored test-output/little-love directory. Additional external audio delivery and YouTube provider messages/network are controlled in-browser test data, not proof of third-party hosting/video availability.
 
 Remaining limits: actual third-party YouTube/audio hosting availability, real payment and Railway production deployment are not verified. No merge or deployment has been performed. Local full-application checks are not production certification.
 
 ## Changelog
+
+- 2026-11-02 (₹99 launch): set initial price to ₹99, replace cover thumbnail with a 1000×688 rendered screenshot, and scope strict validation, upload ownership, in-process race protection and generic order blocking to Little Love paid checkout. Mock gateway tests verify ₹9,900 paise and captured payment settlement; real payments are not claimed. Existing database values remain owner-managed.
 
 - 2026-11-02 (full validation): registry access approved; npm ci, build, full npm test and 13 full-server browser scenarios passed. Added a full-server mode to the disposable browser harness and corrected only Little Love's constrained-media hostile-data fixture in the existing family API test. No production validation, dependency versions or lockfile changed.
 

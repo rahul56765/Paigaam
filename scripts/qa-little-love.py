@@ -9,7 +9,7 @@ import io, json, os, re, subprocess, tempfile, time, urllib.request, urllib.pars
 from pathlib import Path
 from playwright.sync_api import sync_playwright, expect
 ROOT = Path(__file__).resolve().parents[1]
-OUT = ROOT / 'test-output/little-love'
+OUT = Path(os.environ.get('LITTLE_LOVE_QA_OUT', ROOT / 'test-output/little-love'))
 OUT.mkdir(parents=True, exist_ok=True)
 results = []
 def passed(name):
@@ -31,7 +31,15 @@ with tempfile.TemporaryDirectory(prefix='little-love-browser-') as temporary:
     env = dict(os.environ, DATA_DIR=temporary, PAIGAAM_LITTLE_LOVE_QA='1', PORT='4002', HOST='127.0.0.1', BASE_URL=base, RAZORPAY_ENABLED='0')
     log = open(OUT / 'fixture.log', 'w')
     entry = ROOT / ('server.js' if full_app else 'tests/fixtures/little-love-browser.cjs')
-    process = subprocess.Popen(['node', str(entry)], cwd=ROOT, env=env, stdout=log, stderr=log)
+    if full_app:
+        command = ['node', str(entry)]
+    else:
+        # The scoped fixture intentionally exercises the free-publication path.
+        # Its SQLite template insertion must explicitly set price=0 even when the
+        # real Little Love config is paid; production seeding is never changed.
+        fixture_boot = "const q=require('./db').q;const insert=q.templateInsert;q.templateInsert=t=>insert({...t,price:0});require(process.argv[1]);"
+        command = ['node', '-e', fixture_boot, str(entry)]
+    process = subprocess.Popen(command, cwd=ROOT, env=env, stdout=log, stderr=log)
     try:
         for _ in range(100):
             if process.poll() is not None: raise RuntimeError('Fixture exited: ' + (OUT / 'fixture.log').read_text())
@@ -114,7 +122,8 @@ with tempfile.TemporaryDirectory(prefix='little-love-browser-') as temporary:
             page.goto(data_url(base, {'senderName':'One','recipientName':'Two','playlist':[{'title':'A video song','url':'https://m.youtube.com/watch?v=dQw4w9WgXcQ'}]}))
             go(page,3);page.locator('[data-track-step="1"]').click()
             expect(page.locator('[data-youtube-host] iframe')).to_have_attribute('src',re.compile('/embed/dQw4w9WgXcQ'))
-            provider = next(f for f in page.frames if 'youtube-nocookie.com/embed/' in f.url)
+            provider = page.locator('[data-youtube-host] iframe').element_handle().content_frame()
+            provider.wait_for_url(re.compile('youtube-nocookie.com/embed/'))
             provider.evaluate('window.received=[];addEventListener("message",e=>{try{received.push(JSON.parse(e.data))}catch(_){}})')
             provider.evaluate('parent.postMessage({event:"onReady"},"*");parent.postMessage({event:"onStateChange",info:1},"*");parent.postMessage({event:"onStateChange",info:0},"*")')
             expect(page.locator('.ll-song-transport [data-play="song"]')).to_have_attribute('aria-pressed','false')
@@ -169,24 +178,51 @@ with tempfile.TemporaryDirectory(prefix='little-love-browser-') as temporary:
             page.locator('#next').click()
             recording = io.BytesIO()
             with wave.open(recording,'wb') as w:w.setnchannels(1);w.setsampwidth(2);w.setframerate(8000);w.writeframes(b'\0\0'*800)
-            page.locator('[data-audio="musicUpload"] input[type=file]').set_input_files({'name':'memory.wav','mimeType':'audio/wav','buffer':recording.getvalue()})
+            with page.expect_response(lambda r: '/api/little-love/draft' in r.url and r.request.method == 'POST') as draft_response:
+                page.locator('[data-audio="musicUpload"] input[type=file]').set_input_files({'name':'memory.wav','mimeType':'audio/wav','buffer':recording.getvalue()})
+            preview_url = draft_response.value.json()['previewUrl']
             expect(page.locator('[data-audio="musicUpload"]')).to_contain_text('Song added and saved.')
             page.locator('#next').click();page.locator('#f-songTitle').fill('Our browser-tested song')
             page.locator('#next').click();page.locator('#f-closingTitle').fill('All our love')
             page.locator('#next').click();expect(page.locator('#publish')).to_be_visible()
-            page.locator('#publish').click()
-            expect(page.locator('#publishedUrl')).to_have_value(re.compile('/p/'))
-            published=page.locator('#publishedUrl').input_value()
-            page.goto(published)
-            expect(page.locator('[data-current]')).to_have_text('1')
-            assert '/bfday/uploads/' in page.locator('#llMemoryAudio').get_attribute('src')
-            assert page.locator('.ll-letter-copy').inner_text() == 'A browser-tested personal letter.'
-            shot(page,'published-instance')
-            passed('real editor live preview, draft autosave, voice upload, free publish and published rendering')
+            if full_app:
+                expect(page.locator('#pc-inline-checkout')).to_contain_text('₹99')
+                expect(page.locator('#publish')).to_be_enabled()
+                expect(page.locator('#publish')).to_contain_text('₹99')
+                # Offline gateway: verify the real paid route refuses to publish,
+                # without opening a payment modal or initiating a real payment.
+                with page.expect_response(lambda r: '/api/little-love/publish' in r.url and r.request.method == 'POST') as response_info:
+                    page.locator('#publish').click()
+                response = response_info.value
+                assert response.status == 503, response.text()
+                assert response.json()['error'] == 'payments_offline'
+                expect(page.locator('#formError')).to_contain_text('Payments are being switched on')
+                assert page.locator('#publishedResult').is_hidden()
+                assert page.locator('#publishedUrl').input_value() == ''
+                # Publish attempted a save first: it remains an owner-only draft.
+                owner_preview = context.request.get(base + preview_url)
+                assert owner_preview.status == 200
+                assert 'A browser-tested personal letter.' in owner_preview.text()
+                assert '/bfday/uploads/' in owner_preview.text()
+                stranger = browser.new_context()
+                assert stranger.request.get(base + preview_url).status == 403
+                stranger.close()
+                shot(page, 'paid-checkout-offline')
+                passed('real editor, private owner draft and ₹99 checkout gating; offline gateway prevents publication')
+            else:
+                page.locator('#publish').click()
+                expect(page.locator('#publishedUrl')).to_have_value(re.compile('/p/'))
+                published=page.locator('#publishedUrl').input_value()
+                page.goto(published)
+                expect(page.locator('[data-current]')).to_have_text('1')
+                assert '/bfday/uploads/' in page.locator('#llMemoryAudio').get_attribute('src')
+                assert page.locator('.ll-letter-copy').inner_text() == 'A browser-tested personal letter.'
+                shot(page,'published-instance')
+                passed('real editor live preview, draft autosave, voice upload and published rendering with explicit price-0 fixture')
             assert not errors, errors
             passed('no uncaught browser JavaScript errors')
             context.close();browser.close()
-        (OUT/'results.json').write_text(json.dumps({'scope':('Full application server.js with disposable SQLite data; not payments or production' if full_app else 'Real family routes in disposable SQLite fixture; not full server, payments or production'),'passed':results,'count':len(results)},indent=2)+'\n')
+        (OUT/'results.json').write_text(json.dumps({'scope':('Full application server.js with disposable SQLite data; not payments or production' if full_app else 'Real family routes in disposable SQLite fixture with explicitly zero-price template; not full server, payments or production'),'passed':results,'count':len(results)},indent=2)+'\n')
         print(f'{len(results)} browser scenarios passed; screenshots: {OUT}')
     finally:
         process.terminate()
