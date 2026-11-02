@@ -63,7 +63,9 @@ Remaining limits: actual third-party YouTube/audio hosting availability, real pa
 
 ## Changelog
 
-- 2026-11-02 (₹99 launch): set initial price to ₹99, replace cover thumbnail with a 1000×688 rendered screenshot, and scope strict validation, upload ownership, in-process race protection and generic order blocking to Little Love paid checkout. Mock gateway tests verify ₹9,900 paise and captured payment settlement; real payments are not claimed. Existing database values remain owner-managed.
+- 2026-11-02 (checkout audit): for Little Love only, do not mark unrelated pending orders paid when one captured order settles, and reject public paid checkout on a known-ephemeral disk before gateway creation. Mocked verification and signed webhook tests cover late captures, a second pending order and webhook replay; storage rejection uses an isolated child process. Order/edit locking remains in-process only; concurrent server processes do not share it. No real payment was made.
+
+- 2026-11-02 (₹99 launch): set initial price to ₹99, replace cover thumbnail with a 1000×688 rendered screenshot, and scope strict validation, upload ownership, in-process race protection and generic order blocking to Little Love paid checkout. Mock gateway tests verify 9,900 paise and captured payment settlement; real payments are not claimed. Existing database values remain owner-managed.
 
 - 2026-11-02 (full validation): registry access approved; npm ci, build, full npm test and 13 full-server browser scenarios passed. Added a full-server mode to the disposable browser harness and corrected only Little Love's constrained-media hostile-data fixture in the existing family API test. No production validation, dependency versions or lockfile changed.
 
