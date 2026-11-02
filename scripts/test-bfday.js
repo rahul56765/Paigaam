@@ -66,7 +66,7 @@ const { png } = require('../tests/bfday-helpers');
         r = await post(`/api/${t.slug}/draft`, cookie, { id, customer_data: { ...data, [image.id]: photo } });
         assert.equal(r.status, 200, t.slug + ' draft with photo');
       }
-      if (['divya-vivah', 'little-love'].includes(t.slug)) {
+      if (Number(t.config.price) > 0) {
         r = await post(`/api/${t.slug}/publish`, cookie, { id });
         assert.equal(r.status, 503, t.slug + ' paid publish offline');
         assert.equal((await r.json()).error, 'payments_offline');
@@ -86,7 +86,7 @@ const { png } = require('../tests/bfday-helpers');
     await stop(); await start();
 
     for (const { t, pub, photo, cookie, pending, name } of made) {
-      if (['divya-vivah', 'little-love'].includes(t.slug)) {
+      if (Number(t.config.price) > 0) {
         const own = await fetch(base + pending.previewUrl, { headers: { cookie } });
         assert.equal(own.status, 200, `${t.slug}: draft ownership survives restart`);
         if (name) assert.ok((await own.text()).includes(name), `${t.slug}: draft text survives restart`);
