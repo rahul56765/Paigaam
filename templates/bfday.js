@@ -30,6 +30,7 @@ module.exports = [
   'lotus-vivah',
   'patra-vivah',
   'divya-vivah',
+  'shubh-sangam',
   'inaam',
   'purana-seekho',
   'jashn',
