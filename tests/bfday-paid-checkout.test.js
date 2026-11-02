@@ -231,3 +231,69 @@ test('Little Love ₹99: in-flight locking, captured-payment verification and pu
   assert.equal(q.orderByRazorpayOrderId(order).status, 'paid');
   assert.equal((await post('/api/little-love/draft', { id: d.id, customer_data: t.config.demo }, d.cookie)).status, 403);
 });
+
+test('Little Love: settling one of two pending checkout orders does not mark the other paid', async () => {
+  const t = family.bySlug('little-love'); const d = await draft(t.config.demo, t.slug);
+  const one = await post('/api/little-love/publish', { id: d.id }, d.cookie);
+  const two = await post('/api/little-love/publish', { id: d.id }, d.cookie);
+  assert.equal(one.status, 200); assert.equal(two.status, 200);
+  assert.notEqual(one.body.orderId, two.body.orderId);
+  const order1 = q.orderByRazorpayOrderId(one.body.orderId), order2 = q.orderByRazorpayOrderId(two.body.orderId);
+  assert.equal(order1.status, 'cancelled'); assert.equal(order2.status, 'pending');
+  const payment = 'pay_little_order1';
+  payments.set(payment, { id: payment, order_id: one.body.orderId, status: 'captured', amount: 9900, currency: 'INR' });
+  const proof = { razorpay_order_id: one.body.orderId, razorpay_payment_id: payment, razorpay_signature: signature(one.body.orderId, payment) };
+  assert.equal((await post('/api/razorpay/verify', proof)).status, 200);
+  assert.equal(q.orderByRazorpayOrderId(one.body.orderId).status, 'paid');
+  assert.equal(q.orderByRazorpayOrderId(two.body.orderId).status, 'pending', 'an uncaptured order must not be marked paid');
+  assert.equal(q.paigaamById(d.id).status, 'published');
+});
+
+test('Little Love: refuse public paid checkout on known-ephemeral storage before gateway', async () => {
+  const childDir = fs.mkdtempSync(path.join(os.tmpdir(), 'little-love-ephemeral-'));
+  const childCode = `
+    const http = require('node:http');
+    const layer = require('./db'); layer.PERSISTENT = false;
+    const config = require('./templates/little-love/config');
+    layer.q.templateInsert({ ...config, status: 'published' });
+    const routes = require('./lib/bfdayRoutes');
+    let origin;
+    const server = http.createServer(async (req,res) => {
+      try { if (!await routes.handle(req,res,new URL(req.url,origin),{baseUrl:'https://public.example'})) { res.writeHead(404); res.end(); } }
+      catch(e) { res.writeHead(500); res.end(e.message); }
+    });
+    server.listen(0,'127.0.0.1',async()=>{
+      origin='http://127.0.0.1:'+server.address().port;
+      try {
+        const request=(path,body,cookie)=>fetch(origin+path,{method:'POST',headers:{'content-type':'application/json',...(cookie?{cookie}:{})},body:JSON.stringify(body)});
+        const a=await request('/api/little-love/draft',{customer_data:config.demo});
+        const cookie=a.headers.get('set-cookie').split(';')[0], draft=await a.json();
+        const r=await request('/api/little-love/publish',{id:draft.id},cookie);
+        const result=await r.json();
+        if(r.status!==503 || result.error!=='storage_unavailable' || layer.q.paigaamById(draft.id).status!=='draft' || layer.q.ordersAll().length!==0) process.exitCode=1;
+      } catch(e) { console.error(e); process.exitCode=1; }
+      server.closeAllConnections(); server.close(()=>layer.db.close());
+    });`;
+  try {
+    const { spawnSync } = require('node:child_process');
+    const result = spawnSync(process.execPath, ['-e', childCode], { cwd: path.join(__dirname, '..'), env: { ...process.env, DATA_DIR: childDir, RAZORPAY_ENABLED: '0', BFDAY_ALLOW_EPHEMERAL_PUBLISH: '0' }, encoding: 'utf8', timeout: 15000 });
+    assert.equal(result.status, 0, result.stderr + '\n' + result.stdout);
+  } finally { fs.rmSync(childDir, { recursive: true, force: true }); }
+});
+
+test('Little Love: signed captured webhook marks only its own order paid and is idempotent', async () => {
+  const t = family.bySlug('little-love'); const d = await draft(t.config.demo, t.slug);
+  const old = await post('/api/little-love/publish', { id: d.id }, d.cookie);
+  const newer = await post('/api/little-love/publish', { id: d.id }, d.cookie);
+  assert.equal(old.status, 200); assert.equal(newer.status, 200);
+  const payload = { event: 'payment.captured', payload: { payment: { entity: { id: 'pay_webhook_local', order_id: old.body.orderId, status: 'captured', amount: 9900, currency: 'INR' } } } };
+  const raw = JSON.stringify(payload);
+  const signed = crypto.createHmac('sha256', process.env.RAZORPAY_WEBHOOK_SECRET).update(raw).digest('hex');
+  for (let i=0;i<2;i++) {
+    const r = await fetch(origin + '/api/razorpay/webhook', { method:'POST', headers: { 'content-type':'application/json', 'x-razorpay-signature':signed }, body:raw });
+    assert.equal(r.status, 200, await r.text());
+  }
+  assert.equal(q.orderByRazorpayOrderId(old.body.orderId).status, 'paid');
+  assert.equal(q.orderByRazorpayOrderId(newer.body.orderId).status, 'pending');
+  assert.equal(q.paigaamById(d.id).status, 'published');
+});
