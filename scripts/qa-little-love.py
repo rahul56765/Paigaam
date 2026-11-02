@@ -2,7 +2,8 @@
 """Browser QA against real PAIGAAM family routes in a disposable SQLite fixture.
 Dev-only: pip install playwright==1.58.0; python3 -m playwright install chromium
 Run: python3 scripts/qa-little-love.py
-Does not install/replace application dependencies, contact production, or test payments.
+Full application: LITTLE_LOVE_QA_FULL_APP=1 python3 scripts/qa-little-love.py
+Both modes use disposable local data; neither contacts production or tests payments.
 """
 import io, json, os, re, subprocess, tempfile, time, urllib.request, urllib.parse, wave
 from pathlib import Path
@@ -25,10 +26,12 @@ def go(page, number):
 def shot(page, name):
     page.screenshot(path=str(OUT / (name + '.png')), full_page=True)
 with tempfile.TemporaryDirectory(prefix='little-love-browser-') as temporary:
-    env = dict(os.environ, DATA_DIR=temporary, PAIGAAM_LITTLE_LOVE_QA='1', PORT='4002')
-    log = open(OUT / 'fixture.log', 'w')
-    process = subprocess.Popen(['node', str(ROOT / 'tests/fixtures/little-love-browser.cjs')], cwd=ROOT, env=env, stdout=log, stderr=log)
+    full_app = os.environ.get('LITTLE_LOVE_QA_FULL_APP') == '1'
     base = 'http://127.0.0.1:4002'
+    env = dict(os.environ, DATA_DIR=temporary, PAIGAAM_LITTLE_LOVE_QA='1', PORT='4002', HOST='127.0.0.1', BASE_URL=base, RAZORPAY_ENABLED='0')
+    log = open(OUT / 'fixture.log', 'w')
+    entry = ROOT / ('server.js' if full_app else 'tests/fixtures/little-love-browser.cjs')
+    process = subprocess.Popen(['node', str(entry)], cwd=ROOT, env=env, stdout=log, stderr=log)
     try:
         for _ in range(100):
             if process.poll() is not None: raise RuntimeError('Fixture exited: ' + (OUT / 'fixture.log').read_text())
@@ -183,7 +186,7 @@ with tempfile.TemporaryDirectory(prefix='little-love-browser-') as temporary:
             assert not errors, errors
             passed('no uncaught browser JavaScript errors')
             context.close();browser.close()
-        (OUT/'results.json').write_text(json.dumps({'scope':'Real family routes in disposable SQLite fixture; not full server, payments or production','passed':results,'count':len(results)},indent=2)+'\n')
+        (OUT/'results.json').write_text(json.dumps({'scope':('Full application server.js with disposable SQLite data; not payments or production' if full_app else 'Real family routes in disposable SQLite fixture; not full server, payments or production'),'passed':results,'count':len(results)},indent=2)+'\n')
         print(f'{len(results)} browser scenarios passed; screenshots: {OUT}')
     finally:
         process.terminate()

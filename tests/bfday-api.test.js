@@ -220,6 +220,12 @@ for (const t of family.list) {
         events: day.events.map(event => ({ ...event, event: HOSTILE.slice(0, 44), venue: HOSTILE.slice(0, 80) })),
       }));
     }
+    // Little Love's playlist accepts playable audio/video, not generic webpage URLs.
+    // Keep malicious text/query content while preserving the media URL contract.
+    if (S === 'little-love') hostile.playlist = [{
+      title: HOSTILE.slice(0, 65),
+      url: 'https://x.example/song.mp3?a=1&b=%3Cscript%3E',
+    }];
     // Divya's machine-readable time is constrained, unlike free-form invitation copy.
     if (S === 'divya-vivah') hostile.weddingTime = demo.weddingTime;
     const a = await draft(S, hostile);
