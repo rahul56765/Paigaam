@@ -80,6 +80,10 @@ Three templates ship seeded: **Noor** (wedding, editorial uppercase), **Meher** 
 
 Concepts stay separate: **Template** (reusable design) → **Paigaam** (personalized instance) → **Order** (purchase).
 
+## Divya Vivah
+
+The Marathi, Hindi and English Divya Vivah invitation is available through `/create/divya-vivah` when this version is deployed. Its configured initial price for a newly seeded template is **₹99**. Existing database prices are owner-managed and are not overwritten on startup, so an existing Divya Vivah listing must be checked separately before launch. Paid publication uses the existing Razorpay checkout and requires configured payments; no successful live payment or deployment is claimed. Assets are restored and verified by `node scripts/prepare-divya-vivah.js`. See `templates/divya-vivah/README.md` for details and verification limits.
+
 ## Project layout
 
 ```
