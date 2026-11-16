@@ -153,7 +153,7 @@ function setup(slug, { paidResponse = false, holdPhoto = false, holdPublish = fa
     requests.push({ url, options });
     if (url === `/${slug}/preview-frame`) return { ok: true, text: async () => '<p>preview</p>' };
     let body;
-    if (url === `/api/${slug}/draft`) body = { id: draftId, previewUrl: `/${slug}/preview/${draftId}` };
+    if (url === `/api/${slug}/draft`) body = { id: draftId, snapshot: 'd'.repeat(64), previewUrl: `/${slug}/preview/${draftId}` };
     else if (url === `/api/${slug}/upload?id=${draftId}`) { if (photoGate) await photoGate; body = { url: photoUrl }; }
     else if ([`/api/${slug}/upload-audio?id=${draftId}`, `/api/${slug}/audio?id=${draftId}`].includes(url)) body = { url: songUrl };
     else if (url === `/api/${slug}/publish`) { if (publishGate) await publishGate; body = paidResponse ? { razorpay: true } : { url: origin + '/p/fake-local-result' }; }
@@ -206,7 +206,7 @@ for (const [slug, photoField, audioField] of [
     assert.equal(saved.id, draftId);
     assert.equal(saved.customer_data[photoField], photoUrl);
     assert.equal(saved.customer_data[audioField], songUrl);
-    assert.deepEqual(JSON.parse(find(`/api/${slug}/publish`)[0].options.body), { id: draftId });
+    assert.deepEqual(JSON.parse(find(`/api/${slug}/publish`)[0].options.body), { id: draftId, expected_snapshot: 'd'.repeat(64) });
     assert.equal(h.doc.getElementById('publishedUrl').value, origin + '/p/fake-local-result');
     assert.equal(h.result.hidden, false);
     assert.match(h.doc.getElementById('qrImage').src, /^\/api\/qr\?url=/);

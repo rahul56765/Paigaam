@@ -21,7 +21,7 @@ async function create(slug, cookie, client) {
   assert.equal(r.status, 200, `${slug}: ${await r.clone().text()}`);
   return { ...await r.json(), slug, client, cookie: cookie || r.headers.get('set-cookie').split(';')[0] };
 }
-async function publish(d, cookie = d.cookie) { return post(`/api/${d.slug}/publish`, { id: d.id, price: 0, amount: 0 }, cookie, d.client); }
+async function publish(d, cookie = d.cookie) { return post(`/api/${d.slug}/publish`, { id: d.id, expected_snapshot: d.snapshot, price: 0, amount: 0 }, cookie, d.client); }
 function wave() {
   const b = Buffer.alloc(46); b.write('RIFF', 0); b.writeUInt32LE(38, 4); b.write('WAVE', 8);
   b.write('fmt ', 12); b.writeUInt32LE(16, 16); b.writeUInt16LE(1, 20); b.writeUInt16LE(1, 22);
@@ -56,6 +56,7 @@ assert.equal(r.status, 200, await r.clone().text()); const media = (await r.json
 r = await fetch(base + media); assert.equal(r.status, 404);
 r = await post('/api/love-letter/draft', { id: audioDraft.id, customer_data: { ...bySlug('love-letter').config.demo, songUrl: media } }, cookie, audioDraft.client);
 assert.equal(r.status, 200, await r.clone().text());
+audioDraft.snapshot = (await r.json()).snapshot;
 r = await publish(audioDraft); assert.equal(r.status, 200, await r.clone().text());
 r = await fetch(base + media); assert.equal(r.status, 200); assert.equal(r.headers.get('content-type'), 'audio/wav');
 assert.deepEqual(Buffer.from(await r.arrayBuffer()), music);

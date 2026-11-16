@@ -859,6 +859,10 @@ export function builderPage(template, baseUrl = '', options = {}) {
   html = html.replace(/<section class="pc-inline-checkout[\s\S]*?<\/section>/, '')
     .replace(/<script[^>]+src="\/js\/paigaam-pay\.js[^>]*><\/script>\s*/g, '');
   if (freeBuilder) {
+    // New publish requests require the snapshot returned by save. Give each
+    // opted-in editor a new URL so an old cached script fails no user's send.
+    html = html.replace(/(<script\b[^>]*src=")(\/(?:bfday\/create|love-letter\/editor|anniversary-blue\/editor)\.js)(?:\?[^"\s]*)?("[^>]*>)/g,
+      '$1$2?release=cloudflare-snapshot-20261116$3');
     // Keep the original free hint and associate it with the send button.
     html = html.replace('<button type="button" id="publish" class="button publish" >', '<button type="button" id="publish" class="button publish" aria-describedby="free-publish-hint">')
       .replace('<p class="hint">Free. The link stays live; only you can edit it before publishing.</p>', '<p class="hint" id="free-publish-hint">Free. The link stays live; only you can edit it before publishing.</p>');

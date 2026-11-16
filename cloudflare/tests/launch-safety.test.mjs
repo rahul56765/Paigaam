@@ -176,7 +176,7 @@ test('autosave between validation and checkout lock creates no gateway order or 
     return batch(statements);
   };
   t.mock.method(globalThis, 'fetch', async () => { gatewayCalls++; throw new Error('unexpected gateway call'); });
-  const r = await worker.fetch(jsonRequest('/api/vaidehi/publish', { id: d.id, checkout_mode: 'paid', expected_amount_paise: 9900, expected_currency: 'INR' }, d.cookie), env);
+  const r = await worker.fetch(jsonRequest('/api/vaidehi/publish', { id: d.id, expected_snapshot: d.snapshot, checkout_mode: 'paid', expected_amount_paise: 9900, expected_currency: 'INR' }, d.cookie), env);
   assert.equal(r.status, 409, await r.clone().text()); assert.equal(interleaved, true); assert.equal(gatewayCalls, 0);
   assert.equal((await store.getInvite(env.DB, d.id)).status, 'draft');
   assert.equal(env.DB.raw.prepare('SELECT count(*) n FROM orders').get().n, 0);

@@ -39,6 +39,7 @@
 
   var step = 0;
   var draftId = null;
+  var draftSnapshot = null;
   var previewUrl = null;
   // Do not publish while media is still in flight or let the user edit the
   // snapshot while a publication request is being resolved.
@@ -77,6 +78,7 @@
   }
 
   var MESSAGES = {
+    draft_changed: 'This draft changed in another tab. Review it before publishing again.',
     event_schedule_required: 'Add a date and HH:mm time for each custom event, or choose Follow main wedding / Follow reception.',
     invalid_utc_offset: 'Use a signed UTC offset such as +05:30 (between −14:00 and +14:00).',
     invalid_time: 'Use 24-hour HH:mm times, such as 06:45 or 19:00.',
@@ -739,6 +741,7 @@
       say('Saving…');
       return request('/api/' + SLUG + '/draft', { id: draftId, customer_data: collect() }).then(function (body) {
         draftId = body.id;
+        draftSnapshot = body.snapshot || null;
         previewUrl = body.previewUrl;
         say('Saved.');
         return body;
@@ -823,7 +826,7 @@
       publishBtn.disabled = true;
       say('Publishing…');
       saveDraft() // one tap: the latest typing goes with it
-        .then(function () { return request('/api/' + SLUG + '/publish', { id: draftId }); })
+        .then(function () { return request('/api/' + SLUG + '/publish', { id: draftId, expected_snapshot: draftSnapshot }); })
         .then(function (body) {
           // Paid template → the server hands us off to the Razorpay checkout.
           if (body && body.razorpay) { return window.PaigaamPay.open({ order: body, inlineCoupon: true }).then(function (pay) { showResult(pay.url); }); }

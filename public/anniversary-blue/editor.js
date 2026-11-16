@@ -40,6 +40,7 @@
 
   var step = 0;
   var draftId = null;
+  var draftSnapshot = null;
   var previewUrl = null;
 
   window.wizardAdoptDraft = function (id, purl) { draftId = id; if (purl) previewUrl = purl; };
@@ -63,6 +64,7 @@
   }
 
   var MESSAGES = {
+    draft_changed: 'This draft changed in another tab. Review it before publishing again.',
     anniversary_spotify_url: 'Use a Spotify song, album or playlist link from open.spotify.com, or leave it empty and use your uploaded audio.',
     anniversary_audio_url: 'Upload an MP3/WAV or use an HTTPS direct audio-file link, not a YouTube, SoundCloud or Apple Music page. Put Spotify links in the separate Spotify field.',
     invalid_audio: 'Choose a valid MP3 or WAV file.',
@@ -592,6 +594,7 @@
       say('Saving…'); var savingVersion = editVersion;
       return request('/api/' + SLUG + '/draft', { id: draftId, customer_data: collect() }).then(function (body) {
         draftId = body.id;
+        draftSnapshot = body.snapshot || null;
         previewUrl = body.previewUrl;
         if (savingVersion === editVersion) { clearTimeout(autoTimer); autoTimer = 0; say('Saved.'); } else persistSoon();
         return body;
@@ -671,7 +674,7 @@
       publishBtn.disabled = true;
       say('Publishing…');
       saveDraft() // one tap: the latest typing goes with it
-        .then(function () { return request('/api/' + SLUG + '/publish', { id: draftId }); })
+        .then(function () { return request('/api/' + SLUG + '/publish', { id: draftId, expected_snapshot: draftSnapshot }); })
         .then(function (body) {
           // Paid template → the server hands us off to the Razorpay checkout.
           if (body && body.razorpay) { return window.PaigaamPay.open({ order: body, inlineCoupon: true }).then(function (pay) { showResult(pay.url); }); }

@@ -260,7 +260,7 @@ test('exhausted publish quota stops free publication before mutation and leaves 
   let r = await worker.fetch(post(`/api/${slug}/publish`, { id: d.id }, { cookie }), env);
   assert.equal(r.status, 429); assert.equal((await r.json()).error, 'rate_limited');
   assert.deepEqual(await store.getInvite(env.DB, d.id), before);
-  r = await worker.fetch(post(`/api/${slug}/publish`, { id: d.id }, { cookie, ip: '198.51.100.9' }), env);
+  r = await worker.fetch(post(`/api/${slug}/publish`, { id: d.id, expected_snapshot: d.snapshot }, { cookie, ip: '198.51.100.9' }), env);
   assert.equal(r.status, 200, await r.clone().text());
   assert.equal((await store.getInvite(env.DB, d.id)).status, 'published');
   assert.equal(globalThis.fetch.mock.callCount(), 0);

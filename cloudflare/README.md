@@ -465,3 +465,26 @@ header changes. Preview GET and POST share their bucket: 120 local GETs were
 accepted, the next GET and a following POST returned 429. Four sandboxed local
 Chromium builder cases also passed with zero payment requests. The 0006 table and
 synthetic test key were used only locally; no real key or migration was applied.
+
+## Staged builder render and snapshot contract (2026-11-16)
+
+Draft-save responses now include `snapshot`, a SHA-256 digest of the exact
+server-persisted customer JSON. All family publish requests must include
+`expected_snapshot` from that save. Missing or stale values return 409
+`draft_changed` before publication, replay or gateway creation. This closes the
+same-owner cross-tab gap before the first publish read; the existing conditional
+SQL guards still handle updates after that read. The digest is a concurrency
+token, not authentication. Ownership and strict media/schema validation remain
+required. All three source editors send the token; opted-in free builders use a
+new editor asset URL. Paid UI remains disabled and still needs explicit quote
+integration. Lost-response recovery and owner draft restoration are not solved.
+
+Published renderers now receive D1's `public_slug` as their original `slug`,
+restoring canonical URLs and per-link Khulta/Meri Duniya state. Only stateless
+Love Letter/Anniversary Blue editor frames receive `isEditor`; demos and public
+readers do not. Unsupported paid currencies fail before any checkout lock.
+
+This branch remains staged on the request-fairness branch. No flags, remote
+migrations, secrets, DNS, Railway resources or Editzy configuration are changed.
+Storage reservations/reconciliation, retention/restore, full feature parity,
+paid UI/test gateway acceptance and domain cutover remain launch blockers.

@@ -3,7 +3,7 @@ import * as store from './store.mjs';
 import * as payments from './payments.mjs';
 import { DRAFT_ADMISSION, UPLOAD_MAX_TOTAL_BYTES } from './admission-policy.mjs';
 import { enforceRequestRate, rateLimiterReady } from './request-rate.mjs';
-import { fail, randomHex, identity, assertOrigin, readJSON, readBytes, json, html } from './security.mjs';
+import { fail, hash, randomHex, identity, assertOrigin, readJSON, readBytes, json, html } from './security.mjs';
 import { list, bySlug } from './catalog.generated.mjs';
 import { fullCatalog, fullBySlug } from './full-catalog.generated.mjs';
 import { originalHomePage, originalGalleryPage, originalDetailPage, originalOccasionPage, originalOccasionsIndex, originalLegalPage, originalContactPage, builderPage } from './views.mjs';
@@ -41,7 +41,12 @@ async function verifyMedia(env,t,pg,data) {
     if (!upload || upload.invite_id !== pg.id || !await env.MEDIA.head(match[1])) throw fail('invalid_upload');
   }
 }
-function render(t,data,origin,preview=true) { return t.render({customer_data:data},{baseUrl:origin,isPreview:preview}); }
+function render(t,data,origin,{preview=true,editor=false,invite}={}) {
+  // Renderers use the original row's slug for canonical URLs, deterministic
+  // decoration and per-link localStorage. D1 calls this field public_slug.
+  return t.render({customer_data:data,...(invite?{id:invite.id,slug:invite.public_slug}:{})},
+    {baseUrl:origin,isPreview:preview,isEditor:editor&&KEEPSAKE_AUDIO.has(t.slug)});
+}
 async function quote(env,t) { const live = await store.getTemplate(env.DB,t.slug); if (!live) throw fail('template_unavailable',503); return live; }
 function result(pg,origin) { return {slug:pg.public_slug,url:origin+'/p/'+pg.public_slug}; }
 async function publishFree(env,t,pg,person,data) {
@@ -122,7 +127,7 @@ async function handle(request,env) {
       const headers=new Headers(asset.headers);headers.set('Content-Type','text/html; charset=utf-8');headers.set('Cache-Control','private, no-store');headers.set('X-Robots-Tag','noindex, nofollow');headers.set('X-Content-Type-Options','nosniff');
       return new Response(asset.body,{status:asset.status,headers});
     }
-    const t=bySlug(m[1]);return t?html(render(t,t.config.demo,origin,true)):unavailable();
+    const t=bySlug(m[1]);return t?html(render(t,t.config.demo,origin)):unavailable();
   }
   if (request.method==='GET' && path==='/api/qr') {
     const value=u.searchParams.get('url')||''; let target;try{target=new URL(value);}catch{throw fail('validation');}
@@ -130,7 +135,7 @@ async function handle(request,env) {
     return new Response(qr.qrSVG(value),{headers:{'Content-Type':'image/svg+xml','Cache-Control':'public,max-age=3600'}});
   }
   m=path.match(/^\/p\/([a-z0-9-]+)$/);
-  if(m&&request.method==='GET') {requireStorage(env);const pg=await store.getInviteByPublicSlug(env.DB,m[1]);if(!pg)throw fail('not_found',404);const t=bySlug(pg.template_slug);return t?html(render(t,pg.customer_data,origin,false)):unavailable();}
+  if(m&&request.method==='GET') {requireStorage(env);const pg=await store.getInviteByPublicSlug(env.DB,m[1]);if(!pg)throw fail('not_found',404);const t=bySlug(pg.template_slug);return t?html(render(t,pg.customer_data,origin,{preview:false,invite:pg})):unavailable();}
   m=path.match(/^\/bfday\/uploads\/([^/]+)$/);
   if(m&&['GET','HEAD'].includes(request.method)) {
     requireStorage(env);if(!FILE.test(m[1]))throw fail('not_found',404);
@@ -170,7 +175,7 @@ async function handle(request,env) {
         if(new TextEncoder().encode(raw).length>16384)throw fail('too_large',413);
         try{data=JSON.parse(raw);}catch{}
       }
-      return html(render(t,t.schema.validate(data,{mode:'lenient'}),origin));}
+      return html(render(t,t.schema.validate(data,{mode:'lenient'}),origin,{editor:true}));}
     if(m[3]&&request.method==='GET'){requireStorage(env);const pg=await owned(env,m[3],await identity(request),t.slug);return html(render(t,pg.customer_data,origin));}
   }}
   m=path.match(/^\/api\/([a-z0-9-]+)\/(draft|upload|upload-audio|audio|publish)$/);
@@ -185,7 +190,7 @@ async function handle(request,env) {
       const person=await identity(request,true),data=t.schema.validate(b.customer_data,{mode:'draft'});let pg;
       if(b.id){pg=await owned(env,b.id,person,t.slug);await verifyMedia(env,t,pg,data);pg=await store.updateInvite(env.DB,pg.id,person.hash,data);if(!pg)throw fail('draft_locked',409);}
       else{if(refs(t,data).length)throw fail('invalid_upload');await quote(env,t);pg=await store.createInvite(env.DB,t.slug,person.hash,data,DRAFT_ADMISSION);if(!pg)throw fail('limit',429);}
-      return json({id:pg.id,previewUrl:`/${t.slug}/preview/${pg.id}`},200,person.cookie?{'Set-Cookie':person.cookie}:{});
+      return json({id:pg.id,previewUrl:`/${t.slug}/preview/${pg.id}`,snapshot:await hash(JSON.stringify(pg.customer_data))},200,person.cookie?{'Set-Cookie':person.cookie}:{});
     }
     // All upload aliases share one quota. Publish includes paid intent, free
     // publication and replay; signed verification/webhooks are separate above.
@@ -227,6 +232,10 @@ async function handle(request,env) {
       // the only reason to inspect a publish request when checkout is paused.
       if(!checkoutEnabled&&!freeEnabled)throw fail('payments_offline',503);
       const body=await readJSON(request),{id}=body,pg=await owned(env,id,person,t.slug);
+      // Bind the user's send action to the exact save response. The SQL guard
+      // below handles changes after this read; this check also catches a second
+      // tab's autosave between the first tab's save and this request's read.
+      if(body.expected_snapshot!==await hash(JSON.stringify(pg.customer_data)))throw fail('draft_changed',409);
       if(pg.status==='published') {
         // Price changes must not break a free replay or turn a paid invite into
         // a free one. The replay SELECT binds owner, template and snapshot, and
@@ -260,6 +269,8 @@ async function handle(request,env) {
       // so a free-to-paid price change cannot silently initiate checkout.
       const amount=order?order.amount:live.price,currency=order?order.currency:live.currency;
       if(body.checkout_mode!=='paid'||!Number.isSafeInteger(body.expected_amount_paise)||body.expected_amount_paise!==amount||body.expected_currency!==currency)throw fail('checkout_confirmation_required',409);
+      // Reject unsupported quotes before beginCheckout can lock the draft.
+      if(currency!=='INR')throw fail('unsupported_currency');
       if(!checkoutEnabled)throw fail('payments_offline',503);
       if(!order){order=await store.beginCheckout(env.DB,id,person.hash,amount,currency,pg.customer_data);if(!order)throw fail('checkout_in_progress',409);
         const gateway=await payments.razorpayCreateOrder(env,{amount:order.amount,currency:order.currency,receipt:order.id,notes:{paigaam_id:id}});
