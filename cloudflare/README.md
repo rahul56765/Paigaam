@@ -158,9 +158,11 @@ npx wrangler deploy --dry-run --outdir dist
 npx wrangler dev --local
 # Terminal 2:
 node scripts/runtime-smoke.mjs
-# For the LOCAL storage smoke only, restart local dev with:
-# npx wrangler dev --local --var DRAFTS_ENABLED:true
-# node scripts/storage-smoke.mjs
+# For the LOCAL storage smoke, first prepare a new isolated --persist-to state
+# with migrations 0001 + 0006 and a fictional seed; provide the synthetic-only
+# rate key shown in the staged request-rate section below. Never use real keys.
+# Then start local dev with DRAFTS_ENABLED:true, the synthetic rate key, and
+# CHECKOUT_ENABLED:false; run node scripts/storage-smoke.mjs.
 ```
 Only apply the initial schema once per database; do not reapply the raw schema
 file or reset a database that already has data. The remote preview schema/catalog
@@ -331,6 +333,135 @@ comprehensive 29-template browser acceptance.
 Optional local browser smoke: supply a locally installed Puppeteer-core module
 entry path through `PUPPETEER_CORE_MODULE`, a sandbox-capable Chromium binary
 through `CHROMIUM_EXECUTABLE`, and run `node scripts/builder-browser-smoke.mjs`
-against the local Worker with the two free-stage flags enabled. The script
-refuses non-loopback HTTP targets and blocks external requests; it does not add
-browser dependencies to the app or deploy pipeline.
+against the local Worker with the two free-stage flags enabled, migration 0006,
+and a synthetic local rate key. The script refuses non-loopback HTTP targets
+and blocks external requests; it does not add browser dependencies to the app
+or deploy pipeline.
+
+## Staged request-rate and fairness guard — local review only
+
+This branch adds the **un-applied-to-existing-resources** additive migration
+`migrations/0006_request_rate.sql`; it does not alter existing tables or
+change Wrangler flags, domains, bindings, secrets, or deployed data. It was
+applied only to new disposable local test databases. Keep drafts and checkout
+disabled in the existing preview. Never connect or import the old Railway DB,
+wipe/restructure existing storage, modify Editzy/DNS, provision a secret,
+apply a remote migration or deploy without separate authorization.
+
+The Worker now admits requests through D1 before draft creation **and updates**,
+image/audio upload aliases, and publish (including replay/order creation). With
+`DRAFTS_ENABLED` exactly `"true"`, it meters preview **GET and POST** through
+one shared bucket before parsing/rendering. With drafts off, normal stateless
+previews do not require the rate table or key; oversized GET preview data is
+now rejected at 16 KiB in both modes. Demos, other reads, the
+signed Razorpay webhook and signed owner verification/captured-payment
+reconciliation are not subject to the anonymous limiter; the webhook retains
+its separate signature verification and the verification route retains its
+existing origin/owner/signature checks.
+
+The provisional **server-owned**, per-canonical-IP limits below are shared
+across templates and cookie rotations. These are staging assumptions, not
+traffic-derived production recommendations. Every window is an epoch-aligned
+fixed 60 seconds, so up to twice the listed allowance can be spent around a
+boundary. Tune only after observing real workloads, autosave cadence and
+shared-NAT impact, and reviewing cost and error handling with the owner.
+
+| Action bucket | Maximum / 60 s | Routes |
+| --- | ---: | --- |
+| `draft_create` | 40 | new `POST /api/:slug/draft` |
+| `draft_update` | 120 | `POST /api/:slug/draft` with a truthy id |
+| `upload` | 30 | `upload`, `upload-audio` and `audio` combined |
+| `publish` | 40 | free, paid intent and replay combined |
+| `preview_post` | 120 | GET and POST `/:slug/preview-frame` when drafts enabled (bucket name retained for compatibility) |
+
+Counters are independent between actions, but not between templates or owner
+cookies. The original 20/owner/template/day, 5,000/day shared draft cap, and
+500 MiB committed-upload pool remain separate. Same-origin checks precede
+limiting. Draft JSON is first parsed under the existing 64 KiB bound to choose
+create versus update; malformed/unparseable draft bodies therefore do **not**
+spend a token. Other guarded operations are metered before body or storage work.
+Invalid downstream requests and replays still spend a token; failures do not
+refund it. A saturated bucket returns generic `429 rate_limited` with
+`Retry-After`; absent/invalid IP or secret, missing table, or any D1/crypto
+failure returns generic `503 rate_limit_unavailable` and does not authorize the
+customer mutation. Missing storage still has its original 503 behavior. The
+free-builder UI also remains locked if the rate key/table is unavailable; every
+actual operation rechecks admission.
+
+Only Cloudflare's `CF-Connecting-IP` is used, never `X-Forwarded-For` or the
+anonymous owner cookie. IPv4 syntax is strict; IPv6 is expanded consistently,
+and IPv4-mapped IPv6 is folded into its IPv4 equivalent. Ports, brackets,
+zone IDs, lists and malformed addresses are rejected. An HMAC-SHA256 under a
+**dedicated** `RATE_LIMIT_HMAC_KEY` produces an action-domain-separated digest;
+only that digest, action, window timestamps and count enter the new table. The
+application never logs or stores the raw IP or rate secret. HMAC digests are
+still **pseudonymous**, not anonymous, and upstream/platform access logs may
+have separate practices. Rotating the key intentionally starts new buckets.
+
+The required rate secret must be independently generated as 32 cryptographically
+random bytes encoded as exactly 64 hex characters. Missing, malformed and
+single-repeated-byte placeholder values are rejected; these checks cannot prove
+entropy. Do not reuse payment, webhook or cookie secrets, and never put a real
+secret in source, command-line arguments, logs or static assets. Actual secret
+provisioning is an explicitly separate, permission-gated operational task.
+The D1 [batch](https://developers.cloudflare.com/d1/worker-api/d1-database/#batch)
+performs a single conditional UPSERT plus bounded cleanup in one transaction;
+no read-then-write or isolate-local counter can admit excess contenders. If
+D1 fails or the result is uncertain, no customer write is authorized. Each
+request costs D1 work, so capacity and cost need real-load review.
+
+Expired counter rows are **opportunistically** removed at most 20 per protected
+request after their window has been over for 24 hours. This is not a guaranteed
+retention/deletion schedule: stale rows can persist indefinitely while idle or
+under high cardinality. An approved cleanup, privacy/retention, failure and
+monitoring plan is still required before launch. No other storage cleanup is
+performed by this change.
+
+**Limitations:** this is not complete abuse protection or verified fair access.
+[Cloudflare documents](https://developers.cloudflare.com/fundamentals/reference/http-headers/#cf-connecting-ip)
+that same-zone Worker subrequests can alter the effective `CF-Connecting-IP` via
+`x-real-ip`; IPv6 addresses and proxy addresses can rotate; many genuine users
+can share a NAT/IP and therefore a quota. Conversely, fixed windows permit burst
+edges and cannot contain distributed attacks, volume from unmetered read routes,
+malformed draft-body parsing, drafts-off preview traffic, or compromised/trusted-subrequest abuse. Review
+trusted Worker/subrequest architecture and deploy suitable Cloudflare edge/WAF
+controls separately; do not treat this guard as a substitute for them. Durable
+R2 reservations/reconciliation, total/lifetime storage, retention, restoration
+and comprehensive production/browser/payment acceptance remain separate gates.
+
+For **synthetic local-only testing**, use an isolated checkout with no real
+`.dev.vars`, credentials or production bindings, and a newly created
+`--persist-to` directory. Example, from `cloudflare/`:
+
+```sh
+STATE="$(mktemp -d)"  # fresh local D1/R2 only; never point at an existing state
+npx wrangler d1 execute DB --local --persist-to "$STATE" --file migrations/0001_initial.sql
+npx wrangler d1 execute DB --local --persist-to "$STATE" --file migrations/0006_request_rate.sql
+node scripts/seed.mjs  # generates insert-only fictional source-catalog SQL
+npx wrangler d1 execute DB --local --persist-to "$STATE" --file seed.generated.sql
+# This fixed value is PUBLIC TEST DATA, never use it in a real deployment.
+npx wrangler dev --local --persist-to "$STATE" --ip 127.0.0.1 --port 8899 \
+  --var DRAFTS_ENABLED:true --var FREE_PUBLISH_ENABLED:true \
+  --var CHECKOUT_ENABLED:false --var ALLOW_LIVE_PAYMENTS:false \
+  --var RATE_LIMIT_HMAC_KEY:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+# In a second terminal:
+node scripts/request-rate-runtime-smoke.mjs http://127.0.0.1:8899
+```
+
+The local-only full-catalog, storage, safety and browser smoke scripts also use
+synthetic documentation-range IPs. The full-catalog script distributes its
+large test workload across fictional IPs; that is a test fixture, not an
+endorsement of bypassing the policy in production. Local SQLite tests race
+independent connections and include rollover, cookie rotation, action isolation,
+update limits, invalid/missing configuration, rollback, privacy and signed
+payment reconciliation. Workerd/D1/R2 local tests are not evidence of actual
+Cloudflare operational behavior or remote durability.
+
+Follow-up validation for this staged branch: **213/213** local tests pass and
+Wrangler dry-run bundling succeeds. In a freshly created local-only Workerd/D1/R2
+state, 40 allowed creates exhausted the per-IP bucket; eight contenders for the
+last slot produced one success and seven 429 responses despite cookie/forwarded-
+header changes. Preview GET and POST share their bucket: 120 local GETs were
+accepted, the next GET and a following POST returned 429. Four sandboxed local
+Chromium builder cases also passed with zero payment requests. The 0006 table and
+synthetic test key were used only locally; no real key or migration was applied.

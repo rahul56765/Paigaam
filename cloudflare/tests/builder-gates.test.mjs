@@ -4,11 +4,12 @@ import worker from '../src/worker.mjs';
 import { list } from '../src/catalog.generated.mjs';
 import { seedTemplates } from '../src/store.mjs';
 import { D1 } from './d1-shim.mjs';
+import { TEST_RATE_KEY } from './rate-fixtures.mjs';
 const origin = 'https://preview.example';
 async function fixture(t) {
   const DB = new D1(); t.after(() => DB.raw.close());
   await seedTemplates(DB, list.map(x => ({ slug: x.slug, name: x.config.name, price: Math.round((x.config.price || 0) * 100), config: x.config, currency: 'INR' })));
-  return { DB, MEDIA: {}, DRAFTS_ENABLED: 'true', FREE_PUBLISH_ENABLED: 'true' };
+  return { DB, MEDIA: {}, DRAFTS_ENABLED: 'true', FREE_PUBLISH_ENABLED: 'true', RATE_LIMIT_HMAC_KEY: TEST_RATE_KEY };
 }
 async function page(slug, env, query = '') {
   const r = await worker.fetch(new Request(`${origin}/create/${slug}${query}`), env);
@@ -23,7 +24,7 @@ test('only exact storage, flags and authoritative D1 zero price unlock the stage
   const cases = [
     { DRAFTS_ENABLED: undefined }, { DRAFTS_ENABLED: true }, { DRAFTS_ENABLED: 'TRUE' },
     { FREE_PUBLISH_ENABLED: undefined }, { FREE_PUBLISH_ENABLED: true }, { FREE_PUBLISH_ENABLED: 'TRUE' },
-    { MEDIA: undefined }, { DB: undefined },
+    { MEDIA: undefined }, { DB: undefined }, { RATE_LIMIT_HMAC_KEY: undefined }, { RATE_LIMIT_HMAC_KEY: 'not-a-key' },
   ];
   for (const patch of cases) assert.ok(isLocked(await page('sealed-with-a-kiss', { ...env, ...patch }, '?enableFreeBuilder=true&price=0')));
   assert.ok(isLocked(await page('little-love', env)), 'server-owned paid price stays locked');

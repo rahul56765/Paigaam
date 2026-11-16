@@ -5,19 +5,20 @@ import worker from '../src/worker.mjs';
 import { list, bySlug } from '../src/catalog.generated.mjs';
 import * as store from '../src/store.mjs';
 import { D1 } from './d1-shim.mjs';
+import { TEST_IP, TEST_RATE_KEY } from './rate-fixtures.mjs';
 
 // Local SQLite and in-memory bytes only. These tests never call a gateway,
 // write Cloudflare resources, or read/import any Railway database.
 const origin = 'https://preview.example';
 function jsonRequest(path, data, cookie) {
   return new Request(origin + path, {
-    method: 'POST', headers: { Origin: origin, 'Content-Type': 'application/json', ...(cookie ? { Cookie: cookie } : {}) },
+    method: 'POST', headers: { Origin: origin, 'CF-Connecting-IP': TEST_IP, 'Content-Type': 'application/json', ...(cookie ? { Cookie: cookie } : {}) },
     body: JSON.stringify(data),
   });
 }
 function uploadRequest(slug, id, cookie, bytes, mime = 'application/octet-stream', action = 'audio', extra = {}) {
   return new Request(`${origin}/api/${slug}/${action}?id=${id}`, {
-    method: 'POST', headers: { Origin: origin, Cookie: cookie, 'Content-Type': mime, ...extra }, body: bytes,
+    method: 'POST', headers: { Origin: origin, Cookie: cookie, 'CF-Connecting-IP': TEST_IP, 'Content-Type': mime, ...extra }, body: bytes,
   });
 }
 function wave() {
@@ -41,7 +42,7 @@ function memoryR2() {
 async function fixture(t) {
   const DB = new D1(); t.after(() => DB.raw.close());
   await store.seedTemplates(DB, list.map(x => ({ slug: x.slug, name: x.config.name, price: Math.round((x.config.price || 0) * 100), config: x.config, currency: 'INR' })));
-  return { DB, MEDIA: memoryR2(), DRAFTS_ENABLED: 'true' };
+  return { DB, MEDIA: memoryR2(), DRAFTS_ENABLED: 'true', RATE_LIMIT_HMAC_KEY: TEST_RATE_KEY };
 }
 async function draft(env, slug, cookie) {
   const response = await worker.fetch(jsonRequest(`/api/${slug}/draft`, { customer_data: bySlug(slug).config.demo }, cookie), env);
