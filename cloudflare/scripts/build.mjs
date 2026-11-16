@@ -126,7 +126,7 @@ fs.writeFileSync(source('cloudflare/src/catalog.generated.mjs'), generated);
 
 // Validate all referenced local files in actual demo HTML, builder HTML and
 // shipped CSS (including artwork and fonts), rather than silently shipping 404s.
-const { builderPage } = await import('../src/views.mjs');
+const { builderPage, originalHomePage, originalGalleryPage, originalDetailPage, originalOccasionPage, originalOccasionsIndex } = await import('../src/views.mjs');
 const missing = new Set();
 function inspectReferences(text, from) {
   const patterns = [/\b(?:src|href|poster)=["']([^"']+)["']/g, /url\(\s*["']?([^\s)"']+)["']?\s*\)/g];
@@ -139,9 +139,14 @@ function inspectReferences(text, from) {
     if (!fs.existsSync(safeFile(relative))) missing.add(`${relative} (from ${from})`);
   }
 }
+inspectReferences(originalHomePage(family.list), 'index');
+inspectReferences(originalGalleryPage(family.list), 'templates/index');
+inspectReferences(originalOccasionsIndex(family.list), 'occasions');
+inspectReferences(originalOccasionPage('wedding', family.list), 'templates/wedding');
 for (const t of family.list) {
   inspectReferences(t.render({ slug: t.slug + '-demo', customer_data: t.config.demo }, { isPreview: true, baseUrl: 'https://example.invalid' }), t.slug + '/demo');
   inspectReferences(builderPage(t, 'https://example.invalid'), 'create/' + t.slug);
+  inspectReferences(originalDetailPage(t, { baseUrl: 'https://example.invalid' }), 'templates/' + t.slug);
   const thumbnail = t.config.thumbnail_url;
   if (thumbnail?.startsWith('/') && !fs.existsSync(safeFile(thumbnail.slice(1)))) missing.add(thumbnail + ' (catalog thumbnail)');
 }

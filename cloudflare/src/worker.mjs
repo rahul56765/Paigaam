@@ -3,7 +3,8 @@ import * as store from './store.mjs';
 import * as payments from './payments.mjs';
 import { fail, randomHex, identity, assertOrigin, readJSON, readBytes, json, html } from './security.mjs';
 import { list, bySlug } from './catalog.generated.mjs';
-import { catalogPage, detailPage, builderPage } from './views.mjs';
+import { originalHomePage, originalGalleryPage, originalDetailPage, originalOccasionPage, originalOccasionsIndex, originalLegalPage, originalContactPage, builderPage } from './views.mjs';
+import occasions from '../../lib/occasions.js';
 import fields from '../../lib/bfday/fields.js';
 import images from '../../lib/bfday/image.js';
 import audio from '../../lib/bfday/audio.js';
@@ -65,9 +66,19 @@ async function handle(request,env) {
     await owned(env,order.invite_id,person);
     return json(result(await capture(env,order,b.razorpay_payment_id),origin));
   }
-  if (request.method==='GET' && ['/', '/templates'].includes(path)) return html(catalogPage(list));
+  if(request.method==='GET'&&path==='/')return html(originalHomePage(list));
+  if(request.method==='GET'&&path==='/templates'){
+    const valid=(key,choices,def)=>choices.includes(u.searchParams.get(key))?u.searchParams.get(key):def;
+    const state={q:(u.searchParams.get('q')||'').slice(0,200),occasion:valid('occasion',['all',...occasions.OCCASIONS.map(o=>o.slug)],'all'),price:valid('price',['all','free','under','over'],'all'),sort:valid('sort',['newest','popular','price-asc','price-desc'],'newest')};
+    return html(originalGalleryPage(list,state));
+  }
+  if(request.method==='GET'&&path==='/occasions')return html(originalOccasionsIndex(list));
+  if(request.method==='GET'&&path==='/contact')return html(originalContactPage());
+  if(request.method==='GET'&&['/privacy','/terms','/refund'].includes(path))return html(originalLegalPage(path.slice(1)));
   let m=path.match(/^\/templates\/([a-z0-9-]+)$/);
-  if(request.method==='GET'&&m) {const t=bySlug(m[1]);return t?html(detailPage(t)):unavailable();}
+  if(request.method==='GET'&&m){const occasion=occasions.OCCASIONS.find(o=>o.slug===m[1]);if(occasion)return html(originalOccasionPage(occasion,list));const t=bySlug(m[1]);return t?html(originalDetailPage(t,{baseUrl:origin})):unavailable();}
+  m=path.match(/^\/template-view\/([a-z0-9-]+)$/);
+  if(request.method==='GET'&&m){const t=bySlug(m[1]);return t?html(render(t,t.config.demo,origin,true)):unavailable();}
   if (request.method==='GET' && path==='/api/qr') {
     const value=u.searchParams.get('url')||''; let target;try{target=new URL(value);}catch{throw fail('validation');}
     if(target.origin!==origin||!target.pathname.startsWith('/p/')||value.length>1024)throw fail('validation');

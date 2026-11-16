@@ -5,8 +5,9 @@ This is an incremental port, **not feature parity with the Railway application**
 ## What is included
 
 - The **33 built-in shared-family templates** listed in `templates/bfday.js`, in their original order. Their original config, schema/validation, render functions, artwork, fonts and browser experiences are reused.
-- The exact `pages/bfdayCreate.js` wizard and immersive builder shell, including template-specific crop/edit tools. A very small view wrapper removes the unrelated legacy creator-coupon stylesheet/script and changes the default OG origin to the request origin. It does not replace the builder with a generic form.
-- A collection and detail page limited to these family members. Published links, uploads, ownership, payment and administrative handlers depend on the separate Worker implementation and its tests; a successful static build alone does not establish end-to-end support.
+- The original home, dark navigation, gallery/filter and template-detail layouts, adapted from the original Paigaam page components. A compact notice identifies this as a preview, and the original theme and markup remain. DB-driven trending and previously saved Railway thumbnails are not available in this fresh data set.
+- The original `pages/bfdayCreate.js` wizard and immersive builder shell, including template-specific crop/edit tools. Preview-only guard disables photo upload and publication, removes creator-coupon/checkout scripts and uses the preview origin. It does not replace the builder with a generic form.
+- Original collection and detail layouts currently limited to these family members. Published links, uploads, ownership, payment and administrative handlers depend on the separate Worker implementation and its tests; a successful static build alone does not establish end-to-end support.
 - Existing **fixed opening clips** for Royal Vivah, Patra Vivah and Divya Vivah. These are ordinary shipped assets, not video generation.
 
 **Unavailable:** classic/non-shared template families (including Maafi, Sawaal, Ganapati, Shaadi Paigaam and Suvarna Vivah), magazines/Canva, creator studio, collaboration, creator referral/coupon campaigns, and Remotion/wedding-video generation. Existing Railway records, sessions and uploads are **not migrated**. Do not advertise these as working features. The build never copies `public/collab`, admin artwork/pages, a data directory, uploaded user content, magazine assets, Remotion dependencies or the large video-generation asset tree.
@@ -34,7 +35,7 @@ The builder:
 
 Initial verified build: **348 static files**, **72,481,390 bytes** total; maximum file `assets/jashn/cake.png`, **3,033,919 bytes**. **239** distinct decoded assets from **31** family pack modules plus the manifest formats. Fixed clips: Divya **2,198,758 bytes**, Royal **1,709,166 bytes**, Patra clean **1,267,667 bytes**. These counts may change when the source templates change.
 
-Additional performed smoke checks imported the generated registry, strictly validated all 33 demo data objects, and rendered all 33 demos/builders/details successfully. Dependency installation/bundler verification was attempted but the sandbox npm registry returned **403** for `esbuild`; this is not a successful Wrangler bundle or deployment test. Retry installation and run Wrangler's dry run in an environment with registry access before considering deployment.
+Additional smoke checks import the generated registry, strictly validate all 33 demo objects, and render all 33 demos/builders/details. Wrangler bundling and deployment were subsequently verified; see current status below.
 
 ## Worker integration contracts
 
@@ -98,7 +99,7 @@ The Fetch API Worker router now connects the 33-template catalog, original
 builders, stateless previews, owner-isolated drafts, R2 upload authorization,
 QR generation, checkout intents and idempotent payment settlement.
 
-Verified locally: `node --test cloudflare/tests/*.test.mjs` passes 31 tests,
+Verified locally: `node --test cloudflare/tests/*.test.mjs` passes 38 tests, including comparisons of the restored homepage, gallery and template details against the existing page markup,
 including rendering all 33 demos/builders/details and a mocked paid order →
 capture → publication → duplicate verification flow. The D1 tests use an
 in-memory SQLite adapter and R2/gateway calls are mocked. This is NOT an actual
