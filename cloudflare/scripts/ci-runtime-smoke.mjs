@@ -36,6 +36,11 @@ try {
     child.on('error', reject); child.on('exit', resolve);
   });
   assert.equal(legacyCode, 0, 'legacy runtime smoke must pass');
+  const browserCode = await new Promise((resolve, reject) => {
+    const child = spawn(process.execPath, ['scripts/legacy-letters-browser-smoke.mjs', 'http://127.0.0.1:8899'], { stdio: 'inherit' });
+    child.on('error', reject); child.on('exit', resolve);
+  });
+  assert.equal(browserCode, 0, 'original letter browser smoke must pass');
 } finally {
   if (worker) await worker.stop();
   rmSync(state, { recursive: true, force: true });
