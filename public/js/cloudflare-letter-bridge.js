@@ -22,7 +22,11 @@
     return nativeFetch(input,opts).then(function(response){
       if(!response.ok&&sending)unlock();
       if(match[2]==='draft'&&response.ok)return response.clone().json().then(function(saved){snapshots.set(match[1]+':'+saved.id,saved.snapshot);return response;},function(err){if(sending)unlock();throw err;});
-      if(match[2]==='publish'&&response.ok){sending=false;frozen=[];}
+      if(match[2]==='publish'&&response.ok)return response.clone().json().then(function(body){
+        var target;try{target=new URL(body.url,location.href);}catch{}
+        if(!body||typeof body.url!=='string'||!target||target.origin!==location.origin||!target.pathname.startsWith('/p/'))throw new Error('invalid_publish_response');
+        sending=false;frozen=[];return response;
+      }).catch(function(err){unlock();throw err;});
       return response;
     },function(err){if(sending)unlock();throw err;});
   };
