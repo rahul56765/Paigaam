@@ -49,3 +49,10 @@ test('classic demos are read-only assets, keep unsupported customizers disabled'
   for(const slug of ['noor','meher','aashi']){const r=await worker.fetch(req('/template-view/'+slug),{ASSETS});assert.equal(r.status,200);assert.match(r.headers.get('content-type'),/text\/html/);assert.match(r.headers.get('x-robots-tag'),/noindex/);const d=await worker.fetch(req('/templates/'+slug),{ASSETS});assert.match(await d.text(),new RegExp('/template-view/'+slug));const create=await worker.fetch(req('/create/'+slug),{ASSETS});assert.equal(create.status,503);}
   assert.deepEqual(seen,['/classic/noor.data','/classic/meher.data','/classic/aashi.data']);
 });
+
+test('restored legacy demos use original aliases with customization still unavailable',async()=>{
+ const seen=[];const ASSETS={fetch:async request=>{seen.push(new URL(request.url).pathname);return new Response('<!doctype html><title>Legacy sample</title>');}};
+ const cases=[['saalgirah','/saalgirah/demo'],['lavender-tic-tac-toe-bloom','/lavender-bloom/demo'],['valentine-say-yes','/valentine-say-yes/demo']];
+ for(const [slug,path] of cases){const r=await worker.fetch(req(path),{ASSETS});assert.equal(r.status,200);assert.match(r.headers.get('content-type'),/text\/html/);const d=await worker.fetch(req('/templates/'+slug),{ASSETS});assert.match(await d.text(),new RegExp('src="'+path+'"'));const c=await worker.fetch(req('/create/'+slug),{ASSETS});assert.equal(c.status,503);}
+ assert.deepEqual(seen,['/legacy/saalgirah.data','/legacy/lavender-tic-tac-toe-bloom.data','/legacy/valentine-say-yes.data']);
+});

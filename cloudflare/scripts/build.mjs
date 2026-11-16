@@ -9,6 +9,7 @@ import { fileURLToPath } from 'node:url';
 import { generate as generateFullCatalog } from './full-catalog.mjs';
 import { buildLegacyDemo } from './legacy-demos.mjs';
 import { buildClassicDemo } from './classic-demos.mjs';
+import { buildLegacyGroupB } from './legacy-group-b.mjs';
 
 const ROOT = fileURLToPath(new URL('../../', import.meta.url));
 const OUT = path.join(ROOT, 'cloudflare/public');
@@ -154,6 +155,19 @@ for (const slug of ['noor','meher','aashi']) {
     } else write(relative, expected);
   }
   write('classic/' + slug + '.data', Buffer.from(classic.html));
+}
+// Additional original demos are compiled from fixed fictional data; no user
+// data or order routes are enabled. Google Fonts match the original site.
+for (const slug of ['saalgirah','lavender-tic-tac-toe-bloom','valentine-say-yes']) {
+  const demo = buildLegacyGroupB(slug);
+  for (const [url, bytes] of Object.entries(demo.assets)) {
+    const relative = url === '/brand/favicon-512.png' ? 'maafi/demo-favicon.png' : url.slice(1);
+    const target = safeFile(relative);
+    if (fs.existsSync(target)) {
+      if (hash(fs.readFileSync(target)) !== hash(bytes)) throw new Error('Legacy demo asset collision: ' + relative);
+    } else write(relative, bytes);
+  }
+  write('legacy/' + slug + '.data', Buffer.from(demo.html.replaceAll('/brand/favicon-512.png','/maafi/demo-favicon.png')));
 }
 
 // Validate all referenced local files in actual demo HTML, builder HTML and

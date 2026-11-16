@@ -78,9 +78,10 @@ async function handle(request,env) {
   if(request.method==='GET'&&['/privacy','/terms','/refund'].includes(path))return html(originalLegalPage(path.slice(1)));
   let m=path.match(/^\/templates\/([a-z0-9-]+)$/);
   if(request.method==='GET'&&m){const occasion=occasions.OCCASIONS.find(o=>o.slug===m[1]);if(occasion)return html(originalOccasionPage(occasion,fullCatalog));const t=fullBySlug(m[1]);return t?html(originalDetailPage(t,{baseUrl:origin})):unavailable();}
-  if(request.method==='GET'&&path==='/maafi/demo'){
+  const legacyDemoFiles={ '/maafi/demo':'/maafi/demo.data', '/saalgirah/demo':'/legacy/saalgirah.data', '/lavender-bloom/demo':'/legacy/lavender-tic-tac-toe-bloom.data', '/lavender-tic-tac-toe-bloom/demo':'/legacy/lavender-tic-tac-toe-bloom.data', '/valentine-say-yes/demo':'/legacy/valentine-say-yes.data' };
+  if(request.method==='GET'&&Object.hasOwn(legacyDemoFiles,path)){
     if(!env.ASSETS)throw fail('not_found',404);
-    const asset=await env.ASSETS.fetch(new Request(new URL('/maafi/demo.data',origin),request));
+    const asset=await env.ASSETS.fetch(new Request(new URL(legacyDemoFiles[path],origin),request));
     if(!asset.ok)throw fail('not_found',404);
     const headers=new Headers(asset.headers);headers.set('Content-Type','text/html; charset=utf-8');headers.set('Cache-Control','private, no-store');headers.set('X-Robots-Tag','noindex, nofollow');headers.set('X-Content-Type-Options','nosniff');
     return new Response(asset.body,{status:asset.status,headers});
