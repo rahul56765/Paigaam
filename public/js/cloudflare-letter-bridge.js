@@ -9,7 +9,7 @@
     if(!button||button.disabled)return;
     sending=true;lock();
     // Editors may reject locally before issuing a request.
-    queueMicrotask(function(){if(sending==='validating')unlock();});
+    setTimeout(function(){if(sending==='validating')unlock();},0);
     sending='validating';
   },true);
   window.fetch=function(input,options){
