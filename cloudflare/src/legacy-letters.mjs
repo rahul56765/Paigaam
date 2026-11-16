@@ -82,7 +82,8 @@ export async function handleLetters(request,env) {
       if(request.method==='POST')data=(await readJSON(request,16384)).customer_data;
       else {const raw=u.searchParams.get('d')||'{}';if(new TextEncoder().encode(raw).length>16384)throw fail('too_large',413);try{data=JSON.parse(raw);}catch{data={};}}
       // Source renderers already apply their field whitelist and escaping.
-      return html(render(t,{customer_data:t.schema.validate(data)},origin,true));
+      let clean;try{clean=t.schema.validate(data);}catch{clean=t.schema.validate({recipientName:'Meher',senderName:'Rahul'});}
+      return html(render(t,{customer_data:clean},origin,true));
     }
     if(request.method==='GET'&&m[3]) {
       ready(env);pg=await owned(env,m[3],await identity(request),t);
