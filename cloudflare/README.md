@@ -196,17 +196,22 @@ Railway resources or Editzy. Keep the read-only preview defaults in place.
   have passed. Read-only captured-payment reconciliation still works while new
   checkout is paused.
 
-Validation in the patch sandbox: static build succeeds (33 runtime templates,
-50 source entries, 373 static files). All **122 dependency-free tests** pass;
-the safety-focused store/payment/Worker set passes **55/55**. Fixtures use
-in-memory SQLite, mocked R2 and mocked gateway calls, never real charges or
-production customer writes. `git diff --check` is clean.
+Validation after the sandbox's npm-registry access was approved: static build
+succeeds (33 runtime templates, 50 source entries), **128/128 complete tests**
+pass, and Wrangler 4.162.0 dry-run bundling succeeds. In a newly created,
+local-only Miniflare D1/R2 state, the actual Worker returned 474 page/asset
+responses without error, blocked drafts when disabled, persisted a synthetic
+owner-isolated draft and image, and left checkout blocked. A second local-only
+safety smoke verified both keepsake audio contracts, cross-draft denial, private
+media, an actual six-request concurrent audio quota race (one winner), and an
+audio upload after nine photos. The local D1 contained 17 upload records and
+local R2 contained exactly 17 objects after the race; there were no test
+orphan objects. Run `node scripts/safety-runtime-smoke.mjs` only against a fresh
+local Worker started with `DRAFTS_ENABLED=true` and checkout disabled.
 
-The complete suite is **not** verified here: `npm ci` returned npm E403 fetching
-`youch-core`, and an isolated installation of the declared `esbuild@0.25.12`
-also returned E403 from `registry.npmjs.org`. Consequently `views.test.mjs` cannot
-load esbuild, and Wrangler bundling/local-runtime acceptance was not rerun for
-this patch. Existing successful preview deployment is not evidence that these
+These are local fixtures, not remote R2 durability, browser/mobile, payment
+gateway or restore acceptance. No real charges or remote customer writes were
+made. The existing successful preview deployment is not evidence that these
 unmerged changes have been deployed.
 
 Remaining full-launch gates include all 17 legacy customizers and associated
