@@ -20,6 +20,15 @@ try{
     await page.locator('#next').click();await page.waitForTimeout(50);
   }
   assert.ok(await publish.isVisible(),t.slug+': send step reachable');
+  let prematurePublishes=0;
+  const track=req=>{if(new URL(req.url()).pathname==='/api/'+t.route+'/publish')prematurePublishes++;};
+  page.on('request',track);
+  await page.route('**/api/'+t.route+'/draft',route=>route.fulfill({status:503,contentType:'application/json',body:'{"error":"temporary_unavailable"}'}));
+  await publish.click();
+  await page.waitForFunction(()=>!document.getElementById('publish').disabled);
+  assert.equal(prematurePublishes,0,t.slug+': never publish after a failed save');
+  assert.equal(await name.isDisabled(),false,t.slug+': save failure releases controls');
+  page.off('request',track);await page.unroute('**/api/'+t.route+'/draft');
   let entered,release;
   const seen=new Promise(resolve=>entered=resolve),gate=new Promise(resolve=>release=resolve);
   await page.route('**/api/'+t.route+'/publish',async route=>{entered();await gate;await route.continue();});
