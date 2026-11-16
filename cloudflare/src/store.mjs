@@ -68,34 +68,49 @@ export async function updateInvite(db, id, ownerHash, data) {
 export async function listUploads(db, id) {
   return (await stmt(db, 'SELECT * FROM uploads WHERE invite_id=? ORDER BY created_at,key', id).all()).results;
 }
-/** addUpload(db, {key,invite_id,mime,size}) -> upload|null. Only draft metadata can be added.
+/** addUpload(db, {key,invite_id,mime,size}, {kind,maxCount}) -> upload|null.
+ * Required limits: kind is image/audio; maxCount is a positive safe integer.
+ * One conditional INSERT enforces the draft guard and per-invite/per-kind cap.
  * Caller must authorize the invite before writing R2; delete R2 object on null/error.
  */
-export async function addUpload(db, record) {
+export async function addUpload(db, record, { kind, maxCount } = {}) {
   const { key, invite_id, mime, size } = record;
+  if (kind !== 'image' && kind !== 'audio') throw new TypeError('kind must be image or audio');
+  if (!Number.isSafeInteger(maxCount) || maxCount < 1) throw new TypeError('maxCount must be a positive safe integer');
+  nonempty(mime, 'mime');
+  const matchesKind = kind === 'image' ? /^image\/[^\s;/]+$/.test(mime)
+    : /^audio\/[^\s;/]+$/.test(mime) || mime === 'application/ogg';
+  if (!matchesKind) throw new TypeError('mime must match upload kind');
+  const mimeFilter = kind === 'image' ? "mime LIKE 'image/%'" : "(mime LIKE 'audio/%' OR mime='application/ogg')";
   return await stmt(db, `INSERT INTO uploads(key,invite_id,mime,size)
-    SELECT ?,id,?,? FROM invites WHERE id=? AND status='draft' RETURNING *`,
-  nonempty(key, 'key'), nonempty(mime, 'mime'), money(size), invite_id).first();
+    SELECT ?,id,?,? FROM invites WHERE id=? AND status='draft'
+      AND (SELECT count(*) FROM uploads WHERE invite_id=invites.id AND ${mimeFilter}) < ? RETURNING *`,
+  nonempty(key, 'key'), mime, money(size), invite_id, maxCount).first();
 }
 /** getUpload(db, key) -> upload|null. Does not imply public-read permission. */
 export async function getUpload(db, key) {
   return await stmt(db, 'SELECT * FROM uploads WHERE key=?', key).first();
 }
-/** beginCheckout(db, id, ownerHash, amount, currency) -> new creating order|null.
- * A single transactional batch inserts only from an owned draft, then locks
- * that exact invite. Concurrent/repeated calls return null; they do NOT grant
- * permission to call the gateway again. Recover pending UI via getOrderForInvite.
- * Do not automatically unlock a creating intent on network timeout: a gateway
- * order may exist. Reconcile using the local order.id as gateway receipt/key.
+/** beginCheckout(db, id, ownerHash, amount, currency, expectedData) -> new creating order|null.
+ * expectedData is REQUIRED: the caller-validated customer_data object snapshot.
+ * Its json() serialization must exactly equal the persisted JSON; changed data
+ * returns null without an order or lock. A single transactional batch inserts
+ * only from that owned draft, then locks it. Concurrent/repeated calls return
+ * null; they do NOT grant permission to call the gateway again. Recover pending
+ * UI via getOrderForInvite. Do not automatically unlock a creating intent on
+ * network timeout: a gateway order may exist. Reconcile using the local order.id
+ * as gateway receipt/key.
  */
-export async function beginCheckout(db, id, ownerHash, amount, currency) {
+export async function beginCheckout(db, id, ownerHash, amount, currency, expectedData) {
+  const expectedJson = json(expectedData);
   const orderId = hex18();
   const results = await db.batch([
     stmt(db, `INSERT INTO orders(id,invite_id,amount,currency)
-      SELECT ?,id,?,? FROM invites WHERE id=? AND owner_hash=? AND status='draft'`,
-    orderId, money(amount), nonempty(currency, 'currency'), id, ownerHash),
+      SELECT ?,id,?,? FROM invites WHERE id=? AND owner_hash=? AND status='draft' AND customer_data=?`,
+    orderId, money(amount), nonempty(currency, 'currency'), id, ownerHash, expectedJson),
     stmt(db, `UPDATE invites SET status='payment_pending',updated_at=${NOW}
-      WHERE id=? AND status='draft' AND EXISTS(SELECT 1 FROM orders WHERE id=? AND invite_id=invites.id)`, id, orderId),
+      WHERE id=? AND owner_hash=? AND status='draft' AND customer_data=?
+      AND EXISTS(SELECT 1 FROM orders WHERE id=? AND invite_id=invites.id)`, id, ownerHash, expectedJson, orderId),
     stmt(db, 'SELECT * FROM orders WHERE id=?', orderId),
   ]);
   return results[2].results[0] ?? null;
