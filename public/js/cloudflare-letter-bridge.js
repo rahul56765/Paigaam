@@ -14,7 +14,7 @@
   },true);
   window.fetch=function(input,options){
     var url=new URL(typeof input==='string'?input:input.url,location.href),opts=options||{};
-    var match=url.origin===location.origin&&/^\/api\/(maafi|saalgirah|lavender-bloom|valentine-say-yes|love-awaits)\/(draft|publish)$/.exec(url.pathname);
+    var match=url.origin===location.origin&&/^\/api\/(maafi|saalgirah|lavender-bloom|valentine-say-yes|love-awaits|birthday-paigaam)\/(draft|publish)$/.exec(url.pathname);
     if(!match||!opts.body||typeof opts.body!=='string')return nativeFetch(input,options);
     var body;try{body=JSON.parse(opts.body);}catch{return nativeFetch(input,options);}
     if(sending)sending=true;
