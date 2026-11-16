@@ -133,7 +133,7 @@ the per-request Authorization override required for static-asset upload JWTs.
 No asset upload session was created and no partial/incomplete Worker was published.
 Use Cloudflare Git builds for a supported deployment without sharing an API key:
 import `rahul56765/Paigaam`, branch `feat/cloudflare-fresh-start`, Worker name
-`paigaam-fresh-preview`, root directory `cloudflare`, build command `npm run build`,
+`paigaam` (the separate Worker created in the account), root directory `cloudflare`, build command `npm run build`,
 deploy command `npx wrangler deploy`. This is a separate preview Worker, NOT a
 production-domain change. Do not merge into main or attach paigaam.cc yet.
 See https://developers.cloudflare.com/workers/ci-cd/builds/ .

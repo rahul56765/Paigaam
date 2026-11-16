@@ -1,4 +1,4 @@
-name = "paigaam-fresh-preview"
+name = "paigaam"
 main = "src/worker.mjs"
 compatibility_date = "2026-11-16"
 compatibility_flags = ["nodejs_compat"]
