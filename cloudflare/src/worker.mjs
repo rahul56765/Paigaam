@@ -1,11 +1,12 @@
 import { Buffer } from 'node:buffer';
+import { handleLetters, letterCatalog } from './legacy-letters.mjs';
 import * as store from './store.mjs';
 import * as payments from './payments.mjs';
 import { DRAFT_ADMISSION, UPLOAD_MAX_TOTAL_BYTES } from './admission-policy.mjs';
 import { enforceRequestRate, rateLimiterReady } from './request-rate.mjs';
 import { fail, hash, randomHex, identity, assertOrigin, readJSON, readBytes, json, html } from './security.mjs';
 import { list, bySlug } from './catalog.generated.mjs';
-import { fullCatalog, fullBySlug } from './full-catalog.generated.mjs';
+import { fullCatalog as sourceCatalog, fullBySlug } from './full-catalog.generated.mjs';
 import { originalHomePage, originalGalleryPage, originalDetailPage, originalOccasionPage, originalOccasionsIndex, originalLegalPage, originalContactPage, builderPage } from './views.mjs';
 import occasions from '../../lib/occasions.js';
 import fields from '../../lib/bfday/fields.js';
@@ -80,8 +81,10 @@ async function capture(env,order,paymentId) {
   return settled.invite;
 }
 async function handle(request,env) {
+  const fullCatalog=letterCatalog(sourceCatalog,env);
+  const letterResponse=await handleLetters(request,env);if(letterResponse)return letterResponse;
   const u = new URL(request.url), origin=u.origin, path=u.pathname.replace(/\/+$/,'')||'/';
-  if (request.method==='GET' && path==='/status') return json({application:'paigaam-cloudflare-preview',templates:fullCatalog.length,portedTemplates:list.length,checkout:payments.checkoutMode(env).mode,video:false,legacyDataImported:false,catalogOrder:'source-seed-not-legacy-db'});
+  if (request.method==='GET' && path==='/status') return json({application:'paigaam-cloudflare-preview',templates:fullCatalog.length,portedTemplates:fullCatalog.filter(t=>t.supported).length,checkout:payments.checkoutMode(env).mode,video:false,legacyDataImported:false,catalogOrder:'source-seed-not-legacy-db'});
   if (path==='/api/razorpay/webhook' && request.method==='POST') {
     requireStorage(env); const raw = await readBytes(request,262144);
     if (!await payments.verifyWebhookSignature(env,raw,request.headers.get('x-razorpay-signature'))) throw fail('invalid_signature',401);
@@ -109,7 +112,7 @@ async function handle(request,env) {
   if(request.method==='GET'&&path==='/contact')return html(originalContactPage());
   if(request.method==='GET'&&['/privacy','/terms','/refund'].includes(path))return html(originalLegalPage(path.slice(1)));
   let m=path.match(/^\/templates\/([a-z0-9-]+)$/);
-  if(request.method==='GET'&&m){const occasion=occasions.OCCASIONS.find(o=>o.slug===m[1]);if(occasion)return html(originalOccasionPage(occasion,fullCatalog));const t=fullBySlug(m[1]);return t?html(originalDetailPage(t,{baseUrl:origin})):unavailable();}
+  if(request.method==='GET'&&m){const occasion=occasions.OCCASIONS.find(o=>o.slug===m[1]);if(occasion)return html(originalOccasionPage(occasion,fullCatalog));const t=fullCatalog.find(t=>t.slug===m[1]);return t?html(originalDetailPage(t,{baseUrl:origin})):unavailable();}
   const legacyDemoFiles={ '/maafi/demo':'/maafi/demo.data', '/saalgirah/demo':'/legacy/saalgirah.data', '/lavender-bloom/demo':'/legacy/lavender-tic-tac-toe-bloom.data', '/lavender-tic-tac-toe-bloom/demo':'/legacy/lavender-tic-tac-toe-bloom.data', '/valentine-say-yes/demo':'/legacy/valentine-say-yes.data' };
   if(request.method==='GET'&&Object.hasOwn(legacyDemoFiles,path)){
     if(!env.ASSETS)throw fail('not_found',404);
