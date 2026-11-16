@@ -25,7 +25,13 @@ import awaitsRender from '../../templates/love-awaits/render.js';
 import awaitsConfig from '../../templates/love-awaits/config.js';
 import awaitsBuilder from '../../pages/loveAwaitsCreate.js';
 
+import birthdaySchema from '../../templates/birthday-paigaam/schema.js';
+import birthdayRender from '../../templates/birthday-paigaam/render.js';
+import birthdayConfig from '../../templates/birthday-paigaam/config.js';
+import birthdayBuilder from '../../pages/birthdayPaigaamCreate.js';
+
 export const letters = [
+  { slug:'birthday-paigaam', route:'birthday-paigaam', schema:birthdaySchema, render:birthdayRender.renderBirthday, config:birthdayConfig, builder:birthdayBuilder.birthdayPaigaamCreatePage },
   { slug:'maafi', route:'maafi', schema:maafiSchema, render:maafiRender.renderMaafi, config:maafiConfig, builder:maafiBuilder.maafiCreatePage },
   { slug:'saalgirah', route:'saalgirah', schema:saalSchema, render:saalRender.renderLetter, config:saalConfig, builder:saalBuilder.saalgirahCreatePage },
   { slug:'lavender-tic-tac-toe-bloom', route:'lavender-bloom', schema:lavenderSchema, render:lavenderRender.renderBloom, config:lavenderConfig, builder:lavenderBuilder.lavenderCreatePage },
@@ -35,7 +41,7 @@ export const letters = [
 const find = slug => letters.find(t=>t.slug===slug||t.route===slug);
 export function letterCatalog(source,env) {
   if(env.LEGACY_LETTERS_ENABLED!=='true')return source;
-  return source.map(t=>find(t.slug)?{...t,supported:true,portStatus:{supported:true}}:t);
+  return source.map(t=>find(t.slug)&&(t.slug!=='birthday-paigaam'||env.BIRTHDAY_PAIGAAM_ENABLED==='true')?{...t,supported:true,portStatus:{supported:true}}:t);
 }
 const ID=/^[a-f0-9]{18}$/;
 function ready(env) { if(!env.DB||env.DRAFTS_ENABLED!=='true')throw fail('drafts_offline',503); }
@@ -53,6 +59,7 @@ function render(t,pg,origin,preview) {
   return t.render({id:pg.id,slug:pg.public_slug,customer_data:pg.customer_data},{baseUrl:origin,isPreview:preview});
 }
 async function wizard(t,env) {
+  if(t.slug==='birthday-paigaam'&&env.BIRTHDAY_PAIGAAM_ENABLED!=='true')throw fail('template_unavailable',503);
   ready(env);
   const quote=await store.getTemplate(env.DB,t.slug);
   if(!quote||quote.price!==0||env.FREE_PUBLISH_ENABLED!=='true'||!await rateLimiterReady(env))throw fail('template_unavailable',503);
@@ -94,12 +101,14 @@ export async function handleLetters(request,env) {
   }
   if(!(m=/^\/api\/([a-z0-9-]+)\/(draft|publish)$/.exec(p))||!(t=find(m[1])))return null;
   if(request.method!=='POST')throw fail('not_found',404);
+  if(t.slug==='birthday-paigaam'&&env.BIRTHDAY_PAIGAAM_ENABLED!=='true')throw fail('template_unavailable',503);
   assertOrigin(request);ready(env);
   const body=await readJSON(request,16384),action=m[2];
   await enforceRequestRate(request,env,action==='publish'?'publish':body.id?'draft_update':'draft_create');
   const person=await identity(request,action==='draft'&&!body.id);
   if(action==='draft') {
     const data=t.schema.validate(body.customer_data);
+    if(t.schema.mediaIn&&t.schema.mediaIn(data).length)throw fail('media_unavailable',503);
     const quote=await store.getTemplate(env.DB,t.slug);if(!quote)throw fail('template_unavailable',503);
     if(body.id) {
       pg=await owned(env,body.id,person,t);
@@ -118,7 +127,8 @@ export async function handleLetters(request,env) {
   if(env.FREE_PUBLISH_ENABLED!=='true')throw fail('free_publish_not_enabled',503);
   pg=await owned(env,body.id,person,t);
   if(body.expected_snapshot!==await digest(pg))throw fail('draft_changed',409);
-  const data=t.schema.validate(pg.customer_data);
+  const data=t.schema.validate(pg.customer_data,{publish:true});
+  if(t.schema.mediaIn&&t.schema.mediaIn(data).length)throw fail('media_unavailable',503);
   if(JSON.stringify(data)!==JSON.stringify(pg.customer_data))throw fail('validation');
   const replay=await store.getFreePublishedInvite(env.DB,pg.id,person.hash,t.slug,data);
   if(replay)return json(result(replay,origin));

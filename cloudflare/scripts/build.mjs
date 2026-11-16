@@ -65,7 +65,7 @@ function copyTree(relative) {
 for (const slug of slugs) copyTree(slug);
 copyTree('bfday');
 require(source('lib/loveAwaitsMedia.js')).ensureLoveAwaitsMedia();
-for(const name of ['maafi','saalgirah','lavender-bloom','valentine-say-yes','love-awaits']) copyTree(name);
+for(const name of ['maafi','saalgirah','lavender-bloom','valentine-say-yes','love-awaits','birthday-paigaam']) copyTree(name);
 copyTree('js/cloudflare-letter-bridge.js');
 for (const name of ['paigaam.css', 'builder-shell.css']) copyTree('css/' + name);
 for (const name of ['shell.js', 'qr-card.js', 'paigaam-pay.js', 'resume.js']) copyTree('js/' + name);
