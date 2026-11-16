@@ -128,14 +128,18 @@ owner isolation, byte equality and disabled checkout. It found and fixed a full-
 file versus partial-range response bug, with regression coverage. Real gateway,
 browser/mobile, remote R2 durability and backup restoration are still unverified.
 
-The connected MCP authenticates ordinary Cloudflare API calls, but does not expose
-the per-request Authorization override required for static-asset upload JWTs.
-No asset upload session was created and no partial/incomplete Worker was published.
-Use Cloudflare Git builds for a supported deployment without sharing an API key:
-import `rahul56765/Paigaam`, branch `feat/cloudflare-fresh-start`, Worker name
-`paigaam` (the separate Worker created in the account), root directory `cloudflare`, build command `npm run build`,
-deploy command `npx wrangler deploy`. This is a separate preview Worker, NOT a
-production-domain change. Do not merge into main or attach paigaam.cc yet.
+The connected MCP cannot directly supply the asset-upload-session JWT header,
+so the owner connected GitHub using Cloudflare's supported build flow. The isolated
+Worker `paigaam` was deployed on 2026-11-16 at
+`https://paigaam.rahul56765us.workers.dev` from branch `feat/cloudflare-fresh-start`,
+root `cloudflare`, using `npm run build` and `npx wrangler deploy`. Cloudflare build
+ID `988b991d-4ba7-41cd-bcf5-7c6eb5480f72`, version
+`e3d3d1f9-56a6-426c-b72c-dbaa62c56d27`, completed successfully. Remote checks:
+home, Vaidehi demo/builder, logo and builder JS returned 200; status reported 33
+family templates, checkout disabled, video disabled, and no legacy data imported.
+Posting a draft returned 503 drafts_offline; `/admin` returned 503. Existing image
+URLs in the collection returned 200. This is a public preview only, NOT a
+production-domain change; do not merge into main or attach paigaam.cc yet.
 See https://developers.cloudflare.com/workers/ci-cd/builds/ .
 
 Local reproducible checks:

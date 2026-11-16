@@ -166,9 +166,11 @@ An isolated, incremental Cloudflare port is being developed under `cloudflare/`.
 It does **not** include Remotion generation, rendering jobs, the video editor, or
 legacy Railway video records/uploads. Video routes return an explicit unavailable
 response. Existing Railway deployment/configuration and data are unchanged. This
-is preview preparation, not a production cutover. Workers local runtime and
-isolated D1 schema setup have been verified; no remote Worker deployment or real
-payment has been verified. See `cloudflare/README.md` for scope and launch gates.
+is a preview, not a production cutover. The separate Cloudflare Worker `paigaam`
+was deployed at `https://paigaam.rahul56765us.workers.dev` on 2026-11-16 with
+customer writes and checkout disabled. Its generated wedding-video routes return
+unavailable. Workers local runtime and isolated D1 schema setup were verified;
+no real payment or Cloudflare wedding-video rendering has been verified. See `cloudflare/README.md` for scope and launch gates.
 
 ## Changelog
 
