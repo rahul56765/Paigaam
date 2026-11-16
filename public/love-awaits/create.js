@@ -32,6 +32,7 @@
   window.wizardDiscardDraft = function (id) { /* stale draft simply expires */ };
   var previewUrl = null;
   var saving = false;
+  var published = false;
 
   function el(id) { return document.getElementById(id); }
   function value(id) { var node = el(id); return node ? node.value.trim() : ''; }
@@ -70,7 +71,7 @@
 
   /** The recipient's name is the only thing we insist on. */
   function validateStep() {
-    if (step === 1 && !value('recipientName')) {
+    if (step === 0 && !value('recipientName')) {
       setError('Their name, at least — the rest can stay as it is.');
       var node = el('recipientName');
       if (node) node.focus();
@@ -163,8 +164,8 @@
 
   function validateStepOne() {
     if (!value('recipientName')) {
-      setError('Their name is still missing — step 02.');
-      show(1);
+      setError('Their name is still missing — step 01.');
+      show(0);
       var node = el('recipientName');
       if (node) node.focus();
       return false;
@@ -206,10 +207,10 @@
 
   if (publishBtn) {
     publishBtn.addEventListener('click', function () {
+      if (published || !validateStepOne()) return;
       publishBtn.disabled = true;
       say('Publishing…');
       saveDraft()
-        .catch(function () { return null; })
         .then(function () {
           return request('/api/love-awaits/publish', { id: draftId });
         })
@@ -229,6 +230,7 @@
 
   function showResult(url) {
     if (typeof arguments[0] !== 'string' || !/^(https?:\/\/|\/)/.test(arguments[0])) { console.error('bad publish result'); return; } // GUARD
+    published = true; clearTimeout(autoTimer); autoTimer = 0;
     var wizard = document.getElementById('wizard');
     var result = document.getElementById('publishedResult');
     if (wizard) wizard.hidden = true;
@@ -252,6 +254,8 @@
       });
     }
   }
+
+  show(0);
 
   /* ---- live preview pane: follows every keystroke (350ms debounce) ---- */
   var liveFrame = el('liveFrame');
@@ -279,9 +283,10 @@
   /* ---------------- autosave (added): typing pauses 4s → draft saved ---------------- */
   var autoTimer = 0;
   form.addEventListener('input', function () {
+    if (published) return;
     clearTimeout(autoTimer);
     autoTimer = setTimeout(function () {
-      if (typeof saveDraft === 'function' && !saving) { saveDraft().catch(function () {}); }
+      if (!published && typeof saveDraft === 'function' && !saving) { saveDraft().catch(function () {}); }
     }, 4000);
   });
 })();
