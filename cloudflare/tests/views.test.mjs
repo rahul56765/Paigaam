@@ -147,7 +147,7 @@ test('an enabled free builder retains every free source wizard, accessible hints
     assert.doesNotMatch(page, /pc-inline-checkout|Secure payment via Razorpay|Checking your total/, t.slug);
     assert.doesNotMatch(page, /creator-coupon\.css/, t.slug);
     const scripts = scriptSources(page);
-    const expectedScripts = scriptSources(original).filter(src => !/^\/js\/(?:creator-coupon|welcome-back|paigaam-pay)\.js(?:\?|$)/.test(src));
+    const expectedScripts = scriptSources(original).filter(src => !/^\/js\/(?:creator-coupon|welcome-back|paigaam-pay)\.js(?:\?|$)/.test(src)).map(src => /^\/(?:bfday\/create|love-letter\/editor|anniversary-blue\/editor)\.js(?:\?|$)/.test(src) ? src.split('?')[0] + '?release=cloudflare-snapshot-20261116' : src);
     assert.deepEqual(scripts, expectedScripts, `${t.slug}: preserve original editor and QR scripts, remove payment/coupon scripts`);
     assert.ok(scripts.every(src => src.startsWith('/')), `${t.slug}: client scripts remain same-origin`);
     assert.ok(scripts.some(src => src.startsWith('/js/qr-card.js')), t.slug);

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Buffer } from 'node:buffer';
-import { createHmac } from 'node:crypto';
+import { createHmac, createHash } from 'node:crypto';
 import worker from '../src/worker.mjs';
 import { list, bySlug } from '../src/catalog.generated.mjs';
 import * as store from '../src/store.mjs';
@@ -62,7 +62,7 @@ async function save(env, slug, d, data) {
   return worker.fetch(post(`/api/${slug}/draft`, { id: d.id, customer_data: data }, d.cookie), env);
 }
 async function publish(env, slug, d, extra = {}, cookie = d.cookie) {
-  return worker.fetch(post(`/api/${slug}/publish`, { id: d.id, ...extra }, cookie), env);
+  return worker.fetch(post(`/api/${slug}/publish`, { id: d.id, expected_snapshot: createHash('sha256').update(JSON.stringify((await store.getInvite(env.DB, d.id))?.customer_data)).digest('hex'), ...extra }, cookie), env);
 }
 // Test-only wide limits for direct store fixtures; the Worker still uses its
 // own server-owned admission policy.
@@ -110,6 +110,42 @@ function interceptFreeWrites(db, { before, after } = {}) {
 }
 
 // Store tests exercise actual SQLite constraints and statements in memory.
+test('publish binds the save response before its first read, including published replay', async t => {
+  const env = await fixture(t), d = await draft(env);
+  assert.match(d.snapshot, /^[a-f0-9]{64}$/);
+  const changed = { ...bySlug(FREE).config.demo, senderName: 'Changed in another tab' };
+  const saved = await save(env, FREE, d, changed);
+  assert.equal(saved.status, 200);
+  const latest = await saved.json();
+  assert.notEqual(latest.snapshot, d.snapshot);
+  for (const expected_snapshot of [undefined, null, '', 'x'.repeat(64), d.snapshot]) {
+    const r = await publish(env, FREE, d, { expected_snapshot });
+    assert.equal(r.status, 409); assert.equal((await r.json()).error, 'draft_changed');
+    assert.equal((await store.getInvite(env.DB, d.id)).status, 'draft');
+  }
+  const r = await publish(env, FREE, d, { expected_snapshot: latest.snapshot });
+  assert.equal(r.status, 200); const result = await r.json();
+  assert.equal((await store.getInvite(env.DB, d.id)).customer_data.senderName, changed.senderName);
+  const staleReplay = await publish(env, FREE, d, { expected_snapshot: d.snapshot });
+  assert.equal(staleReplay.status, 409);
+  const replay = await publish(env, FREE, d, { expected_snapshot: latest.snapshot });
+  assert.equal(replay.status, 200); assert.deepEqual(await replay.json(), result);
+  assert.equal(await store.getOrderForInvite(env.DB, d.id), null);
+});
+
+test('unsupported paid currency is rejected before locking the draft or creating an order', async t => {
+  const env = { ...await fixture(t), ...secrets };
+  const d = await draft(env, PAID);
+  env.DB.raw.prepare('UPDATE templates SET currency=? WHERE slug=?').run('USD', PAID);
+  const before = await store.getInvite(env.DB, d.id);
+  const response = await publish(env, PAID, d, { checkout_mode: 'paid',
+    expected_amount_paise: 9900, expected_currency: 'USD' });
+  assert.equal(response.status, 400, await response.clone().text());
+  assert.equal((await response.json()).error, 'unsupported_currency');
+  assert.deepEqual(await store.getInvite(env.DB, d.id), before);
+  assert.equal(await store.getOrderForInvite(env.DB, d.id), null);
+});
+
 test('free store performs one owner/template/snapshot/price/order-guarded conditional update', async t => {
   const env = await fixture(t), data = { first: 'A', second: 'B' };
   const pg = await createTestInvite(env.DB, FREE, 'owner-a', data), candidate = slugFor(FREE, key('a'));

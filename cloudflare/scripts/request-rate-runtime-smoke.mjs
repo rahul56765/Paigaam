@@ -58,7 +58,7 @@ assert.equal(r.status, 200); assert.deepEqual(Buffer.from(await r.arrayBuffer())
 r = await post('/api/sealed-with-a-kiss/draft', { customer_data: bySlug('sealed-with-a-kiss').config.demo }, { client: otherIp });
 assert.equal(r.status, 200, await r.clone().text());
 const free = await r.json(), cookie = r.headers.get('set-cookie').split(';')[0];
-r = await post('/api/sealed-with-a-kiss/publish', { id: free.id }, { client: otherIp, cookie });
+r = await post('/api/sealed-with-a-kiss/publish', { id: free.id, expected_snapshot: free.snapshot }, { client: otherIp, cookie });
 assert.equal(r.status, 200, await r.clone().text());
 assert.equal((await fetch((await r.json()).url)).status, 200);
 console.log(JSON.stringify({ localOnly: true, checkoutDisabled: true,
