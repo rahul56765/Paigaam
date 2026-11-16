@@ -1,0 +1,58 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { createHmac } from 'node:crypto';
+import { D1 } from './d1-shim.mjs';
+import worker from '../src/worker.mjs';
+import { list,bySlug } from '../src/catalog.generated.mjs';
+import { seedTemplates, getInvite } from '../src/store.mjs';
+const origin='https://preview.example';
+function req(path,body,cookie,headers={}){return new Request(origin+path,{method:body===undefined?'GET':'POST',headers:{...(body===undefined?{}:{'Content-Type':'application/json',Origin:origin}),...(cookie?{Cookie:cookie}:{}),...headers},...(body===undefined?{}:{body:JSON.stringify(body)})});}
+async function fixture(t){const DB=new D1();t.after(()=>DB.raw.close());await seedTemplates(DB,list.map(x=>({slug:x.slug,name:x.config.name,price:Math.round((x.config.price||0)*100),config:x.config,currency:'INR'})));return {DB,MEDIA:{head:async()=>null},DRAFTS_ENABLED:'true'};}
+async function draft(env,slug='vaidehi'){const r=await worker.fetch(req('/api/'+slug+'/draft',{customer_data:bySlug(slug).config.demo}),env);assert.equal(r.status,200);return {...await r.json(),cookie:r.headers.get('set-cookie').split(';')[0]};}
+test('33 original demos, builder pages and previews render without database',async()=>{for(const t of list){for(const path of ['/'+t.slug+'/demo','/create/'+t.slug,'/templates/'+t.slug]){const r=await worker.fetch(req(path),{});assert.equal(r.status,200,path);assert.match(r.headers.get('content-type'),/text\/html/);assert.ok((await r.text()).length>500);}}});
+test('staging defaults block customer writes and checkout with no credentials',async t=>{const env=await fixture(t);let r=await worker.fetch(req('/api/vaidehi/draft',{customer_data:{}}),{...env,DRAFTS_ENABLED:'false'});assert.equal(r.status,503);const d=await draft(env);r=await worker.fetch(req('/api/vaidehi/publish',{id:d.id},d.cookie),env);assert.equal(r.status,503);assert.equal((await r.json()).error,'payments_offline');assert.equal((await getInvite(env.DB,d.id)).status,'draft');});
+test('owner isolation, same-template enforcement, external-origin and forged-upload rejection',async t=>{const env=await fixture(t),d=await draft(env);let r=await worker.fetch(req('/vaidehi/preview/'+d.id),env);assert.equal(r.status,403);r=await worker.fetch(req('/vaidehi/preview/'+d.id,undefined,d.cookie),env);assert.equal(r.status,200);r=await worker.fetch(req('/api/little-love/draft',{id:d.id,customer_data:{}},d.cookie),env);assert.equal(r.status,404);r=await worker.fetch(req('/api/vaidehi/draft',{id:d.id,customer_data:{}},d.cookie,{Origin:'https://evil.example'}),env);assert.equal(r.status,403);});
+test('paid checkout creates one gateway order, freezes draft and settles only after verified capture',async t=>{const env={...await fixture(t),CHECKOUT_ENABLED:'true',RAZORPAY_KEY_ID:'rzp_test_example',RAZORPAY_KEY_SECRET:'test-secret'};const d=await draft(env);let calls=0;const original=globalThis.fetch;t.after(()=>globalThis.fetch=original);globalThis.fetch=async(url,opts)=>{if(String(url).endsWith('/orders')){calls++;const b=JSON.parse(opts.body);return Response.json({id:'order_example',amount:b.amount,currency:b.currency});}return Response.json({id:'pay_example',order_id:'order_example',amount:9900,currency:'INR',status:'captured',captured:true,amount_refunded:0});};let r=await worker.fetch(req('/api/vaidehi/publish',{id:d.id},d.cookie),env);assert.equal(r.status,200);assert.equal((await r.json()).amount,9900);r=await worker.fetch(req('/api/vaidehi/publish',{id:d.id},d.cookie),env);assert.equal(r.status,200);assert.equal(calls,1);r=await worker.fetch(req('/api/vaidehi/draft',{id:d.id,customer_data:{}},d.cookie),env);assert.equal(r.status,409);const signature=createHmac('sha256','test-secret').update('order_example|pay_example').digest('hex');const body={razorpay_order_id:'order_example',razorpay_payment_id:'pay_example',razorpay_signature:signature};r=await worker.fetch(req('/api/razorpay/verify',body,d.cookie),env);assert.equal(r.status,200);const first=await r.json();assert.match(first.url,/\/p\/vaidehi-/);r=await worker.fetch(req('/api/razorpay/verify',body,d.cookie),env);assert.deepEqual(await r.json(),first);r=await worker.fetch(req(new URL(first.url).pathname),env);assert.equal(r.status,200);assert.equal((await getInvite(env.DB,d.id)).status,'published');});
+test('unavailable modules never return successful checkout or misleading fallback HTML',async()=>{for(const path of ['/admin','/wedding-video','/magazines','/api/razorpay/order']){const r=await worker.fetch(req(path),{});assert.equal(r.status,503,path);}const r=await worker.fetch(req('/api/missing/unknown'),{});assert.equal(r.status,503);});
+
+test('R2 full metadata range does not turn normal GET into a partial response',async t=>{const env=await fixture(t),d=await draft(env),key='a'.repeat(48)+'.png';await env.DB.prepare('INSERT INTO uploads(key,invite_id,mime,size) VALUES(?,?,?,?)').bind(key,d.id,'image/png',3).run();env.MEDIA.get=async(_key,options)=>({size:3,body:options?.range?new Uint8Array([1]):new Uint8Array([1,2,3]),range:{offset:0,length:options?.range?1:3}});let r=await worker.fetch(req('/bfday/uploads/'+key,undefined,d.cookie),env);assert.equal(r.status,200);assert.equal(r.headers.get('content-range'),null);assert.equal((await r.arrayBuffer()).byteLength,3);r=await worker.fetch(req('/bfday/uploads/'+key,undefined,d.cookie,{Range:'bytes=0-0'}),env);assert.equal(r.status,206);assert.equal(r.headers.get('content-range'),'bytes 0-0/3');});
+
+test('preview routes restore original home, navigation, filters and family detail',async()=>{
+  let r=await worker.fetch(req('/'),{}),body=await r.text();assert.equal(r.status,200);assert.match(body,/class="hero--dark"/);assert.match(body,/class="nav nav--dark"/);assert.match(body,/Make your moments/);assert.doesNotMatch(body,/Personal by design/);assert.match(body,/Cloudflare preview/);
+  r=await worker.fetch(req('/templates?q=vaidehi'),{});body=await r.text();assert.equal(r.status,200);assert.match(body,/class="gallery-head reveal in"/);assert.match(body,/data-slug="vaidehi"/);assert.doesNotMatch(body,/data-slug="little-love"/);
+  for(const p of ['/templates/wedding','/templates/birthday','/templates/vaidehi','/occasions','/privacy','/terms','/refund','/contact','/template-view/vaidehi']){r=await worker.fetch(req(p),{});assert.equal(r.status,200,p);}
+  r=await worker.fetch(req('/templates?occasion=%3C%2Fscript%3E%3Cscript%3Ealert(1)%3C%2Fscript%3E'),{});body=await r.text();assert.doesNotMatch(body,/<\/script><script>alert\(1\)<\/script>/);
+});
+
+test('signed captured webhook reconciles known pending order while new checkout is paused',async t=>{
+  const store=await import('../src/store.mjs');const env={...await fixture(t),CHECKOUT_ENABLED:'false',RAZORPAY_KEY_ID:'rzp_live_example',RAZORPAY_KEY_SECRET:'gateway-secret',RAZORPAY_WEBHOOK_SECRET:'webhook-secret'};
+  const d=await draft(env);const pg=await getInvite(env.DB,d.id);const order=await store.beginCheckout(env.DB,d.id,pg.owner_hash,9900,'INR');await store.setGatewayOrder(env.DB,order.id,'order_example');
+  const original=globalThis.fetch;t.after(()=>globalThis.fetch=original);let calls=0;globalThis.fetch=async(url,opts)=>{assert.equal(opts.method,'GET');calls++;return Response.json({id:'pay_example',order_id:'order_example',amount:9900,currency:'INR',status:'captured',captured:true,amount_refunded:0});};
+  const raw=JSON.stringify({event:'payment.captured',payload:{payment:{entity:{id:'pay_example',order_id:'order_example'}}}}),signature=createHmac('sha256','webhook-secret').update(raw).digest('hex');
+  const event=()=>new Request(origin+'/api/razorpay/webhook',{method:'POST',headers:{'Content-Type':'application/json','x-razorpay-signature':signature},body:raw});
+  let r=await worker.fetch(event(),env);assert.equal(r.status,200,await r.clone().text());assert.equal((await getInvite(env.DB,d.id)).status,'published');
+  r=await worker.fetch(event(),env);assert.equal(r.status,200);assert.equal(calls,2);
+  r=await worker.fetch(req('/api/vaidehi/publish',{id:d.id},d.cookie),env);assert.equal(r.status,503);assert.equal((await r.json()).error,'payments_offline');
+});
+
+test('complete source catalogue lists 50 designs in source order without claiming legacy ordering',async()=>{
+  const r=await worker.fetch(req('/templates'),{}), body=await r.text();assert.equal(r.status,200);
+  assert.equal((body.match(/<article class="tcard reveal"/g)||[]).length,50);assert.ok(body.indexOf('data-slug="sawaal"')<body.indexOf('data-slug="maafi"'));assert.ok(body.indexOf('data-slug="apology"')<body.indexOf('data-slug="sealed-with-a-kiss"'));
+  assert.match(body,/previous database, custom ordering and invitations have not been imported/);assert.match(body,/aria-disabled="true">Restoring/);
+  const d=await worker.fetch(req('/templates/maafi'),{}), text=await d.text();assert.equal(d.status,200);assert.match(text,/customizer and ordering are not yet available/);assert.match(text,/src="\/maafi\/demo"/);
+  const other=await worker.fetch(req('/templates/sawaal'),{});assert.equal(other.status,200);assert.match(await other.text(),/preview is still being restored/);
+  const x=await worker.fetch(req('/create/maafi'),{});assert.equal(x.status,503);
+});
+
+test('classic demos are read-only assets, keep unsupported customizers disabled',async()=>{
+  const seen=[];const ASSETS={fetch:async request=>{seen.push(new URL(request.url).pathname);return new Response('<!doctype html><title>Original classic sample</title>',{headers:{'content-type':'application/octet-stream'}});}};
+  for(const slug of ['noor','meher','aashi']){const r=await worker.fetch(req('/template-view/'+slug),{ASSETS});assert.equal(r.status,200);assert.match(r.headers.get('content-type'),/text\/html/);assert.match(r.headers.get('x-robots-tag'),/noindex/);const d=await worker.fetch(req('/templates/'+slug),{ASSETS});assert.match(await d.text(),new RegExp('/template-view/'+slug));const create=await worker.fetch(req('/create/'+slug),{ASSETS});assert.equal(create.status,503);}
+  assert.deepEqual(seen,['/classic/noor.data','/classic/meher.data','/classic/aashi.data']);
+});
+
+test('restored legacy demos use original aliases with customization still unavailable',async()=>{
+ const seen=[];const ASSETS={fetch:async request=>{seen.push(new URL(request.url).pathname);return new Response('<!doctype html><title>Legacy sample</title>');}};
+ const cases=[['saalgirah','/saalgirah/demo'],['lavender-tic-tac-toe-bloom','/lavender-bloom/demo'],['valentine-say-yes','/valentine-say-yes/demo']];
+ for(const [slug,path] of cases){const r=await worker.fetch(req(path),{ASSETS});assert.equal(r.status,200);assert.match(r.headers.get('content-type'),/text\/html/);const d=await worker.fetch(req('/templates/'+slug),{ASSETS});assert.match(await d.text(),new RegExp('src="'+path+'"'));const c=await worker.fetch(req('/create/'+slug),{ASSETS});assert.equal(c.status,503);}
+ assert.deepEqual(seen,['/legacy/saalgirah.data','/legacy/lavender-tic-tac-toe-bloom.data','/legacy/valentine-say-yes.data']);
+});

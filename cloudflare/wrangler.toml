@@ -1,0 +1,27 @@
+name = "paigaam"
+main = "src/worker.mjs"
+compatibility_date = "2026-11-16"
+compatibility_flags = ["nodejs_compat"]
+workers_dev = true
+
+[assets]
+directory = "./public"
+binding = "ASSETS"
+run_worker_first = true
+not_found_handling = "none"
+
+[vars]
+DRAFTS_ENABLED = "false"
+CHECKOUT_ENABLED = "false"
+ALLOW_LIVE_PAYMENTS = "false"
+
+# New, isolated preview storage. Contains no Railway customer records.
+[[d1_databases]]
+binding = "DB"
+database_name = "paigaam-fresh-preview"
+database_id = "3ed9e70b-f4b3-4291-bffe-3047c8b91ab6"
+migrations_dir = "migrations"
+
+[[r2_buckets]]
+binding = "MEDIA"
+bucket_name = "paigaam-fresh-preview-media"
