@@ -178,12 +178,13 @@ Railway resources or Editzy. Keep the read-only preview defaults in place.
   invite. A competing autosave rejects checkout without creating a gateway
   order or freezing different/unvalidated content. Reload/revalidate on a 409;
   do not unlock or retry an ambiguous existing gateway intent automatically.
-- `store.addUpload(db, record, {kind, maxCount})` requires explicit image/audio
-  limits and matching MIME. The conditional INSERT enforces the per-kind count
-  cap atomically. Photos no longer consume the audio allowance. If the draft
-  locks or the quota is consumed while R2 I/O is in flight, the losing object is
-  removed. These are committed-metadata limits, **not** a global admission or
-  byte-budget/reservation system; cleanup failures still need orphan recovery.
+- In the later admission branch, `store.addUpload(db, record, {kind, maxCount,
+  maxTotalBytes})` requires explicit server-owned per-kind and shared committed-
+  byte limits plus matching MIME. The conditional INSERT rechecks them atomically;
+  photos do not consume the audio allowance. The R2 write happens before D1
+  admission. Cleanup may fail, and an ambiguous D1 result can make blind deletion
+  unsafe: durable reservation/reconciliation and retries are still launch gates.
+  The committed-byte ceiling is not a reservation or a lifetime storage limit.
 - The original Love Letter and Anniversary Blue `/api/:slug/audio` editors can
   send MP3/WAV as `application/octet-stream`: the Worker sniffs the container,
   rejects unsupported/mismatched bytes, stores canonical audio MIME, and retains
