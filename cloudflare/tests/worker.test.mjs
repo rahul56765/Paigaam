@@ -43,3 +43,9 @@ test('complete source catalogue lists 50 designs in source order without claimin
   const other=await worker.fetch(req('/templates/sawaal'),{});assert.equal(other.status,200);assert.match(await other.text(),/preview is still being restored/);
   const x=await worker.fetch(req('/create/maafi'),{});assert.equal(x.status,503);
 });
+
+test('classic demos are read-only assets, keep unsupported customizers disabled',async()=>{
+  const seen=[];const ASSETS={fetch:async request=>{seen.push(new URL(request.url).pathname);return new Response('<!doctype html><title>Original classic sample</title>',{headers:{'content-type':'application/octet-stream'}});}};
+  for(const slug of ['noor','meher','aashi']){const r=await worker.fetch(req('/template-view/'+slug),{ASSETS});assert.equal(r.status,200);assert.match(r.headers.get('content-type'),/text\/html/);assert.match(r.headers.get('x-robots-tag'),/noindex/);const d=await worker.fetch(req('/templates/'+slug),{ASSETS});assert.match(await d.text(),new RegExp('/template-view/'+slug));const create=await worker.fetch(req('/create/'+slug),{ASSETS});assert.equal(create.status,503);}
+  assert.deepEqual(seen,['/classic/noor.data','/classic/meher.data','/classic/aashi.data']);
+});

@@ -86,7 +86,16 @@ async function handle(request,env) {
     return new Response(asset.body,{status:asset.status,headers});
   }
   m=path.match(/^\/template-view\/([a-z0-9-]+)$/);
-  if(request.method==='GET'&&m){const t=bySlug(m[1]);return t?html(render(t,t.config.demo,origin,true)):unavailable();}
+  if(request.method==='GET'&&m){
+    if(['noor','meher','aashi'].includes(m[1])){
+      if(!env.ASSETS)throw fail('not_found',404);
+      const asset=await env.ASSETS.fetch(new Request(new URL('/classic/'+m[1]+'.data',origin),request));
+      if(!asset.ok)throw fail('not_found',404);
+      const headers=new Headers(asset.headers);headers.set('Content-Type','text/html; charset=utf-8');headers.set('Cache-Control','private, no-store');headers.set('X-Robots-Tag','noindex, nofollow');headers.set('X-Content-Type-Options','nosniff');
+      return new Response(asset.body,{status:asset.status,headers});
+    }
+    const t=bySlug(m[1]);return t?html(render(t,t.config.demo,origin,true)):unavailable();
+  }
   if (request.method==='GET' && path==='/api/qr') {
     const value=u.searchParams.get('url')||''; let target;try{target=new URL(value);}catch{throw fail('validation');}
     if(target.origin!==origin||!target.pathname.startsWith('/p/')||value.length>1024)throw fail('validation');

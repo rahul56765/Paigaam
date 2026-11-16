@@ -8,6 +8,7 @@ import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { generate as generateFullCatalog } from './full-catalog.mjs';
 import { buildLegacyDemo } from './legacy-demos.mjs';
+import { buildClassicDemo } from './classic-demos.mjs';
 
 const ROOT = fileURLToPath(new URL('../../', import.meta.url));
 const OUT = path.join(ROOT, 'cloudflare/public');
@@ -141,6 +142,19 @@ for (const [url, bytes] of Object.entries(maafi.assets)) {
 // A non-.html extension avoids Workers Assets' automatic extension redirects;
 // the Worker explicitly supplies the correct HTML Content-Type for /maafi/demo.
 write('maafi/demo.data', Buffer.from(maafi.html.replaceAll('/brand/favicon-512.png','/maafi/demo-favicon.png')));
+// Classic previews use original static renderer samples; no legacy runtime DB.
+for (const slug of ['noor','meher','aashi']) {
+  const classic = buildClassicDemo(slug);
+  for (const [url, bytes] of Object.entries(classic.assets)) {
+    if (url === '/brand/admin-marble.svg') continue; // not used after dormant admin CSS removal
+    const relative = url.slice(1), target = safeFile(relative);
+    const expected = url === '/css/paigaam.css' ? Buffer.from(bytes.toString('utf8').replaceAll("url('/brand/admin-marble.svg')", 'none')) : bytes;
+    if (fs.existsSync(target)) {
+      if (hash(fs.readFileSync(target)) !== hash(expected)) throw new Error('Classic demo asset collision: ' + relative);
+    } else write(relative, expected);
+  }
+  write('classic/' + slug + '.data', Buffer.from(classic.html));
+}
 
 // Validate all referenced local files in actual demo HTML, builder HTML and
 // shipped CSS (including artwork and fonts), rather than silently shipping 404s.

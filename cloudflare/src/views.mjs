@@ -819,7 +819,8 @@ export function originalGalleryPage(templates, state = {}, opts = {}) { return g
 export function originalDetailPage(template, opts = {}) {
   const t = adaptTemplate(template, opts.row);
   if (t.supported !== false) return templateDetail(t, opts);
-  const preview = t.slug === 'maafi' ? '<iframe title="Maafi original demo" src="/maafi/demo" style="width:100%;height:100%;border:0" loading="lazy"></iframe>' : '<div style="padding:30px;text-align:center">This design’s preview is still being restored.</div>';
+  const previewPath = t.slug === 'maafi' ? '/maafi/demo' : ['noor','meher','aashi'].includes(t.slug) ? '/template-view/' + t.slug : '';
+  const preview = previewPath ? `<iframe title="${esc(t.name)} original demo" src="${esc(previewPath)}" style="width:100%;height:100%;border:0" loading="lazy"></iframe>` : '<div style="padding:30px;text-align:center">This design’s preview is still being restored.</div>';
   return page(t.name, `<main><div class="wrap"><div class="detail"><div class="reveal in"><div class="phone"><div class="phone__screen">${preview}</div></div></div><div class="reveal in"><span class="kicker">${esc(t.category)}</span><h1 class="section__title" style="letter-spacing:0.14em">${esc(t.name.toUpperCase())}</h1><p>${esc(t.description)}</p><p role="status">This design’s customizer and ordering are not yet available in this Cloudflare preview.</p><div class="detail__actions"><a class="btn btn--ghost" href="/templates">Back to templates</a></div></div></div></div></main>`, {current:'/templates',description:t.description});
 }
 export function originalOccasionPage(occasion, templates, opts = {}) {
