@@ -12,10 +12,13 @@ try{
   const page=await context.newPage(),errors=[];
   page.on('pageerror',e=>errors.push(e.message));
   await page.goto(base+'/create/'+t.slug);
-  const name=page.locator('#recipientName');await name.fill('Ananya');
-  const sender=page.locator('#senderName');if(await sender.count()&&await sender.isVisible())await sender.fill('Rahul');
-  const publish=page.locator('#publish');
-  for(let n=0;n<12&&!await publish.isVisible();n++){await page.locator('#next').click();await page.waitForTimeout(50);}
+  const name=page.locator('#recipientName'),sender=page.locator('#senderName'),publish=page.locator('#publish');
+  for(let n=0;n<12;n++){
+    if(await name.isVisible())await name.fill('Ananya');
+    if(await sender.count()&&await sender.isVisible())await sender.fill('Rahul');
+    if(await publish.isVisible())break;
+    await page.locator('#next').click();await page.waitForTimeout(50);
+  }
   assert.ok(await publish.isVisible(),t.slug+': send step reachable');
   let entered,release;
   const seen=new Promise(resolve=>entered=resolve),gate=new Promise(resolve=>release=resolve);
