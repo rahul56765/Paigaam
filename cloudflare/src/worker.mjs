@@ -1,6 +1,7 @@
 import { Buffer } from 'node:buffer';
 import * as store from './store.mjs';
 import * as payments from './payments.mjs';
+import { DRAFT_ADMISSION, UPLOAD_MAX_TOTAL_BYTES } from './admission-policy.mjs';
 import { fail, randomHex, identity, assertOrigin, readJSON, readBytes, json, html } from './security.mjs';
 import { list, bySlug } from './catalog.generated.mjs';
 import { fullCatalog, fullBySlug } from './full-catalog.generated.mjs';
@@ -141,7 +142,7 @@ async function handle(request,env) {
     if(action==='draft') {
       const b=await readJSON(request),data=t.schema.validate(b.customer_data,{mode:'draft'});let pg;
       if(b.id){pg=await owned(env,b.id,person,t.slug);await verifyMedia(env,t,pg,data);pg=await store.updateInvite(env.DB,pg.id,person.hash,data);if(!pg)throw fail('draft_locked',409);}
-      else{if(refs(t,data).length)throw fail('invalid_upload');await quote(env,t);pg=await store.createInvite(env.DB,t.slug,person.hash,data);}
+      else{if(refs(t,data).length)throw fail('invalid_upload');await quote(env,t);pg=await store.createInvite(env.DB,t.slug,person.hash,data,DRAFT_ADMISSION);if(!pg)throw fail('limit',429);}
       return json({id:pg.id,previewUrl:`/${t.slug}/preview/${pg.id}`},200,person.cookie?{'Set-Cookie':person.cookie}:{});
     }
     if(['upload','upload-audio','audio'].includes(action)) {
@@ -171,7 +172,7 @@ async function handle(request,env) {
       const key=randomHex(24)+'.'+ext;await env.MEDIA.put(key,bytes,{httpMetadata:{contentType:mime}});
       // The preflight count is only an optimization. The D1 INSERT rechecks the
       // cap atomically; losing concurrent requests must remove their R2 object.
-      try {if(!await store.addUpload(env.DB,{key,invite_id:pg.id,mime,size:bytes.length},{kind,maxCount:cap}))throw fail('upload_not_accepted',409);}catch(e){await env.MEDIA.delete(key);throw e;}
+      try {if(!await store.addUpload(env.DB,{key,invite_id:pg.id,mime,size:bytes.length},{kind,maxCount:cap,maxTotalBytes:UPLOAD_MAX_TOTAL_BYTES}))throw fail('upload_not_accepted',409);}catch(e){await env.MEDIA.delete(key);throw e;}
       return json({url:'/bfday/uploads/'+key});
     }
     if(action==='publish') {

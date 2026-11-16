@@ -178,12 +178,13 @@ Railway resources or Editzy. Keep the read-only preview defaults in place.
   invite. A competing autosave rejects checkout without creating a gateway
   order or freezing different/unvalidated content. Reload/revalidate on a 409;
   do not unlock or retry an ambiguous existing gateway intent automatically.
-- `store.addUpload(db, record, {kind, maxCount})` requires explicit image/audio
-  limits and matching MIME. The conditional INSERT enforces the per-kind count
-  cap atomically. Photos no longer consume the audio allowance. If the draft
-  locks or the quota is consumed while R2 I/O is in flight, the losing object is
-  removed. These are committed-metadata limits, **not** a global admission or
-  byte-budget/reservation system; cleanup failures still need orphan recovery.
+- In the later admission branch, `store.addUpload(db, record, {kind, maxCount,
+  maxTotalBytes})` requires explicit server-owned per-kind and shared committed-
+  byte limits plus matching MIME. The conditional INSERT rechecks them atomically;
+  photos do not consume the audio allowance. The R2 write happens before D1
+  admission. Cleanup may fail, and an ambiguous D1 result can make blind deletion
+  unsafe: durable reservation/reconciliation and retries are still launch gates.
+  The committed-byte ceiling is not a reservation or a lifetime storage limit.
 - The original Love Letter and Anniversary Blue `/api/:slug/audio` editors can
   send MP3/WAV as `application/octet-stream`: the Worker sniffs the container,
   rejects unsupported/mismatched bytes, stores canonical audio MIME, and retains
@@ -223,3 +224,37 @@ acceptance. Only after feature acceptance should production routing be changed.
 An active Cloudflare zone is required for a Worker Custom Domain; the observed
 `paigaam.cc` zone is still pending, so any delegation change also requires the
 owner's explicit approval and a complete DNS inventory preserving Editzy/mail.
+
+## Draft write admission — separate staging branch
+
+The Cloudflare store now requires caller-supplied **server-owned** admission
+limits when creating an invite or committing upload metadata. The provisionally
+selected preview policy is 20 invites per owner/template per rolling 24 hours,
+5,000 invites globally per rolling 24 hours, and 500 MiB of committed invite
+upload metadata. The per-owner and byte-pool values match the original app's
+published limits; the shared 5,000/day figure is a staging guard, not a
+traffic-based production recommendation. Review policy, costs and D1 query
+performance against real usage before enabling customer writes.
+
+Both draft counts include all invite statuses. Their UTC cutoff uses the same
+ISO timestamp format as stored `created_at`. One conditional INSERT applies
+owner/template and shared admission atomically; denial returns a generic 429.
+The existing conditional upload INSERT also checks the shared committed-byte
+budget atomically, alongside draft state and per-kind caps; the R2 object is
+removed if the metadata write is denied. Request bodies cannot set policy
+values. Unrouted Maafi/Saalgirah adapters use the same guard if later enabled.
+
+This is **not** a complete abuse or retention system. A rolling daily ceiling
+is not a lifetime cap, cookies can be rotated, and R2 bytes are temporarily
+written before D1 admission. Edge/IP throttling, total storage inventory,
+orphan recovery, retention/deletion, backups/restore and any additional
+magazine/creator upload systems still need separate implementation and
+acceptance. No existing tables, data, migrations, bindings or feature flags are
+changed by this branch.
+
+Tests use fresh local SQLite/Miniflare databases only. Store tests race separate
+SQLite connections for draft and byte caps. Worker-level tests verify generic
+429 responses, server-owned policy and R2 compensation. A local Workerd test
+raced 24 requests from one owner: 19 new drafts succeeded and five returned
+429 after an initial draft, for exactly 20 total. No remote data or real
+payments were involved.

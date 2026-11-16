@@ -95,7 +95,7 @@ test('draft opt-in uses isolated cookie owner and exact original validation, wit
   for (const customer_data of [{}, { recipientName: 'X'.repeat(61) }, { recipientName: 'X\nY' }, { recipientName: 'X', note: '\u0001' }, { recipientName: 7 }]) {
     r = await handleSaalgirah(post('/api/saalgirah/draft', { customer_data }, d.cookie), env); assert.equal(r.status, 400);
   }
-  const foreign = await store.createInvite(env.DB, 'other', stored.owner_hash, { recipientName: 'X' });
+  const foreign = await store.createInvite(env.DB, 'other', stored.owner_hash, { recipientName: 'X' }, { maxPerOwnerTemplate24h: 1000, maxGlobal24h: 1000 });
   assert.equal((await handleSaalgirah(get('/saalgirah/preview/' + foreign.id, d.cookie), env)).status, 404);
   env.DB.raw.prepare("UPDATE invites SET status='payment_pending' WHERE id=?").run(d.id);
   assert.equal((await handleSaalgirah(post('/api/saalgirah/draft', { id: d.id, customer_data: { recipientName: 'New' } }, d.cookie), env)).status, 409);

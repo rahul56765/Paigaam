@@ -6,6 +6,7 @@ import schema from '../../templates/saalgirah/schema.js';
 import renderer from '../../templates/saalgirah/render.js';
 import builder from '../../pages/saalgirahCreate.js';
 import * as store from './store.mjs';
+import { DRAFT_ADMISSION } from './admission-policy.mjs';
 import { fail, identity, assertOrigin, readJSON, json, html } from './security.mjs';
 
 export const DEMO = Object.freeze({
@@ -79,7 +80,8 @@ async function route(request, env, path, url) {
       if (!invite) throw fail('draft_locked', 409);
     } else {
       if (!await store.getTemplate(env.DB, 'saalgirah')) throw fail('template_unavailable', 503);
-      invite = await store.createInvite(env.DB, 'saalgirah', person.hash, data);
+      invite = await store.createInvite(env.DB, 'saalgirah', person.hash, data, DRAFT_ADMISSION);
+      if (!invite) throw fail('limit', 429);
     }
     return json({ id: invite.id, previewUrl: '/saalgirah/preview/' + invite.id }, 200,
       person.cookie ? { 'Set-Cookie': person.cookie } : {});

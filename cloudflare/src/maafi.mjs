@@ -7,6 +7,7 @@ import schema from '../../templates/maafi/schema.js';
 import renderer from '../../templates/maafi/render.js';
 import builder from '../../pages/maafiCreate.js';
 import * as store from './store.mjs';
+import { DRAFT_ADMISSION } from './admission-policy.mjs';
 import { fail, identity, assertOrigin, readJSON, json, html } from './security.mjs';
 const ID = /^[a-f0-9]{18}$/;
 const DEMO = { recipientName:'Meher',senderName:'Rahul',headline:'I’m really sorry ❤️',yesLabel:'Okay baby, I forgive you 💖',noLabel:'No, I’m still angry 😠',celebration:'Yay! You forgave me! 😍💖🥳' };
@@ -39,7 +40,7 @@ async function route(request,env,path,url){
  if(method==='POST'&&path==='/api/maafi/draft'){
    drafts(env);const b=await readJSON(request,16384),data=schema.validate(b.customer_data),person=await identity(request,!b.id);let p;
    if(b.id){p=await owned(env,b.id,person);if(p.status!=='draft')throw fail('draft_locked',409);p=await store.updateInvite(env.DB,p.id,person.hash,data);if(!p)throw fail('draft_locked',409);}
-   else{if(!await store.getTemplate(env.DB,'maafi'))throw fail('template_unavailable',503);p=await store.createInvite(env.DB,'maafi',person.hash,data);}
+   else{if(!await store.getTemplate(env.DB,'maafi'))throw fail('template_unavailable',503);p=await store.createInvite(env.DB,'maafi',person.hash,data,DRAFT_ADMISSION);if(!p)throw fail('limit',429);}
    return json({id:p.id,previewUrl:'/maafi/preview/'+p.id},200,person.cookie?{'Set-Cookie':person.cookie}:{});
  }
  if(method==='POST'&&path==='/api/maafi/publish')throw fail('payments_offline',503);

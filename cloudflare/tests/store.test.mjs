@@ -4,6 +4,10 @@ import { DatabaseSync } from 'node:sqlite';
 import { readFileSync } from 'node:fs';
 import * as store from '../src/store.mjs';
 
+// Test-only, server-side policy values; production callers must choose their own.
+const CREATE_LIMITS = Object.freeze({ maxPerOwnerTemplate24h: 1000, maxGlobal24h: 1000 });
+const MAX_TOTAL_BYTES = 1_000_000;
+
 // D1-like async boundary; batch is one SQLite transaction, as on actual D1.
 // No network, filesystem database, payment calls, R2 bucket or legacy db import.
 class Statement {
@@ -42,7 +46,7 @@ async function fixture(t) {
   await store.seedTemplates(db, [{ slug: 'rose', name: 'Rose', price: 19900, currency: 'INR', config: { demo: { name: 'A' } } }]);
   return db;
 }
-async function draft(db, owner = 'hash-a') { return store.createInvite(db, 'rose', owner, { name: 'A' }); }
+async function draft(db, owner = 'hash-a') { return store.createInvite(db, 'rose', owner, { name: 'A' }, CREATE_LIMITS); }
 async function pending(db, gateway, owner = 'hash-a') {
   const invite = await draft(db, owner);
   const order = await store.beginCheckout(db, invite.id, owner, 19900, 'INR', invite.customer_data);
@@ -67,7 +71,7 @@ test('invite IDs, foreign keys, draft owner guard, replace JSON, durable checkou
   assert.equal(invite.status, 'draft'); assert.equal(invite.public_slug, null);
   assert.deepEqual(invite.customer_data, { name: 'A' });
   assert.equal(await store.getInvite(db, 'absent'), null);
-  await assert.rejects(store.createInvite(db, 'absent', 'hash', {}), /FOREIGN KEY/);
+  await assert.rejects(store.createInvite(db, 'absent', 'hash', {}, CREATE_LIMITS), /FOREIGN KEY/);
   assert.equal(await store.updateInvite(db, invite.id, 'wrong', { name: 'bad' }), null);
   assert.equal(await store.beginCheckout(db, invite.id, 'wrong', 19900, 'INR', invite.customer_data), null);
   const updated = await store.updateInvite(db, invite.id, 'hash-a', { other: 1 });
@@ -138,7 +142,7 @@ test('checkout compares exact serialized JSON and accepts the current persisted 
 test('upload metadata maps R2 key to invite; rejects frozen draft and missing FK', async t => {
   const db = await fixture(t), invite = await draft(db);
   const record = { key: 'uploads/photo.webp', invite_id: invite.id, mime: 'image/webp', size: 12 };
-  const limits = { kind: 'image', maxCount: 3 };
+  const limits = { kind: 'image', maxCount: 3, maxTotalBytes: MAX_TOTAL_BYTES };
   const uploaded = await store.addUpload(db, record, limits);
   assert.equal(uploaded.key, record.key); assert.equal(uploaded.size, 12);
   assert.equal((await store.getUpload(db, record.key)).invite_id, invite.id);
@@ -152,7 +156,7 @@ test('upload metadata maps R2 key to invite; rejects frozen draft and missing FK
 
 test('concurrent audio uploads at eight of nine committed rows have exactly one quota winner', async t => {
   const db = await fixture(t), invite = await draft(db);
-  const limits = { kind: 'audio', maxCount: 9 };
+  const limits = { kind: 'audio', maxCount: 9, maxTotalBytes: MAX_TOTAL_BYTES };
   const record = { invite_id: invite.id, mime: 'audio/mpeg', size: 12 };
   for (let i = 0; i < 8; i++) {
     assert.ok(await store.addUpload(db, { ...record, key: `audio-${i}`, mime: i === 0 ? 'application/ogg' : 'audio/mpeg' }, limits));
@@ -174,7 +178,7 @@ test('image and audio upload quotas are independent and scoped to each invite', 
   const db = await fixture(t), a = await draft(db), b = await draft(db);
   const image = { key: 'image-a1', invite_id: a.id, mime: 'image/png', size: 12 };
   const audio = { key: 'audio-a1', invite_id: a.id, mime: 'application/ogg', size: 12 };
-  const images = { kind: 'image', maxCount: 2 }, audios = { kind: 'audio', maxCount: 1 };
+  const images = { kind: 'image', maxCount: 2, maxTotalBytes: MAX_TOTAL_BYTES }, audios = { kind: 'audio', maxCount: 1, maxTotalBytes: MAX_TOTAL_BYTES };
   assert.ok(await store.addUpload(db, image, images));
   assert.ok(await store.addUpload(db, { ...image, key: 'image-a2' }, images));
   assert.ok(await store.addUpload(db, audio, audios)); // Photos do not consume the audio cap.
@@ -183,8 +187,8 @@ test('image and audio upload quotas are independent and scoped to each invite', 
   assert.equal((await store.listUploads(db, a.id)).length, 3);
 
   assert.ok(await store.addUpload(db, { ...audio, key: 'audio-b1', invite_id: b.id }, audios));
-  assert.ok(await store.addUpload(db, { ...image, key: 'image-b1', invite_id: b.id }, { kind: 'image', maxCount: 1 }));
-  assert.equal(await store.addUpload(db, { ...image, key: 'image-b2', invite_id: b.id }, { kind: 'image', maxCount: 1 }), null);
+  assert.ok(await store.addUpload(db, { ...image, key: 'image-b1', invite_id: b.id }, { kind: 'image', maxCount: 1, maxTotalBytes: MAX_TOTAL_BYTES }));
+  assert.equal(await store.addUpload(db, { ...image, key: 'image-b2', invite_id: b.id }, { kind: 'image', maxCount: 1, maxTotalBytes: MAX_TOTAL_BYTES }), null);
   assert.equal(await store.addUpload(db, { ...audio, key: 'audio-b2', invite_id: b.id }, audios), null);
   assert.equal((await store.listUploads(db, b.id)).length, 2);
 });
@@ -197,7 +201,7 @@ test('pending and published invites deny both upload kinds even below their caps
     assert.equal(frozen.status, status);
     for (const [kind, mime] of [['image', 'image/webp'], ['audio', 'audio/mpeg'], ['audio', 'application/ogg']]) {
       const key = `${status}-${mime}`;
-      assert.equal(await store.addUpload(db, { key, invite_id: invite.id, mime, size: 12 }, { kind, maxCount: 9 }), null);
+      assert.equal(await store.addUpload(db, { key, invite_id: invite.id, mime, size: 12 }, { kind, maxCount: 9, maxTotalBytes: MAX_TOTAL_BYTES }), null);
       assert.equal(await store.getUpload(db, key), null);
     }
     assert.deepEqual(await store.getInvite(db, invite.id), frozen);
@@ -211,23 +215,23 @@ test('uploads require explicit valid limits and consistent image/audio MIME', as
   await assert.rejects(store.addUpload(db, record), /kind/);
   await assert.rejects(store.addUpload(db, record, null), TypeError);
   for (const kind of [undefined, null, '', 'photo', 'video', 'IMAGE']) {
-    await assert.rejects(store.addUpload(db, record, { kind, maxCount: 9 }), /kind/);
+    await assert.rejects(store.addUpload(db, record, { kind, maxCount: 9, maxTotalBytes: MAX_TOTAL_BYTES }), /kind/);
   }
   for (const maxCount of [undefined, null, 0, -1, 1.5, NaN, Infinity, '9', Number.MAX_SAFE_INTEGER + 1]) {
-    await assert.rejects(store.addUpload(db, record, { kind: 'image', maxCount }), /maxCount/);
+    await assert.rejects(store.addUpload(db, record, { kind: 'image', maxCount, maxTotalBytes: MAX_TOTAL_BYTES }), /maxCount/);
   }
   for (const [kind, mime] of [
     ['image', 'audio/mpeg'], ['audio', 'image/png'], ['image', 'application/ogg'],
     ['audio', 'application/octet-stream'], ['image', 'text/plain'], ['image', 'image/'],
     ['audio', 'audio/'], ['image', 'image/png; charset=utf-8'], ['image', ''], ['audio', null],
   ]) {
-    await assert.rejects(store.addUpload(db, { ...record, mime }, { kind, maxCount: 9 }), /mime/);
+    await assert.rejects(store.addUpload(db, { ...record, mime }, { kind, maxCount: 9, maxTotalBytes: MAX_TOTAL_BYTES }), /mime/);
   }
-  await assert.rejects(store.addUpload(db, { ...record, key: '' }, { kind: 'image', maxCount: 9 }), /key/);
-  await assert.rejects(store.addUpload(db, { ...record, size: -1 }, { kind: 'image', maxCount: 9 }), /minor units/);
+  await assert.rejects(store.addUpload(db, { ...record, key: '' }, { kind: 'image', maxCount: 9, maxTotalBytes: MAX_TOTAL_BYTES }), /key/);
+  await assert.rejects(store.addUpload(db, { ...record, size: -1 }, { kind: 'image', maxCount: 9, maxTotalBytes: MAX_TOTAL_BYTES }), /minor units/);
   assert.deepEqual(await store.listUploads(db, invite.id), []);
   assert.deepEqual(await store.getInvite(db, invite.id), invite);
-  assert.ok(await store.addUpload(db, record, { kind: 'image', maxCount: Number.MAX_SAFE_INTEGER }));
+  assert.ok(await store.addUpload(db, record, { kind: 'image', maxCount: Number.MAX_SAFE_INTEGER, maxTotalBytes: MAX_TOTAL_BYTES }));
 });
 
 test('concurrent beginCheckout has one SQL winner, not one per process', async t => {
@@ -313,7 +317,7 @@ test('constraints and argument validation reject invalid money, JSON and status'
   for (const amount of [-1, 1.5, NaN, Number.MAX_SAFE_INTEGER + 1]) {
     await assert.rejects(store.beginCheckout(db, invite.id, 'hash-a', amount, 'INR', invite.customer_data), /minor units/);
   }
-  await assert.rejects(store.createInvite(db, 'rose', '', {}), /ownerHash/);
+  await assert.rejects(store.createInvite(db, 'rose', '', {}, CREATE_LIMITS), /ownerHash/);
   await assert.rejects(store.updateInvite(db, invite.id, 'hash-a', []), /object/);
   assert.throws(() => db.raw.prepare("UPDATE invites SET customer_data='invalid' WHERE id=?").run(invite.id), /CHECK/);
   assert.throws(() => db.raw.prepare("UPDATE invites SET status='invalid' WHERE id=?").run(invite.id), /CHECK/);
