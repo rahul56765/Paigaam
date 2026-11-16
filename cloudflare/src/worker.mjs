@@ -1,0 +1,141 @@
+import { Buffer } from 'node:buffer';
+import * as store from './store.mjs';
+import * as payments from './payments.mjs';
+import { fail, randomHex, identity, assertOrigin, readJSON, readBytes, json, html } from './security.mjs';
+import { list, bySlug } from './catalog.generated.mjs';
+import { catalogPage, detailPage, builderPage } from './views.mjs';
+import fields from '../../lib/bfday/fields.js';
+import images from '../../lib/bfday/image.js';
+import audio from '../../lib/bfday/audio.js';
+import qr from '../../lib/qrcode.js';
+
+const ID = /^[a-f0-9]{18}$/;
+const FILE = /^[a-f0-9]{48}\.(?:jpg|png|webp|mp3|m4a|ogg|wav)$/;
+const unavailable = () => html('<!doctype html><html lang="en"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Paigaam · migration preview</title><body style="padding:48px;font:18px system-ui;max-width:700px;margin:auto"><h1>This feature is not available in the Cloudflare preview.</h1><p>No payment has been taken here. Existing Railway invitations and customer data have not been imported.</p><a href="/">Back to the collection</a></body></html>', 503);
+function requireStorage(env) { if (!env.DB || !env.MEDIA) throw fail('storage_unavailable',503); }
+function requireDrafts(env) { requireStorage(env); if (env.DRAFTS_ENABLED !== 'true') throw fail('drafts_offline',503); }
+async function owned(env, id, person, slug) {
+  if (!ID.test(id || '')) throw fail('not_found',404);
+  const pg = await store.getInvite(env.DB,id);
+  if (!pg || (slug && pg.template_slug !== slug)) throw fail('not_found',404);
+  if (!person.hash || pg.owner_hash !== person.hash) throw fail('forbidden',403);
+  return pg;
+}
+function refs(t,data) { return [...fields.imagesIn(t.fields,data), ...fields.audioIn(t.fields,data)]; }
+async function verifyMedia(env,t,pg,data) {
+  for (const url of refs(t,data)) {
+    const match = /^\/bfday\/uploads\/([^/?#]+)$/.exec(url);
+    if (!match || !FILE.test(match[1])) throw fail('invalid_upload');
+    const upload = await store.getUpload(env.DB,match[1]);
+    if (!upload || upload.invite_id !== pg.id || !await env.MEDIA.head(match[1])) throw fail('invalid_upload');
+  }
+}
+function render(t,data,origin,preview=true) { return t.render({customer_data:data},{baseUrl:origin,isPreview:preview}); }
+async function quote(env,t) { const live = await store.getTemplate(env.DB,t.slug); if (!live) throw fail('template_unavailable',503); return live; }
+function result(pg,origin) { return {slug:pg.public_slug,url:origin+'/p/'+pg.public_slug}; }
+async function capture(env,order,paymentId) {
+  const p = await payments.fetchPayment(env,paymentId);
+  if (!payments.validateCapturedPayment(p,{orderId:order.gateway_order_id,amount:order.amount,currency:order.currency})) throw fail('payment_mismatch',400);
+  const pg = await store.getInvite(env.DB,order.invite_id);
+  if (!pg) throw fail('not_found',404);
+  const t = bySlug(pg.template_slug); if (!t) throw fail('template_unavailable',503);
+  const data = t.schema.validate(pg.customer_data,{mode:'strict'});
+  await verifyMedia(env,t,pg,data);
+  const settled = await store.settleOrder(env.DB,order.gateway_order_id,paymentId,t.slug+'-'+randomHex(9));
+  if (!settled) throw fail('settlement_conflict',409);
+  return settled.invite;
+}
+async function handle(request,env) {
+  const u = new URL(request.url), origin=u.origin, path=u.pathname.replace(/\/+$/,'')||'/';
+  if (request.method==='GET' && path==='/status') return json({application:'paigaam-cloudflare-preview',templates:list.length,checkout:payments.checkoutMode(env).mode,video:false,legacyDataImported:false});
+  if (path==='/api/razorpay/webhook' && request.method==='POST') {
+    requireStorage(env); const raw = await readBytes(request,262144);
+    if (!await payments.verifyWebhookSignature(env,raw,request.headers.get('x-razorpay-signature'))) throw fail('invalid_signature',401);
+    let body; try {body=JSON.parse(new TextDecoder().decode(raw));}catch{throw fail('validation');}
+    if (body.event!=='payment.captured') return json({received:true,handled:false});
+    const p=body.payload?.payment?.entity, order=p?.order_id&&await store.getOrderByGateway(env.DB,p.order_id);
+    if (!order) throw fail('unknown_order',409); // Never silently acknowledge missing legacy orders.
+    await capture(env,order,p.id); return json({received:true,handled:true});
+  }
+  if (request.method==='POST') assertOrigin(request);
+  if (path==='/api/razorpay/verify' && request.method==='POST') {
+    requireStorage(env); const b=await readJSON(request),person=await identity(request);
+    if (!await payments.verifyCheckoutSignature(env,{orderId:b.razorpay_order_id,paymentId:b.razorpay_payment_id,signature:b.razorpay_signature})) throw fail('invalid_signature',401);
+    const order=await store.getOrderByGateway(env.DB,b.razorpay_order_id); if(!order)throw fail('not_found',404);
+    await owned(env,order.invite_id,person);
+    return json(result(await capture(env,order,b.razorpay_payment_id),origin));
+  }
+  if (request.method==='GET' && ['/', '/templates'].includes(path)) return html(catalogPage(list));
+  let m=path.match(/^\/templates\/([a-z0-9-]+)$/);
+  if(request.method==='GET'&&m) {const t=bySlug(m[1]);return t?html(detailPage(t)):unavailable();}
+  if (request.method==='GET' && path==='/api/qr') {
+    const value=u.searchParams.get('url')||''; let target;try{target=new URL(value);}catch{throw fail('validation');}
+    if(target.origin!==origin||!target.pathname.startsWith('/p/')||value.length>1024)throw fail('validation');
+    return new Response(qr.qrSVG(value),{headers:{'Content-Type':'image/svg+xml','Cache-Control':'public,max-age=3600'}});
+  }
+  m=path.match(/^\/p\/([a-z0-9-]+)$/);
+  if(m&&request.method==='GET') {requireStorage(env);const pg=await store.getInviteByPublicSlug(env.DB,m[1]);if(!pg)throw fail('not_found',404);const t=bySlug(pg.template_slug);return t?html(render(t,pg.customer_data,origin,false)):unavailable();}
+  m=path.match(/^\/bfday\/uploads\/([^/]+)$/);
+  if(m&&['GET','HEAD'].includes(request.method)) {
+    requireStorage(env);if(!FILE.test(m[1]))throw fail('not_found',404);
+    const upload=await store.getUpload(env.DB,m[1]),pg=upload&&await store.getInvite(env.DB,upload.invite_id);
+    if(!pg)throw fail('not_found',404); const t=bySlug(pg.template_slug),person=await identity(request);
+    const isPublic=pg.status==='published'&&t&&refs(t,pg.customer_data).includes('/bfday/uploads/'+m[1]);
+    if(!isPublic&&person.hash!==pg.owner_hash)throw fail('not_found',404);
+    const obj=await env.MEDIA.get(m[1],{range:request.headers});if(!obj)throw fail('not_found',404);
+    const headers=new Headers({'Content-Type':upload.mime,'Cache-Control':'private,no-store','X-Content-Type-Options':'nosniff','Accept-Ranges':'bytes'});
+    if(obj.range){headers.set('Content-Range',`bytes ${obj.range.offset}-${obj.range.offset+obj.range.length-1}/${obj.size}`);headers.set('Content-Length',String(obj.range.length));}else headers.set('Content-Length',String(obj.size));
+    return new Response(request.method==='HEAD'?null:obj.body,{status:obj.range?206:200,headers});
+  }
+  m=path.match(/^\/create\/([a-z0-9-]+)$/);
+  if(m&&request.method==='GET') {const t=bySlug(m[1]);if(!t)return unavailable();const live=env.DB?await store.getTemplate(env.DB,t.slug):null;return html(builderPage(t,{price:live?live.price/100:t.config.price||0,listPrice:t.config.list_price||0,baseUrl:origin}));}
+  m=path.match(/^\/([a-z0-9-]+)\/(demo|preview-frame|preview\/([a-f0-9]{18}))$/);
+  if(m){const t=bySlug(m[1]);if(t){
+    if(m[2]==='demo'&&request.method==='GET')return html(render(t,t.config.demo,origin));
+    if(m[2]==='preview-frame'&&['POST','GET'].includes(request.method)){let data={};if(request.method==='POST')data=(await readJSON(request)).customer_data;else{try{data=JSON.parse(u.searchParams.get('d')||'{}');}catch{}}
+      return html(render(t,t.schema.validate(data,{mode:'lenient'}),origin));}
+    if(m[3]&&request.method==='GET'){requireStorage(env);const pg=await owned(env,m[3],await identity(request),t.slug);return html(render(t,pg.customer_data,origin));}
+  }}
+  m=path.match(/^\/api\/([a-z0-9-]+)\/(draft|upload|upload-audio|audio|publish)$/);
+  if(m&&request.method==='POST') {
+    const t=bySlug(m[1]);if(!t)throw fail('not_found',404);requireDrafts(env);
+    const action=m[2],person=await identity(request,action==='draft');
+    if(action==='draft') {
+      const b=await readJSON(request),data=t.schema.validate(b.customer_data,{mode:'draft'});let pg;
+      if(b.id){pg=await owned(env,b.id,person,t.slug);await verifyMedia(env,t,pg,data);pg=await store.updateInvite(env.DB,pg.id,person.hash,data);if(!pg)throw fail('draft_locked',409);}
+      else{if(refs(t,data).length)throw fail('invalid_upload');await quote(env,t);pg=await store.createInvite(env.DB,t.slug,person.hash,data);}
+      return json({id:pg.id,previewUrl:`/${t.slug}/preview/${pg.id}`},200,person.cookie?{'Set-Cookie':person.cookie}:{});
+    }
+    if(['upload','upload-audio','audio'].includes(action)) {
+      const pg=await owned(env,u.searchParams.get('id'),person,t.slug);if(pg.status!=='draft')throw fail('draft_locked',409);
+      const isImage=action==='upload', cap=isImage?fields.maxImages(t.fields)*3+6:9;
+      if(isImage&&!fields.maxImages(t.fields))throw fail('not_found',404);
+      if(!isImage&&!t.fields.some(f=>f.type==='audio'))throw fail('not_found',404);
+      const prior=await store.listUploads(env.DB,pg.id);if(prior.length>=cap)throw fail('limit',429);
+      const mime=(request.headers.get('content-type')||'').split(';')[0].trim().toLowerCase(),types=isImage?images.EXT:audio.EXT;
+      if(!types[mime])throw fail(isImage?'invalid_image':'invalid_audio');
+      const bytes=Buffer.from(await readBytes(request,isImage?2*1024*1024:audio.MAX_BYTES));
+      const problem=isImage?images.checkImage(bytes,mime):audio.checkAudio(bytes,mime);if(problem)throw fail(problem,problem==='too_large'?413:400);
+      const key=randomHex(24)+'.'+types[mime];await env.MEDIA.put(key,bytes,{httpMetadata:{contentType:mime}});
+      try {if(!await store.addUpload(env.DB,{key,invite_id:pg.id,mime,size:bytes.length}))throw fail('draft_locked',409);}catch(e){await env.MEDIA.delete(key);throw e;}
+      return json({url:'/bfday/uploads/'+key});
+    }
+    if(action==='publish') {
+      if(!payments.checkoutMode(env).enabled)throw fail('payments_offline',503);
+      const {id}=await readJSON(request),pg=await owned(env,id,person,t.slug);if(pg.status==='published')return json(result(pg,origin));
+      const data=t.schema.validate(pg.customer_data,{mode:'strict'});await verifyMedia(env,t,pg,data);const live=await quote(env,t);
+      if(live.price===0)throw fail('free_publish_not_enabled',503);
+      let order=await store.getOrderForInvite(env.DB,id);
+      if(!order){order=await store.beginCheckout(env.DB,id,person.hash,live.price,live.currency);if(!order)throw fail('checkout_in_progress',409);
+        const gateway=await payments.razorpayCreateOrder(env,{amount:order.amount,currency:order.currency,receipt:order.id,notes:{paigaam_id:id}});
+        order=await store.setGatewayOrder(env.DB,order.id,gateway.id);if(!order)throw fail('checkout_reconciliation_required',409);
+      }
+      if(order.status==='creating')throw fail('checkout_reconciliation_required',409);
+      return json({razorpay:true,keyId:env.RAZORPAY_KEY_ID,orderId:order.gateway_order_id,amount:order.amount,currency:order.currency,name:'Paigaam',description:t.config.name});
+    }
+  }
+  if(path.startsWith('/api/')||path.startsWith('/admin')||path.startsWith('/wedding-video')||path.startsWith('/magazines')||path.startsWith('/creators'))return unavailable();
+  if(['GET','HEAD'].includes(request.method)&&env.ASSETS){const response=await env.ASSETS.fetch(request);if(response.status!==404)return response;}
+  throw fail('not_found',404);
+}
+export default {async fetch(request,env){try{return await handle(request,env);}catch(e){if(!e?.status)console.error('Paigaam request failed');return json({error:e?.status?(e.code||'validation'):'server_error'},e?.status||500);}}};

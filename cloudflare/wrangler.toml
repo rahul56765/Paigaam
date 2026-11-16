@@ -1,0 +1,27 @@
+name = "paigaam-fresh-preview"
+main = "src/worker.mjs"
+compatibility_date = "2026-11-16"
+compatibility_flags = ["nodejs_compat"]
+workers_dev = true
+
+[assets]
+directory = "./public"
+binding = "ASSETS"
+run_worker_first = true
+not_found_handling = "none"
+
+[vars]
+DRAFTS_ENABLED = "false"
+CHECKOUT_ENABLED = "false"
+ALLOW_LIVE_PAYMENTS = "false"
+
+# Add ONLY newly created isolated staging bindings after recording their actual IDs.
+# [[d1_databases]]
+# binding = "DB"
+# database_name = "paigaam-fresh-preview"
+# database_id = "<returned-by-Cloudflare>"
+# migrations_dir = "migrations"
+#
+# [[r2_buckets]]
+# binding = "MEDIA"
+# bucket_name = "<new-isolated-preview-bucket>"

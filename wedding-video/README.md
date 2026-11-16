@@ -160,7 +160,18 @@ node scripts/stills.mjs 9 17 26                      # quick visual checks
 
 The separate Divya Vivah web invitation is prepared locally at a configured initial price of ₹99 for newly seeded listings; existing database prices remain owner-managed. Its owner-checked paid order route now strictly validates Divya data and upload ownership, blocks concurrent Divya order/edit races within one process, and requires valid payment-pending edits; the generic order route is blocked for Divya only. Existing bfday templates retain their previous flows. The shared settlement path does not revalidate legacy orders, and the lock is not distributed. Checkout tests use mocked gateway traffic only; no real or Razorpay test-mode payment or actual gateway integration was tested. This work has not been merged remotely or deployed and does not change the Remotion video renderer. See `templates/divya-vivah/README.md` for test results and limitations.
 
+## Cloudflare fresh-start preview (2026-11-16)
+
+An isolated, incremental Cloudflare port is being developed under `cloudflare/`.
+It does **not** include Remotion generation, rendering jobs, the video editor, or
+legacy Railway video records/uploads. Video routes return an explicit unavailable
+response. Existing Railway deployment/configuration and data are unchanged. This
+is source preparation, not a production cutover; no Cloudflare deployment or real
+payment has been verified. See `cloudflare/README.md` for scope and launch gates.
+
 ## Changelog
+
+- **2026-11-16 (Cloudflare preview preparation)** Added an isolated fresh-start Workers/D1/R2 source package for the shared invitation family. Generated wedding-video functionality is explicitly unavailable there; Railway video code, configuration and data are untouched. Local mocked payment/storage tests are not proof of Cloudflare runtime or live payment acceptance.
 
 - **2026-11-02 (checkout safeguards)** Scoped new paid checkout validation, in-process order/edit protection and the generic-order guard to Divya Vivah only; mocked checkout coverage includes an existing paid family's unchanged behavior. No real payment was tested and the Remotion feature is unchanged.
 
