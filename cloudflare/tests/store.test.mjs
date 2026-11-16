@@ -149,7 +149,7 @@ test('upload metadata maps R2 key to invite; rejects frozen draft and missing FK
   assert.equal((await store.listUploads(db, invite.id)).length, 1);
   await assert.rejects(store.addUpload(db, record, limits), /UNIQUE/);
   assert.equal(await store.addUpload(db, { ...record, key: 'missing', invite_id: 'missing' }, limits), null);
-  await store.beginCheckout(db, invite.id, 'hash-a', 0, 'INR', invite.customer_data);
+  await store.beginCheckout(db, invite.id, 'hash-a', 19900, 'INR', invite.customer_data);
   assert.equal(await store.addUpload(db, { ...record, key: 'late' }, limits), null);
   assert.equal(await store.getUpload(db, 'late'), null);
 });
@@ -242,10 +242,24 @@ test('concurrent beginCheckout has one SQL winner, not one per process', async t
   assert.equal((await store.getInvite(db, invite.id)).status, 'payment_pending');
 });
 
+test('checkout atomically rejects stale amount or currency without an order or draft lock', async t => {
+  const db = await fixture(t), invite = await draft(db);
+  const batch = db.batch.bind(db); let interleaved = false;
+  db.batch = async statements => {
+    if (!interleaved) { interleaved = true; db.raw.prepare('UPDATE templates SET price=? WHERE slug=?').run(20000, 'rose'); }
+    return batch(statements);
+  };
+  assert.equal(await store.beginCheckout(db, invite.id, 'hash-a', 19900, 'INR', invite.customer_data), null);
+  assert.equal((await store.getInvite(db, invite.id)).status, 'draft');
+  assert.equal(db.raw.prepare('SELECT count(*) n FROM orders').get().n, 0);
+  assert.equal(await store.beginCheckout(db, invite.id, 'hash-a', 20000, 'USD', invite.customer_data), null);
+  assert.ok(await store.beginCheckout(db, invite.id, 'hash-a', 20000, 'INR', invite.customer_data));
+});
+
 test('checkout batch rolls back insert if invite lock update fails', async t => {
   const db = await fixture(t), invite = await draft(db);
   db.raw.exec("CREATE TRIGGER fail_lock BEFORE UPDATE OF status ON invites WHEN new.status='payment_pending' BEGIN SELECT RAISE(ABORT,'injected failure'); END");
-  await assert.rejects(store.beginCheckout(db, invite.id, 'hash-a', 1, 'INR', invite.customer_data), /injected failure/);
+  await assert.rejects(store.beginCheckout(db, invite.id, 'hash-a', 19900, 'INR', invite.customer_data), /injected failure/);
   assert.equal((await store.getInvite(db, invite.id)).status, 'draft');
   assert.equal(db.raw.prepare('SELECT count(*) n FROM orders').get().n, 0);
 });
@@ -254,7 +268,7 @@ test('gateway mapping is unique, idempotent, and cannot be changed', async t => 
   const db = await fixture(t), first = await pending(db, 'gw-a'), second = await draft(db);
   assert.equal((await store.setGatewayOrder(db, first.order.id, 'gw-a')).status, 'pending');
   assert.equal(await store.setGatewayOrder(db, first.order.id, 'gw-other'), null);
-  const order2 = await store.beginCheckout(db, second.id, 'hash-a', 1, 'INR', second.customer_data);
+  const order2 = await store.beginCheckout(db, second.id, 'hash-a', 19900, 'INR', second.customer_data);
   await assert.rejects(store.setGatewayOrder(db, order2.id, 'gw-a'), /UNIQUE/);
   assert.equal((await store.getOrder(db, order2.id)).status, 'creating');
   assert.equal((await store.getOrderByGateway(db, 'gw-a')).id, first.order.id);

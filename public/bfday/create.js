@@ -40,6 +40,21 @@
   var step = 0;
   var draftId = null;
   var previewUrl = null;
+  // Do not publish while media is still in flight or let the user edit the
+  // snapshot while a publication request is being resolved.
+  var pendingMedia = 0, sending = false, published = false, autoTimer = 0;
+  var disabledDuringSend = [];
+  function lockForSend(locked) {
+    if (locked) {
+      disabledDuringSend = [];
+      form.querySelectorAll('input, textarea, select, button').forEach(function (control) {
+        if (!control.disabled) { control.disabled = true; disabledDuringSend.push(control); }
+      });
+    } else {
+      disabledDuringSend.forEach(function (control) { control.disabled = false; });
+      disabledDuringSend = [];
+    }
+  }
 
   window.wizardAdoptDraft = function (id, purl) { draftId = id; if (purl) previewUrl = purl; };
   window.wizardDiscardDraft = function (id) { /* stale draft simply expires */ };
@@ -74,6 +89,8 @@
     limit: 'That is a lot for one day. Try again a bit later.',
     storage_unavailable: 'Publishing is paused right now. Your draft is safe — try again shortly.',
     payments_offline: 'Payments are being switched on — check back shortly. Your draft is safe.',
+    checkout_confirmation_required: 'The price may have changed. Reload to review it before continuing.',
+    free_publish_conflict: 'Your draft or its price changed. Review it and try again.',
     forbidden: 'This Paigaam is no longer editable here.',
     not_found: 'This draft has wandered off. Reload and start again.',
     too_large: 'That photo is too large — try a smaller one.',
@@ -223,7 +240,7 @@
     }
     paint('');
 
-    function pickFile() { if (!choose.disabled) file.click(); }
+    function pickFile() { if (!choose.disabled && !sending && !published) file.click(); }
     choose.addEventListener('click', pickFile);
     if (f.tapToPick) {
       thumb.classList.add('bf-photo__thumb--pickable');
@@ -235,13 +252,14 @@
         if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); pickFile(); }
       });
     }
-    remove.addEventListener('click', function () { value = ''; paint(''); note.textContent = ''; changed(); });
+    remove.addEventListener('click', function () { if (sending || published || choose.disabled) return; value = ''; paint(''); note.textContent = ''; changed(); });
     file.addEventListener('change', function () {
       var picked = file.files && file.files[0];
       file.value = '';
-      if (!picked) return;
+      if (!picked || sending || published) return;
       setError('');
-      choose.disabled = true;
+      pendingMedia++;
+      choose.disabled = true; remove.disabled = true;
       note.textContent = 'Preparing your ' + mediaName + '…';
       var local = null;
       prepareImage(picked, f.preserveTransparency).then(function (blob) {
@@ -259,7 +277,7 @@
         note.textContent = '';
         setError(MESSAGES[err && err.code] || 'That photo didn’t upload. Check your connection and try again.');
       }).then(function () {
-        choose.disabled = false;
+        pendingMedia--; choose.disabled = false; remove.disabled = false;
         if (local) setTimeout(function () { URL.revokeObjectURL(local); }, 4000);
       });
     });
@@ -299,21 +317,22 @@
       choose.textContent = value ? 'Replace song' : 'Upload a song';
     }
     paint();
-    choose.addEventListener('click', function () { file.click(); });
+    choose.addEventListener('click', function () { if (!sending && !published && !choose.disabled) file.click(); });
     remove.addEventListener('click', function () {
+      if (sending || published || remove.disabled) return;
       value = ''; paint(); note.textContent = ''; changed();
       if (draftId) saveDraft().catch(function () { /* saveDraft shows the error */ });
     });
     file.addEventListener('change', function () {
       var picked = file.files && file.files[0];
       file.value = '';
-      if (!picked) return;
+      if (!picked || sending || published) return;
       setError('');
       if (picked.size > 15 * 1024 * 1024) { setError('That song is too large. Choose a file up to 15 MB.'); return; }
       var match = /\.(mp3|m4a|ogg|wav)$/i.exec(picked.name);
       if (!match) { setError('Choose an MP3, M4A, OGG or WAV audio file.'); return; }
       var mime = { mp3: 'audio/mpeg', m4a: 'audio/mp4', ogg: 'audio/ogg', wav: 'audio/wav' }[match[1].toLowerCase()];
-      choose.disabled = true; remove.disabled = true;
+      pendingMedia++; choose.disabled = true; remove.disabled = true;
       note.textContent = 'Uploading song…';
       ensureDraft().then(function (id) {
         return fetch('/api/' + SLUG + '/upload-audio?id=' + encodeURIComponent(id), {
@@ -330,7 +349,7 @@
         setError(err.code === 'too_large' ? 'That song is too large. Choose a file up to 15 MB.' :
           err.code === 'invalid_audio' ? 'That file is not valid MP3, M4A, OGG or WAV audio.' :
           MESSAGES[err.code] || 'That song didn’t save. Check your connection and try again.');
-      }).then(function () { choose.disabled = false; remove.disabled = false; });
+      }).then(function () { pendingMedia--; choose.disabled = false; remove.disabled = false; });
     });
     return {
       get: function () { return value; },
@@ -628,13 +647,13 @@
 
   form.addEventListener('submit', function (event) {
     event.preventDefault();
-    if (!validateStep(step)) return;
+    if (sending || published || !validateStep(step)) return;
     show(step + 1);
   });
-  backBtn.addEventListener('click', function () { show(step - 1); });
+  backBtn.addEventListener('click', function () { if (!sending && !published) show(step - 1); });
   progress.forEach(function (item, i) {
     item.addEventListener('click', function () {
-      if (i > LAST_STEP) return;
+      if (sending || published || i > LAST_STEP) return;
       if (i <= step) { show(i); return; }
       for (var s = step; s < i; s++) if (!validateStep(s)) { if (s !== step) show(s); validateStep(s); return; }
       show(i);
@@ -764,6 +783,8 @@
 
   if (previewBtn) {
     previewBtn.addEventListener('click', function () {
+      if (sending || published) return;
+      if (pendingMedia) { setError('Please wait for your uploads to finish.'); return; }
       if (!validateAll()) return;
       previewBtn.disabled = true;
       saveDraft().then(function () {
@@ -795,6 +816,10 @@
 
   if (publishBtn) {
     publishBtn.addEventListener('click', function () {
+      if (sending || published) return;
+      if (pendingMedia) { setError('Please wait for your uploads to finish.'); return; }
+      if (!validateAll()) return;
+      clearTimeout(autoTimer); autoTimer = 0; sending = true; lockForSend(true);
       publishBtn.disabled = true;
       say('Publishing…');
       saveDraft() // one tap: the latest typing goes with it
@@ -805,7 +830,7 @@
           showResult(body.url);
         })
         .catch(function (err) {
-          publishBtn.disabled = false;
+          sending = false; lockForSend(false); publishBtn.disabled = false;
           say('');
           setError((window.PaigaamCouponError && window.PaigaamCouponError(err)) || MESSAGES[err.code] || 'Publishing didn’t work. Try again in a moment.');
         });
@@ -813,7 +838,8 @@
   }
 
   function showResult(url) {
-    if (typeof arguments[0] !== 'string' || !/^(https?:\/\/|\/)/.test(arguments[0])) { console.error('bad publish result'); return; } // GUARD
+    if (typeof url !== 'string' || !/^(https?:\/\/|\/)/.test(url)) throw new Error('bad publish result');
+    published = true; sending = false; clearTimeout(autoTimer); autoTimer = 0;
     var wizard = el('wizard');
     var result = el('publishedResult');
     if (wizard) wizard.hidden = true;
@@ -852,8 +878,8 @@
   refreshLivePreview();
 
   /* ---------------- autosave (added): typing pauses 4s → draft saved ---------------- */
-  var autoTimer = 0;
   form.addEventListener('input', function () {
+    if (sending || published) return;
     clearTimeout(autoTimer);
     autoTimer = setTimeout(function () {
       if (typeof saveDraft === 'function' && draftId) { saveDraft().catch(function () {}); }

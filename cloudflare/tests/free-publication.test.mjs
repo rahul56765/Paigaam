@@ -198,7 +198,11 @@ test('store collision is a no-op, and fresh random candidate can then publish wi
 for (const winner of ['free', 'paid']) test(`free publication versus paid checkout: ${winner} wins exclusively`, async t => {
   const env = await fixture(t), data = { name: 'A' }, pg = await createTestInvite(env.DB, FREE, 'owner', data);
   const free = () => store.publishFree(env.DB, pg.id, 'owner', FREE, data, slugFor(FREE, key('a')));
-  const paid = () => store.beginCheckout(env.DB, pg.id, 'owner', 9900, 'INR', data);
+  const paid = () => {
+    // A paid intent can only be created after an authoritative price change.
+    env.DB.raw.prepare('UPDATE templates SET price=9900 WHERE slug=?').run(FREE);
+    return store.beginCheckout(env.DB, pg.id, 'owner', 9900, 'INR', data);
+  };
   const [a, b] = await Promise.all(winner === 'free' ? [free(), paid()] : [paid(), free()]);
   assert.ok(a); assert.equal(b, null);
   const stored = await store.getInvite(env.DB, pg.id);
@@ -368,7 +372,10 @@ test('authoritative price rising after the free quote is checked in the atomic u
 test('a new payment intent racing free publication prevents the free transition', async t => {
   const env = await fixture(t), d = await draft(env), pg = await store.getInvite(env.DB, d.id); let order;
   interceptFreeWrites(env.DB, { async before() {
-    if (!order) order = await store.beginCheckout(env.DB, d.id, pg.owner_hash, 9900, 'INR', pg.customer_data);
+    if (!order) {
+      env.DB.raw.prepare('UPDATE templates SET price=9900 WHERE slug=?').run(FREE);
+      order = await store.beginCheckout(env.DB, d.id, pg.owner_hash, 9900, 'INR', pg.customer_data);
+    }
   } });
   const r = await publish(env, FREE, d); assert.equal(r.status, 409); assert.equal((await r.json()).error, 'free_publish_conflict');
   assert.equal(order.status, 'creating'); assert.equal((await store.getInvite(env.DB, d.id)).status, 'payment_pending');
@@ -456,6 +463,38 @@ test('pre-existing non-free published slugs retain paid replay behavior and cann
   assert.deepEqual(counts(env), { orders: 0, published: 1 });
 });
 
+test('a formerly free builder cannot start paid checkout without explicit paid confirmation', async t => {
+  const env = { ...await fixture(t), ...secrets }, d = await draft(env, FREE);
+  env.DB.raw.prepare('UPDATE templates SET price=9900 WHERE slug=?').run(FREE);
+  const bodies = [
+    {}, { price: 0, amount: 0 }, { checkout_mode: 'paid' },
+    { checkout_mode: 'paid', expected_amount_paise: 0, expected_currency: 'INR' },
+    { checkout_mode: 'paid', expected_amount_paise: '9900', expected_currency: 'INR' },
+    { checkout_mode: 'paid', expected_amount_paise: 9900, expected_currency: 'USD' },
+  ];
+  for (const body of bodies) {
+    const r = await publish(env, FREE, d, body);
+    assert.equal(r.status, 409); assert.equal((await r.json()).error, 'checkout_confirmation_required');
+  }
+  assert.equal((await store.getInvite(env.DB, d.id)).status, 'draft');
+  assert.deepEqual(counts(env), { orders: 0, published: 0 });
+});
+
+test('a paid quote changed before D1 lock cannot create an order or call the gateway', async t => {
+  const env = { ...await fixture(t), ...secrets }, d = await draft(env, PAID), batch = env.DB.batch.bind(env.DB);
+  let interleaved = false;
+  env.DB.batch = async statements => {
+    if (!interleaved && statements[0].sql.includes('INSERT INTO orders')) {
+      interleaved = true; env.DB.raw.prepare('UPDATE templates SET price=19800 WHERE slug=?').run(PAID);
+    }
+    return batch(statements);
+  };
+  const r = await publish(env, PAID, d, { checkout_mode: 'paid', expected_amount_paise: 9900, expected_currency: 'INR' });
+  assert.equal(r.status, 409); assert.equal((await r.json()).error, 'checkout_in_progress');
+  assert.equal(interleaved, true); assert.equal((await store.getInvite(env.DB, d.id)).status, 'draft');
+  assert.deepEqual(counts(env), { orders: 0, published: 0 });
+});
+
 test('paid templates reject client-asserted zero; enabled checkout retains server-side paise and paid lock', async t => {
   let requestedAmount;
   const env = await fixture(t, async (url, options) => {
@@ -468,15 +507,33 @@ test('paid templates reject client-asserted zero; enabled checkout retains serve
   assert.equal(r.status, 503); assert.equal((await r.json()).error, 'payments_offline');
   assert.deepEqual(counts(env), { orders: 0, published: 0 });
   env.network.expected = 1;
-  r = await publish({ ...env, ...secrets }, PAID, d, { price: 0, amount: 0 });
+  r = await publish({ ...env, ...secrets }, PAID, d, { price: 0, amount: 0, checkout_mode: 'paid', expected_amount_paise: 9900, expected_currency: 'INR' });
   assert.equal(r.status, 200, await r.clone().text()); const response = await r.json();
   assert.equal(requestedAmount, 9900); assert.equal(response.amount, 9900); assert.equal(response.razorpay, true);
   const pg = await store.getInvite(env.DB, d.id); assert.equal(pg.status, 'payment_pending'); assert.equal(pg.public_slug, null);
   assert.deepEqual(counts(env), { orders: 1, published: 0 });
   // A price drop and the free flag cannot republish the locked paid intent.
   env.DB.raw.prepare('UPDATE templates SET price=0 WHERE slug=?').run(PAID);
-  r = await publish(env, PAID, d); assert.equal(r.status, 409); assert.equal((await r.json()).error, 'free_publish_conflict');
+  r = await publish(env, PAID, d); assert.equal(r.status, 503); assert.equal((await r.json()).error, 'payments_offline');
   assert.equal((await store.getOrderForInvite(env.DB, d.id)).status, 'pending');
+});
+
+test('paid pending retry binds explicit confirmation to its order even after the catalog price changes', async t => {
+  const env = { ...await fixture(t, async (_url, options) => {
+    const body = JSON.parse(options.body);
+    return Response.json({ id: 'order_retry', amount: body.amount, currency: body.currency });
+  }), ...secrets }, d = await draft(env, PAID);
+  const consent = { checkout_mode: 'paid', expected_amount_paise: 9900, expected_currency: 'INR' };
+  env.network.expected = 1;
+  let r = await publish(env, PAID, d, consent); assert.equal(r.status, 200);
+  const original = await r.json();
+  env.DB.raw.prepare('UPDATE templates SET price=0 WHERE slug=?').run(PAID);
+  r = await publish(env, PAID, d); assert.equal(r.status, 409); assert.equal((await r.json()).error, 'checkout_confirmation_required');
+  r = await publish(env, PAID, d, { ...consent, expected_amount_paise: 0 }); assert.equal(r.status, 409);
+  r = await publish(env, PAID, d, consent); assert.equal(r.status, 200);
+  assert.deepEqual(await r.json(), original);
+  assert.equal((await store.getOrderForInvite(env.DB, d.id)).status, 'pending');
+  assert.equal((await store.getInvite(env.DB, d.id)).status, 'payment_pending');
 });
 
 test('a paid captured webhook still reconciles with free flag on, checkout paused and price now zero', async t => {
@@ -506,7 +563,7 @@ test('a paid captured webhook still reconciles with free flag on, checkout pause
   assert.deepEqual(counts(env), { orders: 1, published: 1 });
 });
 
-test('all zero-price supported family demos publish; unsupported legacy routes and browser controls stay locked', async t => {
+test('all zero-price supported family demos publish; legacy routes stay locked and free builder requires readiness', async t => {
   const env = await fixture(t), free = list.filter(tpl => (tpl.config.price || 0) === 0); let cookie;
   for (const tpl of free) {
     const d = await draft(env, tpl.slug, tpl.config.demo, cookie); cookie = d.cookie;
@@ -517,6 +574,8 @@ test('all zero-price supported family demos publish; unsupported legacy routes a
   assert.deepEqual(counts(env), { orders: 0, published: free.length });
   const unsupported = await worker.fetch(post('/api/maafi/publish', { id: 'a'.repeat(18) }, cookie), env);
   assert.equal(unsupported.status, 404);
-  const page = await worker.fetch(new Request(origin + '/create/' + FREE), env); assert.equal(page.status, 200);
+  let page = await worker.fetch(new Request(origin + '/create/' + FREE), env); assert.equal(page.status, 200);
+  assert.match(await page.text(), /id="publish" class="button publish" aria-describedby="free-publish-hint"/);
+  page = await worker.fetch(new Request(origin + '/create/' + FREE), { ...env, FREE_PUBLISH_ENABLED: 'false' });
   assert.match(await page.text(), /id="publish" class="button publish" disabled/);
 });

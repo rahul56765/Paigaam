@@ -145,7 +145,15 @@ async function handle(request,env) {
     return new Response(request.method==='HEAD'?null:obj.body,{status:partial?206:200,headers});
   }
   m=path.match(/^\/create\/([a-z0-9-]+)$/);
-  if(m&&request.method==='GET') {const t=bySlug(m[1]);if(!t)return unavailable();const live=env.DB?await store.getTemplate(env.DB,t.slug):null;return html(builderPage(t,{price:live?live.price/100:t.config.price||0,listPrice:t.config.list_price||0,baseUrl:origin}));}
+  if(m&&request.method==='GET') {
+    const t=bySlug(m[1]);if(!t)return unavailable();
+    const live=env.DB?await store.getTemplate(env.DB,t.slug):null;
+    // A request parameter or a source-config price can never unlock the UI.
+    // Only a real D1 zero price plus both exact server flags and both storage
+    // bindings authorize the staged free builder. All other states stay locked.
+    const enableFreeBuilder=!!(env.DB&&env.MEDIA&&env.DRAFTS_ENABLED==='true'&&env.FREE_PUBLISH_ENABLED==='true'&&live&&live.price===0);
+    return html(builderPage(t,{price:live?live.price/100:t.config.price||0,listPrice:t.config.list_price||0,baseUrl:origin,enableFreeBuilder}));
+  }
   m=path.match(/^\/([a-z0-9-]+)\/(demo|preview-frame|preview\/([a-f0-9]{18}))$/);
   if(m){const t=bySlug(m[1]);if(t){
     if(m[2]==='demo'&&request.method==='GET')return html(render(t,t.config.demo,origin));
@@ -198,7 +206,7 @@ async function handle(request,env) {
       // Keep the existing paid kill switch; the separate, exact free flag is
       // the only reason to inspect a publish request when checkout is paused.
       if(!checkoutEnabled&&!freeEnabled)throw fail('payments_offline',503);
-      const {id}=await readJSON(request),pg=await owned(env,id,person,t.slug);
+      const body=await readJSON(request),{id}=body,pg=await owned(env,id,person,t.slug);
       if(pg.status==='published') {
         // Price changes must not break a free replay or turn a paid invite into
         // a free one. The replay SELECT binds owner, template and snapshot, and
@@ -217,12 +225,23 @@ async function handle(request,env) {
       if(!checkoutEnabled){live=await quote(env,t);if(live.price!==0)throw fail('payments_offline',503);}
       const data=t.schema.validate(pg.customer_data,{mode:'strict'});await verifyMedia(env,t,pg,data);
       if(!live)live=await quote(env,t);
-      if(live.price===0){
+      let order=await store.getOrderForInvite(env.DB,id);
+      // An existing paid intent wins over the current catalog price. Never
+      // reclassify it as free after a price drop or start a second order.
+      if(order){
+        if(!checkoutEnabled)throw fail('payments_offline',503);
+        if(order.status!=='pending')throw fail('checkout_reconciliation_required',409);
+      }else if(live.price===0){
         if(!freeEnabled)throw fail('free_publish_not_enabled',503);
         return json(result(await publishFree(env,t,pg,person,data),origin));
       }
-      let order=await store.getOrderForInvite(env.DB,id);
-      if(!order){order=await store.beginCheckout(env.DB,id,person.hash,live.price,live.currency,pg.customer_data);if(!order)throw fail('checkout_in_progress',409);
+      // Free views submit only {id}. Explicit paid intent plus the exact
+      // server-owned quote is required before creating or reopening an order,
+      // so a free-to-paid price change cannot silently initiate checkout.
+      const amount=order?order.amount:live.price,currency=order?order.currency:live.currency;
+      if(body.checkout_mode!=='paid'||!Number.isSafeInteger(body.expected_amount_paise)||body.expected_amount_paise!==amount||body.expected_currency!==currency)throw fail('checkout_confirmation_required',409);
+      if(!checkoutEnabled)throw fail('payments_offline',503);
+      if(!order){order=await store.beginCheckout(env.DB,id,person.hash,amount,currency,pg.customer_data);if(!order)throw fail('checkout_in_progress',409);
         const gateway=await payments.razorpayCreateOrder(env,{amount:order.amount,currency:order.currency,receipt:order.id,notes:{paigaam_id:id}});
         order=await store.setGatewayOrder(env.DB,order.id,gateway.id);if(!order)throw fail('checkout_reconciliation_required',409);
       }

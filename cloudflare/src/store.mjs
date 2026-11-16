@@ -162,9 +162,11 @@ export async function getUpload(db, key) {
 /** beginCheckout(db, id, ownerHash, amount, currency, expectedData) -> new creating order|null.
  * expectedData is REQUIRED: the caller-validated customer_data object snapshot.
  * Its json() serialization must exactly equal the persisted JSON; changed data
- * returns null without an order or lock. A single transactional batch inserts
- * only from that owned draft, then locks it. Concurrent/repeated calls return
- * null; they do NOT grant permission to call the gateway again. Recover pending
+ * returns null without an order or lock. The INSERT also rechecks the current
+ * server-owned template amount/currency, preventing a stale quote from being
+ * locked. A single transactional batch inserts only from that owned draft,
+ * then locks it. Concurrent/repeated calls return null; they do NOT grant
+ * permission to call the gateway again. Recover pending
  * UI via getOrderForInvite. Do not automatically unlock a creating intent on
  * network timeout: a gateway order may exist. Reconcile using the local order.id
  * as gateway receipt/key.
@@ -174,8 +176,9 @@ export async function beginCheckout(db, id, ownerHash, amount, currency, expecte
   const orderId = hex18();
   const results = await db.batch([
     stmt(db, `INSERT INTO orders(id,invite_id,amount,currency)
-      SELECT ?,id,?,? FROM invites WHERE id=? AND owner_hash=? AND status='draft' AND customer_data=?`,
-    orderId, money(amount), nonempty(currency, 'currency'), id, ownerHash, expectedJson),
+      SELECT ?,id,?,? FROM invites WHERE id=? AND owner_hash=? AND status='draft' AND customer_data=?
+      AND EXISTS(SELECT 1 FROM templates t WHERE t.slug=invites.template_slug AND t.price=? AND t.currency=?)`,
+    orderId, money(amount), nonempty(currency, 'currency'), id, ownerHash, expectedJson, amount, currency),
     stmt(db, `UPDATE invites SET status='payment_pending',updated_at=${NOW}
       WHERE id=? AND owner_hash=? AND status='draft' AND customer_data=?
       AND EXISTS(SELECT 1 FROM orders WHERE id=? AND invite_id=invites.id)`, id, ownerHash, expectedJson, orderId),
