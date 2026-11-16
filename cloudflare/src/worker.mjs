@@ -2,6 +2,7 @@ import { Buffer } from 'node:buffer';
 import * as store from './store.mjs';
 import * as payments from './payments.mjs';
 import { DRAFT_ADMISSION, UPLOAD_MAX_TOTAL_BYTES } from './admission-policy.mjs';
+import { enforceRequestRate, rateLimiterReady } from './request-rate.mjs';
 import { fail, randomHex, identity, assertOrigin, readJSON, readBytes, json, html } from './security.mjs';
 import { list, bySlug } from './catalog.generated.mjs';
 import { fullCatalog, fullBySlug } from './full-catalog.generated.mjs';
@@ -149,28 +150,47 @@ async function handle(request,env) {
     const t=bySlug(m[1]);if(!t)return unavailable();
     const live=env.DB?await store.getTemplate(env.DB,t.slug):null;
     // A request parameter or a source-config price can never unlock the UI.
-    // Only a real D1 zero price plus both exact server flags and both storage
-    // bindings authorize the staged free builder. All other states stay locked.
-    const enableFreeBuilder=!!(env.DB&&env.MEDIA&&env.DRAFTS_ENABLED==='true'&&env.FREE_PUBLISH_ENABLED==='true'&&live&&live.price===0);
+    // Only a real D1 zero price, both exact flags, storage and limiter
+    // readiness unlock the staged free builder. The mutation still rechecks
+    // admission atomically; no request parameter can unlock this view.
+    const enableFreeBuilder=!!(env.DB&&env.MEDIA&&env.DRAFTS_ENABLED==='true'&&env.FREE_PUBLISH_ENABLED==='true'&&live&&live.price===0&&await rateLimiterReady(env));
     return html(builderPage(t,{price:live?live.price/100:t.config.price||0,listPrice:t.config.list_price||0,baseUrl:origin,enableFreeBuilder}));
   }
   m=path.match(/^\/([a-z0-9-]+)\/(demo|preview-frame|preview\/([a-f0-9]{18}))$/);
   if(m){const t=bySlug(m[1]);if(t){
     if(m[2]==='demo'&&request.method==='GET')return html(render(t,t.config.demo,origin));
-    if(m[2]==='preview-frame'&&['POST','GET'].includes(request.method)){let data={};if(request.method==='POST')data=(await readJSON(request)).customer_data;else{try{data=JSON.parse(u.searchParams.get('d')||'{}');}catch{}}
+    if(m[2]==='preview-frame'&&['POST','GET'].includes(request.method)){
+      // The legacy GET form can render the same expensive page as POST, so
+      // both methods share one admission bucket when customer writes are on.
+      if(env.DRAFTS_ENABLED==='true')await enforceRequestRate(request,env,'preview_post');
+      let data={};
+      if(request.method==='POST')data=(await readJSON(request)).customer_data;
+      else{
+        const raw=u.searchParams.get('d')||'{}';
+        if(new TextEncoder().encode(raw).length>16384)throw fail('too_large',413);
+        try{data=JSON.parse(raw);}catch{}
+      }
       return html(render(t,t.schema.validate(data,{mode:'lenient'}),origin));}
     if(m[3]&&request.method==='GET'){requireStorage(env);const pg=await owned(env,m[3],await identity(request),t.slug);return html(render(t,pg.customer_data,origin));}
   }}
   m=path.match(/^\/api\/([a-z0-9-]+)\/(draft|upload|upload-audio|audio|publish)$/);
   if(m&&request.method==='POST') {
     const t=bySlug(m[1]);if(!t)throw fail('not_found',404);requireDrafts(env);
-    const action=m[2],person=await identity(request,action==='draft');
+    const action=m[2];
     if(action==='draft') {
-      const b=await readJSON(request),data=t.schema.validate(b.customer_data,{mode:'draft'});let pg;
+      // The 64 KiB bounded parse distinguishes create from update. Admission
+      // comes before schema validation, identity, storage or media work.
+      const b=await readJSON(request);
+      await enforceRequestRate(request,env,b.id?'draft_update':'draft_create');
+      const person=await identity(request,true),data=t.schema.validate(b.customer_data,{mode:'draft'});let pg;
       if(b.id){pg=await owned(env,b.id,person,t.slug);await verifyMedia(env,t,pg,data);pg=await store.updateInvite(env.DB,pg.id,person.hash,data);if(!pg)throw fail('draft_locked',409);}
       else{if(refs(t,data).length)throw fail('invalid_upload');await quote(env,t);pg=await store.createInvite(env.DB,t.slug,person.hash,data,DRAFT_ADMISSION);if(!pg)throw fail('limit',429);}
       return json({id:pg.id,previewUrl:`/${t.slug}/preview/${pg.id}`},200,person.cookie?{'Set-Cookie':person.cookie}:{});
     }
+    // All upload aliases share one quota. Publish includes paid intent, free
+    // publication and replay; signed verification/webhooks are separate above.
+    await enforceRequestRate(request,env,action==='publish'?'publish':'upload');
+    const person=await identity(request);
     if(['upload','upload-audio','audio'].includes(action)) {
       const pg=await owned(env,u.searchParams.get('id'),person,t.slug);if(pg.status!=='draft')throw fail('draft_locked',409);
       const isImage=action==='upload', keepsake=!isImage&&action==='audio'&&KEEPSAKE_AUDIO.has(t.slug);
@@ -253,4 +273,4 @@ async function handle(request,env) {
   if(['GET','HEAD'].includes(request.method)&&env.ASSETS){const response=await env.ASSETS.fetch(request);if(response.status!==404)return response;}
   throw fail('not_found',404);
 }
-export default {async fetch(request,env){try{return await handle(request,env);}catch(e){if(!e?.status)console.error('Paigaam request failed');return json({error:e?.status?(e.code||'validation'):'server_error'},e?.status||500);}}};
+export default {async fetch(request,env){try{return await handle(request,env);}catch(e){if(!e?.status)console.error('Paigaam request failed');const headers=e?.status===429&&Number.isSafeInteger(e.retryAfter)?{'Retry-After':String(e.retryAfter)}:{};return json({error:e?.status?(e.code||'validation'):'server_error'},e?.status||500,headers);}}};

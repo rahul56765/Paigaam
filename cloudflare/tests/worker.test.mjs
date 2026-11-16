@@ -2,12 +2,13 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHmac } from 'node:crypto';
 import { D1 } from './d1-shim.mjs';
+import { TEST_IP, TEST_RATE_KEY } from './rate-fixtures.mjs';
 import worker from '../src/worker.mjs';
 import { list,bySlug } from '../src/catalog.generated.mjs';
 import { seedTemplates, getInvite } from '../src/store.mjs';
 const origin='https://preview.example';
-function req(path,body,cookie,headers={}){return new Request(origin+path,{method:body===undefined?'GET':'POST',headers:{...(body===undefined?{}:{'Content-Type':'application/json',Origin:origin}),...(cookie?{Cookie:cookie}:{}),...headers},...(body===undefined?{}:{body:JSON.stringify(body)})});}
-async function fixture(t){const DB=new D1();t.after(()=>DB.raw.close());await seedTemplates(DB,list.map(x=>({slug:x.slug,name:x.config.name,price:Math.round((x.config.price||0)*100),config:x.config,currency:'INR'})));return {DB,MEDIA:{head:async()=>null},DRAFTS_ENABLED:'true'};}
+function req(path,body,cookie,headers={}){return new Request(origin+path,{method:body===undefined?'GET':'POST',headers:{...(body===undefined?{}:{'Content-Type':'application/json',Origin:origin,'CF-Connecting-IP':TEST_IP}),...(cookie?{Cookie:cookie}:{}),...headers},...(body===undefined?{}:{body:JSON.stringify(body)})});}
+async function fixture(t){const DB=new D1();t.after(()=>DB.raw.close());await seedTemplates(DB,list.map(x=>({slug:x.slug,name:x.config.name,price:Math.round((x.config.price||0)*100),config:x.config,currency:'INR'})));return {DB,MEDIA:{head:async()=>null},DRAFTS_ENABLED:'true',RATE_LIMIT_HMAC_KEY:TEST_RATE_KEY};}
 async function draft(env,slug='vaidehi'){const r=await worker.fetch(req('/api/'+slug+'/draft',{customer_data:bySlug(slug).config.demo}),env);assert.equal(r.status,200);return {...await r.json(),cookie:r.headers.get('set-cookie').split(';')[0]};}
 test('33 original demos, builder pages and previews render without database',async()=>{for(const t of list){for(const path of ['/'+t.slug+'/demo','/create/'+t.slug,'/templates/'+t.slug]){const r=await worker.fetch(req(path),{});assert.equal(r.status,200,path);assert.match(r.headers.get('content-type'),/text\/html/);assert.ok((await r.text()).length>500);}}});
 test('staging defaults block customer writes and checkout with no credentials',async t=>{const env=await fixture(t);let r=await worker.fetch(req('/api/vaidehi/draft',{customer_data:{}}),{...env,DRAFTS_ENABLED:'false'});assert.equal(r.status,503);const d=await draft(env);r=await worker.fetch(req('/api/vaidehi/publish',{id:d.id},d.cookie),env);assert.equal(r.status,503);assert.equal((await r.json()).error,'payments_offline');assert.equal((await getInvite(env.DB,d.id)).status,'draft');});

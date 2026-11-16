@@ -11,9 +11,10 @@ class Statement {
   }
 }
 export class D1 {
-  constructor() {
+  constructor({ rateSchema = true } = {}) {
     this.raw = new DatabaseSync(':memory:');
     this.raw.exec(readFileSync(new URL('../migrations/0001_initial.sql', import.meta.url), 'utf8'));
+    if (rateSchema) this.raw.exec(readFileSync(new URL('../migrations/0006_request_rate.sql', import.meta.url), 'utf8'));
   }
   prepare(sql) { return new Statement(this, sql); }
   async batch(statements) {

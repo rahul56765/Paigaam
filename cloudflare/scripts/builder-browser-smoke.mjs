@@ -2,7 +2,8 @@ import assert from 'node:assert/strict';
 import { pathToFileURL, fileURLToPath } from 'node:url';
 
 // Optional local-only browser test: supply a local Puppeteer module entry and a
-// Chromium binary via environment. No dependencies are added to the app build.
+// Chromium binary via environment. Requires 0006 and a synthetic local-only
+// rate key. No dependencies are added to the app build.
 const puppeteerEntry = process.env.PUPPETEER_CORE_MODULE;
 const chromePath = process.env.CHROMIUM_EXECUTABLE;
 if (!puppeteerEntry || !chromePath) throw new Error('Set PUPPETEER_CORE_MODULE and CHROMIUM_EXECUTABLE to installed local paths');
@@ -23,6 +24,7 @@ try {
   ]) {
     const context=await browser.createBrowserContext();
     const page=await context.newPage(); await page.setViewport(viewport);
+    await page.setExtraHTTPHeaders({'cf-connecting-ip':'203.0.113.212'});
     const errors=[], localFailures=[], payments=[], apiResponses=[], apiRequests=[];
     let heldUpload, heldPublish, uploadSeen, publishSeen;
     const uploadWait=new Promise(resolve=>{uploadSeen=resolve;}),publishWait=new Promise(resolve=>{publishSeen=resolve;});

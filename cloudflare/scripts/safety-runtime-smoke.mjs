@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 // LOCAL-ONLY acceptance smoke for safety PR #85. It creates synthetic test
 // drafts and media in a fresh Miniflare D1/R2 state. It never contacts a remote
-// Worker, production storage, Railway, or a payment gateway.
+// Worker, production storage, Railway, or a payment gateway. Requires 0006
+// and a synthetic RATE_LIMIT_HMAC_KEY in the isolated local runtime.
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { bySlug } from '../src/catalog.generated.mjs';
@@ -18,7 +19,7 @@ assert.equal(state.legacyDataImported, false);
 const cookies = new Map();
 async function draft(slug) {
   const response = await fetch(`${base}/api/${slug}/draft`, {
-    method: 'POST', headers: { Origin: base, 'Content-Type': 'application/json' },
+    method: 'POST', headers: { Origin: base, 'CF-Connecting-IP': '203.0.113.210', 'Content-Type': 'application/json' },
     body: JSON.stringify({ customer_data: bySlug(slug).config.demo }),
   });
   assert.equal(response.status, 200, await response.clone().text());
@@ -28,12 +29,12 @@ async function draft(slug) {
 }
 async function upload(d, bytes, action, type) {
   return fetch(`${base}/api/${d.slug}/${action}?id=${d.id}`, {
-    method: 'POST', headers: { Origin: base, Cookie: d.cookie, 'Content-Type': type }, body: bytes,
+    method: 'POST', headers: { Origin: base, Cookie: d.cookie, 'CF-Connecting-IP': '203.0.113.210', 'Content-Type': type }, body: bytes,
   });
 }
 async function save(d, data) {
   return fetch(`${base}/api/${d.slug}/draft`, {
-    method: 'POST', headers: { Origin: base, Cookie: d.cookie, 'Content-Type': 'application/json' },
+    method: 'POST', headers: { Origin: base, Cookie: d.cookie, 'CF-Connecting-IP': '203.0.113.210', 'Content-Type': 'application/json' },
     body: JSON.stringify({ id: d.id, customer_data: data }),
   });
 }
@@ -84,7 +85,7 @@ for (let i = 0; i < 9; i++) {
 let r = await upload(free, audio, 'upload-audio', 'audio/wav');
 assert.equal(r.status, 200, await r.clone().text());
 r = await fetch(`${base}/api/vaidehi/publish`, {
-  method: 'POST', headers: { Origin: base, Cookie: free.cookie, 'Content-Type': 'application/json' }, body: JSON.stringify({ id: free.id }),
+  method: 'POST', headers: { Origin: base, Cookie: free.cookie, 'CF-Connecting-IP': '203.0.113.210', 'Content-Type': 'application/json' }, body: JSON.stringify({ id: free.id }),
 });
 assert.equal(r.status, 503); assert.equal((await r.json()).error, 'payments_offline');
 console.log(JSON.stringify({

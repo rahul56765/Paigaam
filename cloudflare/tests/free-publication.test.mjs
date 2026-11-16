@@ -6,6 +6,7 @@ import worker from '../src/worker.mjs';
 import { list, bySlug } from '../src/catalog.generated.mjs';
 import * as store from '../src/store.mjs';
 import { D1 } from './d1-shim.mjs';
+import { TEST_IP, TEST_RATE_KEY } from './rate-fixtures.mjs';
 
 // All D1/R2 state is in-memory. Any unexpected global fetch is trapped; the
 // two explicit paid-flow tests use local mocked responses, never the network.
@@ -20,12 +21,12 @@ const secrets = {
 };
 function post(path, data, cookie, headers = {}) {
   return new Request(origin + path, { method: 'POST', headers: {
-    Origin: origin, 'Content-Type': 'application/json', ...(cookie ? { Cookie: cookie } : {}), ...headers,
+    Origin: origin, 'CF-Connecting-IP': TEST_IP, 'Content-Type': 'application/json', ...(cookie ? { Cookie: cookie } : {}), ...headers,
   }, body: JSON.stringify(data) });
 }
 function mediaRequest(slug, id, cookie, bytes, mime, action = 'upload') {
   return new Request(`${origin}/api/${slug}/${action}?id=${id}`, { method: 'POST', headers: {
-    Origin: origin, Cookie: cookie, 'Content-Type': mime,
+    Origin: origin, Cookie: cookie, 'CF-Connecting-IP': TEST_IP, 'Content-Type': mime,
   }, body: bytes });
 }
 function memoryR2() {
@@ -50,7 +51,7 @@ async function fixture(t, fetchImpl) {
     throw new Error('Unexpected external network request');
   });
   t.after(() => assert.equal(network.calls, network.expected, 'no unmocked network calls'));
-  return { DB, MEDIA: memoryR2(), DRAFTS_ENABLED: 'true', FREE_PUBLISH_ENABLED: 'true', network };
+  return { DB, MEDIA: memoryR2(), DRAFTS_ENABLED: 'true', FREE_PUBLISH_ENABLED: 'true', RATE_LIMIT_HMAC_KEY: TEST_RATE_KEY, network };
 }
 async function draft(env, slug = FREE, data = bySlug(slug).config.demo, cookie) {
   const r = await worker.fetch(post(`/api/${slug}/draft`, { customer_data: data }, cookie), env);
