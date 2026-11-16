@@ -10,6 +10,10 @@
  * D1 batch() MUST be transactional (Cloudflare's contract), including on error.
  */
 const NOW = "strftime('%Y-%m-%dT%H:%M:%fZ','now')";
+// invites.created_at uses this same UTC ISO-8601 format, including milliseconds.
+// Using SQLite's datetime() here would introduce a space instead of 'T' and
+// make a lexical comparison against created_at incorrect on the boundary date.
+const DAY_AGO = "strftime('%Y-%m-%dT%H:%M:%fZ','now','-24 hours')";
 const stmt = (db, sql, ...args) => db.prepare(sql).bind(...args);
 const decode = row => row ? Object.fromEntries(Object.entries(row).map(([k, v]) =>
   [k, (k === 'config' || k === 'customer_data') && typeof v === 'string' ? JSON.parse(v) : v])) : null;
@@ -20,6 +24,10 @@ function nonempty(value, name) {
 }
 function money(value) {
   if (!Number.isSafeInteger(value) || value < 0) throw new TypeError('amount must be nonnegative integer minor units');
+  return value;
+}
+function positiveSafeInteger(value, name) {
+  if (!Number.isSafeInteger(value) || value < 1) throw new TypeError(`${name} must be a positive safe integer`);
   return value;
 }
 function json(value) {
@@ -52,12 +60,24 @@ export async function getInvite(db, id) {
 export async function getInviteByPublicSlug(db, publicSlug) {
   return decode(await stmt(db, "SELECT * FROM invites WHERE public_slug=? AND status='published'", publicSlug).first());
 }
-/** createInvite(db, slug, ownerHash, data) -> invite. IDs are 18 random hex characters. */
-export async function createInvite(db, slug, ownerHash, data) {
-  const id = hex18();
-  await stmt(db, 'INSERT INTO invites(id,template_slug,owner_hash,customer_data) VALUES(?,?,?,?)',
-    id, nonempty(slug, 'slug'), nonempty(ownerHash, 'ownerHash'), json(data)).run();
-  return getInvite(db, id);
+/** createInvite(db, slug, ownerHash, data, {maxPerOwnerTemplate24h,maxGlobal24h}) -> invite|null.
+ * Both limits are REQUIRED positive safe integers chosen by server policy, never
+ * by a request. Counts include every status and the cutoff instant itself. A
+ * single conditional INSERT makes both rolling 24-hour checks atomic. A null
+ * result means admission was denied without revealing which quota was hit.
+ * IDs are 18 random hex characters; returned rows are internal (owner_hash).
+ */
+export async function createInvite(db, slug, ownerHash, data, { maxPerOwnerTemplate24h, maxGlobal24h } = {}) {
+  positiveSafeInteger(maxPerOwnerTemplate24h, 'maxPerOwnerTemplate24h');
+  positiveSafeInteger(maxGlobal24h, 'maxGlobal24h');
+  const templateSlug = nonempty(slug, 'slug'), owner = nonempty(ownerHash, 'ownerHash');
+  return decode(await stmt(db, `INSERT INTO invites(id,template_slug,owner_hash,customer_data)
+    SELECT ?,?,?,?
+    WHERE (SELECT count(*) FROM invites WHERE owner_hash=? AND template_slug=?
+      AND created_at>=${DAY_AGO}) < ?
+      AND (SELECT count(*) FROM invites WHERE created_at>=${DAY_AGO}) < ?
+    RETURNING *`, hex18(), templateSlug, owner, json(data), owner, templateSlug,
+  maxPerOwnerTemplate24h, maxGlobal24h).first());
 }
 /** updateInvite(db, id, ownerHash, data) -> updated invite|null; replaces JSON only while owned draft. */
 export async function updateInvite(db, id, ownerHash, data) {
@@ -68,24 +88,28 @@ export async function updateInvite(db, id, ownerHash, data) {
 export async function listUploads(db, id) {
   return (await stmt(db, 'SELECT * FROM uploads WHERE invite_id=? ORDER BY created_at,key', id).all()).results;
 }
-/** addUpload(db, {key,invite_id,mime,size}, {kind,maxCount}) -> upload|null.
- * Required limits: kind is image/audio; maxCount is a positive safe integer.
- * One conditional INSERT enforces the draft guard and per-invite/per-kind cap.
+/** addUpload(db, {key,invite_id,mime,size}, {kind,maxCount,maxTotalBytes}) -> upload|null.
+ * Required server-owned limits: kind is image/audio; maxCount and maxTotalBytes
+ * are positive safe integers, never request-supplied. One conditional INSERT
+ * enforces the draft, per-invite/per-kind, and account-wide committed-byte caps.
  * Caller must authorize the invite before writing R2; delete R2 object on null/error.
  */
-export async function addUpload(db, record, { kind, maxCount } = {}) {
+export async function addUpload(db, record, { kind, maxCount, maxTotalBytes } = {}) {
   const { key, invite_id, mime, size } = record;
   if (kind !== 'image' && kind !== 'audio') throw new TypeError('kind must be image or audio');
-  if (!Number.isSafeInteger(maxCount) || maxCount < 1) throw new TypeError('maxCount must be a positive safe integer');
+  positiveSafeInteger(maxCount, 'maxCount');
+  positiveSafeInteger(maxTotalBytes, 'maxTotalBytes');
   nonempty(mime, 'mime');
   const matchesKind = kind === 'image' ? /^image\/[^\s;/]+$/.test(mime)
     : /^audio\/[^\s;/]+$/.test(mime) || mime === 'application/ogg';
   if (!matchesKind) throw new TypeError('mime must match upload kind');
   const mimeFilter = kind === 'image' ? "mime LIKE 'image/%'" : "(mime LIKE 'audio/%' OR mime='application/ogg')";
+  const bytes = money(size);
   return await stmt(db, `INSERT INTO uploads(key,invite_id,mime,size)
     SELECT ?,id,?,? FROM invites WHERE id=? AND status='draft'
-      AND (SELECT count(*) FROM uploads WHERE invite_id=invites.id AND ${mimeFilter}) < ? RETURNING *`,
-  nonempty(key, 'key'), mime, money(size), invite_id, maxCount).first();
+      AND (SELECT count(*) FROM uploads WHERE invite_id=invites.id AND ${mimeFilter}) < ?
+      AND (SELECT COALESCE(SUM(size),0) FROM uploads) + ? <= ? RETURNING *`,
+  nonempty(key, 'key'), mime, bytes, invite_id, maxCount, bytes, maxTotalBytes).first();
 }
 /** getUpload(db, key) -> upload|null. Does not imply public-read permission. */
 export async function getUpload(db, key) {

@@ -223,3 +223,37 @@ acceptance. Only after feature acceptance should production routing be changed.
 An active Cloudflare zone is required for a Worker Custom Domain; the observed
 `paigaam.cc` zone is still pending, so any delegation change also requires the
 owner's explicit approval and a complete DNS inventory preserving Editzy/mail.
+
+## Draft write admission — separate staging branch
+
+The Cloudflare store now requires caller-supplied **server-owned** admission
+limits when creating an invite or committing upload metadata. The provisionally
+selected preview policy is 20 invites per owner/template per rolling 24 hours,
+5,000 invites globally per rolling 24 hours, and 500 MiB of committed invite
+upload metadata. The per-owner and byte-pool values match the original app's
+published limits; the shared 5,000/day figure is a staging guard, not a
+traffic-based production recommendation. Review policy, costs and D1 query
+performance against real usage before enabling customer writes.
+
+Both draft counts include all invite statuses. Their UTC cutoff uses the same
+ISO timestamp format as stored `created_at`. One conditional INSERT applies
+owner/template and shared admission atomically; denial returns a generic 429.
+The existing conditional upload INSERT also checks the shared committed-byte
+budget atomically, alongside draft state and per-kind caps; the R2 object is
+removed if the metadata write is denied. Request bodies cannot set policy
+values. Unrouted Maafi/Saalgirah adapters use the same guard if later enabled.
+
+This is **not** a complete abuse or retention system. A rolling daily ceiling
+is not a lifetime cap, cookies can be rotated, and R2 bytes are temporarily
+written before D1 admission. Edge/IP throttling, total storage inventory,
+orphan recovery, retention/deletion, backups/restore and any additional
+magazine/creator upload systems still need separate implementation and
+acceptance. No existing tables, data, migrations, bindings or feature flags are
+changed by this branch.
+
+Tests use fresh local SQLite/Miniflare databases only. Store tests race separate
+SQLite connections for draft and byte caps. Worker-level tests verify generic
+429 responses, server-owned policy and R2 compensation. A local Workerd test
+raced 24 requests from one owner: 19 new drafts succeeded and five returned
+429 after an initial draft, for exactly 20 total. No remote data or real
+payments were involved.
