@@ -43,6 +43,24 @@ async function verifyMedia(env,t,pg,data) {
 function render(t,data,origin,preview=true) { return t.render({customer_data:data},{baseUrl:origin,isPreview:preview}); }
 async function quote(env,t) { const live = await store.getTemplate(env.DB,t.slug); if (!live) throw fail('template_unavailable',503); return live; }
 function result(pg,origin) { return {slug:pg.public_slug,url:origin+'/p/'+pg.public_slug}; }
+async function publishFree(env,t,pg,person,data) {
+  // Never publish an unvalidated or differently normalized snapshot. Drafts
+  // saved by this Worker are already canonical; older/changed data fails closed.
+  if (JSON.stringify(data)!==JSON.stringify(pg.customer_data)) throw fail('validation');
+  for (let attempt=0;attempt<5;attempt++) {
+    const slug=t.slug+'-free-'+randomHex(24);
+    const published=await store.publishFree(env.DB,pg.id,person.hash,t.slug,data,slug);
+    if (published) return published;
+    // A concurrent same-snapshot publication is a replay, not a second write.
+    // A changed snapshot, different owner/template, or any live order is denied.
+    const replay=await store.getFreePublishedInvite(env.DB,pg.id,person.hash,t.slug,data);
+    if (replay) return replay;
+    // Only an actual collision merits a bounded retry. All other failed guards
+    // (including a concurrent autosave or price change) are a conflict.
+    if (!await store.getInviteByPublicSlug(env.DB,slug)) throw fail('free_publish_conflict',409);
+  }
+  throw fail('slug_unavailable',503);
+}
 async function capture(env,order,paymentId) {
   const p = await payments.fetchPayment(env,paymentId);
   if (!payments.validateCapturedPayment(p,{orderId:order.gateway_order_id,amount:order.amount,currency:order.currency})) throw fail('payment_mismatch',400);
@@ -176,10 +194,33 @@ async function handle(request,env) {
       return json({url:'/bfday/uploads/'+key});
     }
     if(action==='publish') {
-      if(!payments.checkoutMode(env).enabled)throw fail('payments_offline',503);
-      const {id}=await readJSON(request),pg=await owned(env,id,person,t.slug);if(pg.status==='published')return json(result(pg,origin));
-      const data=t.schema.validate(pg.customer_data,{mode:'strict'});await verifyMedia(env,t,pg,data);const live=await quote(env,t);
-      if(live.price===0)throw fail('free_publish_not_enabled',503);
+      const checkoutEnabled=payments.checkoutMode(env).enabled,freeEnabled=env.FREE_PUBLISH_ENABLED==='true';
+      // Keep the existing paid kill switch; the separate, exact free flag is
+      // the only reason to inspect a publish request when checkout is paused.
+      if(!checkoutEnabled&&!freeEnabled)throw fail('payments_offline',503);
+      const {id}=await readJSON(request),pg=await owned(env,id,person,t.slug);
+      if(pg.status==='published') {
+        // Price changes must not break a free replay or turn a paid invite into
+        // a free one. The replay SELECT binds owner, template and snapshot, and
+        // excludes all active/paid orders. Both free flags still apply.
+        if(freeEnabled){const replay=await store.getFreePublishedInvite(env.DB,id,person.hash,t.slug,pg.customer_data);if(replay)return json(result(replay,origin));}
+        if(!checkoutEnabled)throw fail('payments_offline',503);
+        // Paid publications (including pre-existing non-free slug formats)
+        // retain their original checkout-gated replay. The reserved free slug
+        // namespace cannot be replayed through the paid gate by itself.
+        if(!store.isFreePublicSlug(t.slug,pg.public_slug)||await store.getOrderForInvite(env.DB,id))return json(result(pg,origin));
+        throw fail('free_publish_not_enabled',503);
+      }
+      // With payments paused, reject non-free templates before doing any write;
+      // client-supplied prices or data are never used as the quote/snapshot.
+      let live;
+      if(!checkoutEnabled){live=await quote(env,t);if(live.price!==0)throw fail('payments_offline',503);}
+      const data=t.schema.validate(pg.customer_data,{mode:'strict'});await verifyMedia(env,t,pg,data);
+      if(!live)live=await quote(env,t);
+      if(live.price===0){
+        if(!freeEnabled)throw fail('free_publish_not_enabled',503);
+        return json(result(await publishFree(env,t,pg,person,data),origin));
+      }
       let order=await store.getOrderForInvite(env.DB,id);
       if(!order){order=await store.beginCheckout(env.DB,id,person.hash,live.price,live.currency,pg.customer_data);if(!order)throw fail('checkout_in_progress',409);
         const gateway=await payments.razorpayCreateOrder(env,{amount:order.amount,currency:order.currency,receipt:order.id,notes:{paigaam_id:id}});
