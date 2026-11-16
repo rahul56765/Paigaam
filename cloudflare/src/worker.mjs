@@ -82,10 +82,12 @@ async function handle(request,env) {
     if(!pg)throw fail('not_found',404); const t=bySlug(pg.template_slug),person=await identity(request);
     const isPublic=pg.status==='published'&&t&&refs(t,pg.customer_data).includes('/bfday/uploads/'+m[1]);
     if(!isPublic&&person.hash!==pg.owner_hash)throw fail('not_found',404);
-    const obj=await env.MEDIA.get(m[1],{range:request.headers});if(!obj)throw fail('not_found',404);
+    const requestedRange=request.headers.has('range');
+    const obj=await env.MEDIA.get(m[1],requestedRange?{range:request.headers}:undefined);if(!obj)throw fail('not_found',404);
+    const partial=requestedRange&&obj.range;
     const headers=new Headers({'Content-Type':upload.mime,'Cache-Control':'private,no-store','X-Content-Type-Options':'nosniff','Accept-Ranges':'bytes'});
-    if(obj.range){headers.set('Content-Range',`bytes ${obj.range.offset}-${obj.range.offset+obj.range.length-1}/${obj.size}`);headers.set('Content-Length',String(obj.range.length));}else headers.set('Content-Length',String(obj.size));
-    return new Response(request.method==='HEAD'?null:obj.body,{status:obj.range?206:200,headers});
+    if(partial){headers.set('Content-Range',`bytes ${obj.range.offset}-${obj.range.offset+obj.range.length-1}/${obj.size}`);headers.set('Content-Length',String(obj.range.length));}else headers.set('Content-Length',String(obj.size));
+    return new Response(request.method==='HEAD'?null:obj.body,{status:partial?206:200,headers});
   }
   m=path.match(/^\/create\/([a-z0-9-]+)$/);
   if(m&&request.method==='GET') {const t=bySlug(m[1]);if(!t)return unavailable();const live=env.DB?await store.getTemplate(env.DB,t.slug):null;return html(builderPage(t,{price:live?live.price/100:t.config.price||0,listPrice:t.config.list_price||0,baseUrl:origin}));}

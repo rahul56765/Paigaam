@@ -8,5 +8,8 @@
     "dev": "wrangler dev",
     "deploy": "npm run build && wrangler deploy"
   },
-  "devDependencies": { "esbuild": "0.25.12", "wrangler": "4.50.0" }
+  "devDependencies": {
+    "esbuild": "0.25.12",
+    "wrangler": "4.162.0"
+  }
 }

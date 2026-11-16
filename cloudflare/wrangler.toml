@@ -15,13 +15,13 @@ DRAFTS_ENABLED = "false"
 CHECKOUT_ENABLED = "false"
 ALLOW_LIVE_PAYMENTS = "false"
 
-# Add ONLY newly created isolated staging bindings after recording their actual IDs.
-# [[d1_databases]]
-# binding = "DB"
-# database_name = "paigaam-fresh-preview"
-# database_id = "<returned-by-Cloudflare>"
-# migrations_dir = "migrations"
-#
-# [[r2_buckets]]
-# binding = "MEDIA"
-# bucket_name = "<new-isolated-preview-bucket>"
+# New, isolated preview storage. Contains no Railway customer records.
+[[d1_databases]]
+binding = "DB"
+database_name = "paigaam-fresh-preview"
+database_id = "3ed9e70b-f4b3-4291-bffe-3047c8b91ab6"
+migrations_dir = "migrations"
+
+[[r2_buckets]]
+binding = "MEDIA"
+bucket_name = "paigaam-fresh-preview-media"

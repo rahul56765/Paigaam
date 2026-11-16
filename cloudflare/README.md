@@ -98,14 +98,17 @@ The Fetch API Worker router now connects the 33-template catalog, original
 builders, stateless previews, owner-isolated drafts, R2 upload authorization,
 QR generation, checkout intents and idempotent payment settlement.
 
-Verified locally: `node --test cloudflare/tests/*.test.mjs` passes 30 tests,
+Verified locally: `node --test cloudflare/tests/*.test.mjs` passes 31 tests,
 including rendering all 33 demos/builders/details and a mocked paid order →
 capture → publication → duplicate verification flow. The D1 tests use an
 in-memory SQLite adapter and R2/gateway calls are mocked. This is NOT an actual
 Cloudflare-runtime, R2-persistence, browser, payment-gateway or restore test.
 
 Safe defaults in `wrangler.toml`: customer writes AND checkout are disabled.
-No actual D1 database ID, bucket binding or gateway secrets have been provisioned.
+An isolated D1 `paigaam-fresh-preview` and private R2 bucket
+`paigaam-fresh-preview-media` have been created in the connected account. The new
+D1 contains the schema and 33 insert-only catalog entries; zero customer invites,
+upload records or orders. No gateway secrets have been provisioned.
 `/status` reports non-secret preview state. No domain or Railway cutover is made.
 No admin is ported yet; `/admin` explicitly returns unavailable. Free-template
 publication intentionally fails closed pending a reviewed atomic publish route.
@@ -117,7 +120,41 @@ production admin, non-family features, UI availability notices, CPU benchmarks
 and real Workers integration testing are remaining launch gates. Do not enable
 `DRAFTS_ENABLED`, live payments or production DNS before these are addressed.
 
-The dependency install currently receives HTTP 403 from registry.npmjs.org;
-network-access approval was requested. A Wrangler dry run and remote deployment
-are blocked until the dependencies can be installed. Do not substitute another
-registry without the owner's permission.
+Network access was approved and dependency installation succeeded. Wrangler
+4.162.0 bundles successfully: approximately 896 KiB raw / 229 KiB gzip. Its
+local Workers runtime served 449 page/asset requests with zero errors. A separate
+LOCAL-ONLY test verified real Miniflare D1 draft persistence and R2 upload/read,
+owner isolation, byte equality and disabled checkout. It found and fixed a full-
+file versus partial-range response bug, with regression coverage. Real gateway,
+browser/mobile, remote R2 durability and backup restoration are still unverified.
+
+The connected MCP authenticates ordinary Cloudflare API calls, but does not expose
+the per-request Authorization override required for static-asset upload JWTs.
+No asset upload session was created and no partial/incomplete Worker was published.
+Use Cloudflare Git builds for a supported deployment without sharing an API key:
+import `rahul56765/Paigaam`, branch `feat/cloudflare-fresh-start`, Worker name
+`paigaam-fresh-preview`, root directory `cloudflare`, build command `npm run build`,
+deploy command `npx wrangler deploy`. This is a separate preview Worker, NOT a
+production-domain change. Do not merge into main or attach paigaam.cc yet.
+See https://developers.cloudflare.com/workers/ci-cd/builds/ .
+
+Local reproducible checks:
+```sh
+npm ci
+npm run build
+node scripts/seed.mjs
+npx wrangler d1 execute DB --local --file migrations/0001_initial.sql
+npx wrangler d1 execute DB --local --file seed.generated.sql
+npm test
+npx wrangler deploy --dry-run --outdir dist
+# Terminal 1: default read-only preview
+npx wrangler dev --local
+# Terminal 2:
+node scripts/runtime-smoke.mjs
+# For the LOCAL storage smoke only, restart local dev with:
+# npx wrangler dev --local --var DRAFTS_ENABLED:true
+# node scripts/storage-smoke.mjs
+```
+Only apply the initial schema once per database; do not reapply the raw schema
+file or reset a database that already has data. The remote preview schema/catalog
+have already been initialized; do not reapply them during Git deployment.
