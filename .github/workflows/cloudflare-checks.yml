@@ -1,0 +1,43 @@
+name: Cloudflare migration checks
+on:
+  push:
+    branches: [ci/cloudflare-runtime-20261117]
+  pull_request:
+    paths:
+      - 'cloudflare/**'
+      - 'public/bfday/**'
+      - 'public/love-letter/**'
+      - 'public/anniversary-blue/**'
+      - '.github/workflows/cloudflare-checks.yml'
+permissions:
+  contents: read
+jobs:
+  cloudflare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install original asset preparation dependencies
+        run: npm ci
+      - name: Install pinned Cloudflare tooling
+        working-directory: cloudflare
+        run: npm ci
+      - name: Build static assets
+        working-directory: cloudflare
+        run: npm run build
+      - name: Test Cloudflare app
+        working-directory: cloudflare
+        run: npm test
+      - name: Test original editor compatibility
+        run: node --test tests/bfday-love-letter-editor.test.js tests/bfday-love-letter-revision.test.js tests/bfday-sita-kalyanam-editor.test.js
+      - name: Verify Worker packaging without deployment
+        working-directory: cloudflare
+        run: npx wrangler deploy --dry-run --outdir dist-ci
+      - name: Check real local Workers runtime with disposable storage
+        working-directory: cloudflare
+        run: node scripts/ci-runtime-smoke.mjs
