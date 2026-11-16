@@ -59,6 +59,7 @@ async function wizard(t,env) {
   // Original UI and field IDs. Paid scripts are excluded from this free view.
   let page=t.builder({price:0,listPrice:0});
   page=page.replace(/<script[^>]+src="\/js\/(?:paigaam-pay|creator-coupon|welcome-back)\.js[^>]*><\/script>\s*/g,'');
+  page=page.replace(/<link[^>]+href="\/css\/creator-coupon\.css[^"]*"[^>]*>/g,'');
   page=page.replace(/<section class="pc-inline-checkout[\s\S]*?<\/section>/g,'');
   return page.replace(/(<head\b[^>]*>)/i,'$1<script src="/js/cloudflare-letter-bridge.js?release=20261117"></script>');
 }
@@ -68,7 +69,7 @@ export async function handleLetters(request,env) {
   let t,m,pg;
   // Public reads reuse the original renderer and preserve its per-link slug.
   if(request.method==='GET'&&(m=/^\/p\/([a-z0-9-]+)$/.exec(p))) {
-    if(!env.DB)return null;
+    if(!env.DB||!letters.some(t=>m[1].startsWith(t.slug+'-free-')))return null;
     pg=await store.getInviteByPublicSlug(env.DB,m[1]);t=pg&&find(pg.template_slug);
     return t?html(render(t,pg,origin,false)):null;
   }
