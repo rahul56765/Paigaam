@@ -257,3 +257,33 @@ SQLite connections for draft and byte caps. Worker-level tests verify generic
 raced 24 requests from one owner: 19 new drafts succeeded and five returned
 429 after an initial draft, for exactly 20 total. No remote data or real
 payments were involved.
+
+## Free family publication — separate staging branch
+
+For the 33 supported family templates, a new backend path can publish a
+zero-price invitation without a Razorpay order. It is **fail-closed** unless
+both `DRAFTS_ENABLED` and `FREE_PUBLISH_ENABLED` are exactly `"true"`; the
+second flag is unset in the deployed configuration. The browser builder is
+still locked in this branch. No Worker configuration, production flags or SQL
+migrations are changed.
+
+The handler authenticates the owner and template, strictly validates the saved
+snapshot and checks its R2 media. One conditional D1 update rechecks the exact
+snapshot, current zero price and absence of any creating/pending/paid order,
+then publishes an unpredictable 192-bit slug. Collision retries are bounded.
+Concurrent same-snapshot requests return the same owner-authorized URL; stale
+content, a price change or a competing paid intent fails closed. The free path
+neither creates a gateway order nor needs gateway secrets. R2 validation and D1
+publication cannot be one cross-service transaction; durability/retention and
+orphan handling are still required before launch.
+
+The combined safety, admission and free-publication branch passes **179/179**
+local tests and a Wrangler bundle dry run. Against fresh **local-only** Workerd,
+D1 and R2, `scripts/free-runtime-smoke.mjs` created, published and retrieved
+all 29 supported zero-price demo templates; twelve concurrent requests for one
+draft returned one stable URL. A foreign owner was denied, a paid template
+remained blocked with checkout off, and referenced uploaded audio was privately
+held until publication then read successfully. Local state afterward contained
+31 published synthetic invitations, one paid draft, one upload and **zero
+orders**. These results are not browser, remote-durability, payment-gateway,
+restore, full-feature-parity or production-domain acceptance.

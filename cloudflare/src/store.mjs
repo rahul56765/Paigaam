@@ -84,6 +84,50 @@ export async function updateInvite(db, id, ownerHash, data) {
   return decode(await stmt(db, `UPDATE invites SET customer_data=?,updated_at=${NOW}
     WHERE id=? AND owner_hash=? AND status='draft' RETURNING *`, json(data), id, ownerHash).first());
 }
+/** Reserved free-publication namespace. Paid settlement retains its existing
+ * different slug format; the random suffix is generated only by the Worker. */
+export function isFreePublicSlug(templateSlug, publicSlug) {
+  if (typeof templateSlug !== 'string' || !templateSlug || typeof publicSlug !== 'string') return false;
+  const prefix = templateSlug + '-free-';
+  return publicSlug.startsWith(prefix) && /^[a-f0-9]{48}$/.test(publicSlug.slice(prefix.length));
+}
+/** publishFree(db, id, ownerHash, templateSlug, expectedData, publicSlug) -> invite|null.
+ * The caller must authenticate the owner/template, strictly validate this exact
+ * customer_data snapshot and verify its R2 references BEFORE calling. One D1
+ * statement is the only mutation: it rechecks ownership, draft status, the exact
+ * serialized snapshot, the CURRENT integer zero price, and the absence of any
+ * creating/pending/paid order. The collision predicate makes a taken slug a
+ * harmless no-op; the UNIQUE constraint remains the final authority.
+ *
+ * A null result never authorizes a paid checkout or a new R2 write. The caller
+ * may retry a collision, or check the snapshot-bound replay below; it must fail
+ * closed for stale data, changed prices, or competing payment intents.
+ */
+export async function publishFree(db, id, ownerHash, templateSlug, expectedData, publicSlug) {
+  const expectedJson = json(expectedData);
+  nonempty(publicSlug, 'publicSlug'); nonempty(templateSlug, 'templateSlug');
+  if (!isFreePublicSlug(templateSlug, publicSlug)) throw new TypeError('publicSlug must use the free-publication namespace');
+  return decode(await stmt(db, `UPDATE invites SET status='published',public_slug=?,updated_at=${NOW}
+    WHERE id=? AND owner_hash=? AND template_slug=? AND status='draft' AND customer_data=?
+      AND EXISTS(SELECT 1 FROM templates t WHERE t.slug=invites.template_slug AND typeof(t.price)='integer' AND t.price=0)
+      AND NOT EXISTS(SELECT 1 FROM orders o WHERE o.invite_id=invites.id AND o.status IN ('creating','pending','paid'))
+      AND NOT EXISTS(SELECT 1 FROM invites other WHERE other.public_slug=?) RETURNING *`,
+    nonempty(publicSlug, 'publicSlug'), nonempty(id, 'id'), nonempty(ownerHash, 'ownerHash'),
+    nonempty(templateSlug, 'templateSlug'), expectedJson, publicSlug).first());
+}
+/** getFreePublishedInvite(db, id, ownerHash, templateSlug, expectedData) -> invite|null.
+ * Snapshot-bound, owner/template-bound read-only replay. The reserved slug
+ * namespace and absent active/paid order identify this path without a migration;
+ * a paid invite is not reclassified when the catalog price later becomes zero.
+ * Conversely a free invite stays replayable if the catalog price later changes.
+ */
+export async function getFreePublishedInvite(db, id, ownerHash, templateSlug, expectedData) {
+  const row = await stmt(db, `SELECT * FROM invites WHERE id=? AND owner_hash=? AND template_slug=?
+    AND status='published' AND public_slug IS NOT NULL AND customer_data=?
+    AND NOT EXISTS(SELECT 1 FROM orders o WHERE o.invite_id=invites.id AND o.status IN ('creating','pending','paid'))`,
+  nonempty(id, 'id'), nonempty(ownerHash, 'ownerHash'), nonempty(templateSlug, 'templateSlug'), json(expectedData)).first();
+  return row && isFreePublicSlug(templateSlug, row.public_slug) ? decode(row) : null;
+}
 /** listUploads(db, id) -> upload[]; authorization is the caller's responsibility. */
 export async function listUploads(db, id) {
   return (await stmt(db, 'SELECT * FROM uploads WHERE invite_id=? ORDER BY created_at,key', id).all()).results;
