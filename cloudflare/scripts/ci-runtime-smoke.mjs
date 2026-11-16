@@ -19,7 +19,7 @@ try {
   worker = await unstable_dev('src/worker.mjs', {
     config: 'wrangler.toml', ip: '127.0.0.1', port: 8899, local: true, persistTo: state,
     vars: { DRAFTS_ENABLED: 'true', FREE_PUBLISH_ENABLED: 'true',
-      CHECKOUT_ENABLED: 'false', ALLOW_LIVE_PAYMENTS: 'false',
+      LEGACY_LETTERS_ENABLED: 'true', CHECKOUT_ENABLED: 'false', ALLOW_LIVE_PAYMENTS: 'false',
       RATE_LIMIT_HMAC_KEY: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef' },
     experimental: { disableExperimentalWarning: true },
   });
@@ -31,6 +31,16 @@ try {
     child.on('error', reject); child.on('exit', resolve);
   });
   assert.equal(code, 0, 'local runtime smoke must pass');
+  const legacyCode = await new Promise((resolve, reject) => {
+    const child = spawn(process.execPath, ['scripts/legacy-letters-runtime-smoke.mjs', 'http://127.0.0.1:8899'], { stdio: 'inherit' });
+    child.on('error', reject); child.on('exit', resolve);
+  });
+  assert.equal(legacyCode, 0, 'legacy runtime smoke must pass');
+  const browserCode = await new Promise((resolve, reject) => {
+    const child = spawn(process.execPath, ['scripts/legacy-letters-browser-smoke.mjs', 'http://127.0.0.1:8899'], { stdio: 'inherit' });
+    child.on('error', reject); child.on('exit', resolve);
+  });
+  assert.equal(browserCode, 0, 'original letter browser smoke must pass');
 } finally {
   if (worker) await worker.stop();
   rmSync(state, { recursive: true, force: true });

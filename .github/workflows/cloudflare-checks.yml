@@ -11,9 +11,12 @@ on:
       - '.github/workflows/cloudflare-checks.yml'
 permissions:
   contents: read
+concurrency:
+  group: cloudflare-checks-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   cloudflare:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
@@ -38,6 +41,8 @@ jobs:
       - name: Verify Worker packaging without deployment
         working-directory: cloudflare
         run: npx wrangler deploy --dry-run --outdir dist-ci
+      - name: Install pinned browser for local-only acceptance
+        run: npx playwright install --with-deps chromium
       - name: Check real local Workers runtime with disposable storage
         working-directory: cloudflare
         run: node scripts/ci-runtime-smoke.mjs

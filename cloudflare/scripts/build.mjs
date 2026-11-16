@@ -64,6 +64,9 @@ function copyTree(relative) {
 // family, magazines, or Remotion bundles/media are part of this pilot.
 for (const slug of slugs) copyTree(slug);
 copyTree('bfday');
+require(source('lib/loveAwaitsMedia.js')).ensureLoveAwaitsMedia();
+for(const name of ['maafi','saalgirah','lavender-bloom','valentine-say-yes','love-awaits']) copyTree(name);
+copyTree('js/cloudflare-letter-bridge.js');
 for (const name of ['paigaam.css', 'builder-shell.css']) copyTree('css/' + name);
 for (const name of ['shell.js', 'qr-card.js', 'paigaam-pay.js', 'resume.js']) copyTree('js/' + name);
 for (const name of ['logo-full.png', 'logo-full@2x.png', 'dove.png', 'dove@2x.png', 'favicon-512.png']) copyTree('brand/' + name);

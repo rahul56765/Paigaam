@@ -13,7 +13,6 @@ const STEPS = [
   
   { key: 'who', title: 'Who it’s for' },
   { key: 'words', title: 'The words' },
-  { key: 'review', title: 'Look it over' },
   { key: 'publish', title: 'Send it' },
 ];
 
