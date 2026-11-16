@@ -263,9 +263,10 @@ payments were involved.
 For the 33 supported family templates, a new backend path can publish a
 zero-price invitation without a Razorpay order. It is **fail-closed** unless
 both `DRAFTS_ENABLED` and `FREE_PUBLISH_ENABLED` are exactly `"true"`; the
-second flag is unset in the deployed configuration. The browser builder is
-still locked in this branch. No Worker configuration, production flags or SQL
-migrations are changed.
+second flag is unset in the deployed configuration. The initial backend PR
+left the browser builder locked; a subsequent staged change adds the guarded
+free-builder view described below. No Worker configuration, production flags
+or SQL migrations are changed.
 
 The handler authenticates the owner and template, strictly validates the saved
 snapshot and checks its R2 media. One conditional D1 update rechecks the exact
@@ -287,3 +288,48 @@ held until publication then read successfully. Local state afterward contained
 31 published synthetic invitations, one paid draft, one upload and **zero
 orders**. These results are not browser, remote-durability, payment-gateway,
 restore, full-feature-parity or production-domain acceptance.
+
+## Guarded free builder — separate staging branch
+
+The original free family wizard is now selectable only when the Worker has D1
+and R2 bindings, `DRAFTS_ENABLED` and `FREE_PUBLISH_ENABLED` are both exactly
+`"true"`, and the current server-owned D1 price is integer zero. Query strings,
+source-config defaults, missing rows, missing bindings and nonzero prices cannot
+unlock it. The existing deployment sets neither flag to enable this feature;
+paid builders and checkout remain locked. No live routing or database migration
+is part of this branch.
+
+The shared original family editor now waits for in-flight photo/audio uploads,
+freezes edits during publishing and cancels pending autosaves after publication;
+a failed request releases the controls. This avoids publishing a draft before
+its selected media has arrived. A successful free response still comes from the
+server-validated, snapshot-bound D1 transition described above.
+
+To prevent a free view from silently initiating a paid order if its catalog
+price changes while open, new paid-order creation/reopening now requires an
+explicit `checkout_mode: "paid"`, integer `expected_amount_paise` and matching
+`expected_currency`. The D1 checkout lock atomically rechecks the current
+server quote. A pending order is replayed against its own locked amount, not a
+later catalog price. **The paid browser UI does not yet implement this
+confirmation contract**; do not enable paid checkout until it does and payment
+acceptance/reconciliation are complete. Signed captured-payment reconciliation
+remains independent of new-checkout flags.
+
+Validation: **196/196 Cloudflare tests** and **26/26 original-editor tests**
+pass; static build and Wrangler dry-run pass. Actual sandboxed Chromium against
+fresh local Workerd/D1/R2 verified a free builder at desktop and 390-pixel mobile
+widths, Love Letter at desktop, and Diwali Deep with a deliberately delayed
+photo upload. The latter refused publication until upload completion, disabled
+editing during the publication request and included the photo in the published
+page. All four browser cases had zero local HTTP/JavaScript errors and zero
+payment requests; external browser requests were blocked. The four-second
+autosave window produced no post-publication error. These are synthetic local
+fixtures—not real-customer, remote-durability, payment, backup/restore, or
+comprehensive 29-template browser acceptance.
+
+Optional local browser smoke: supply a locally installed Puppeteer-core module
+entry path through `PUPPETEER_CORE_MODULE`, a sandbox-capable Chromium binary
+through `CHROMIUM_EXECUTABLE`, and run `node scripts/builder-browser-smoke.mjs`
+against the local Worker with the two free-stage flags enabled. The script
+refuses non-loopback HTTP targets and blocks external requests; it does not add
+browser dependencies to the app or deploy pipeline.

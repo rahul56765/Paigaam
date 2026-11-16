@@ -11,7 +11,7 @@ import * as store from '../src/store.mjs';
 // These are deliberately test-only policy values. Routes must supply their own
 // trusted, server-controlled values; the store has no fallback budgets.
 const WIDE_DRAFT_LIMITS = Object.freeze({ maxPerOwnerTemplate24h: 100, maxGlobal24h: 100 });
-const templates = [{ slug: 'rose', name: 'Rose' }, { slug: 'amber', name: 'Amber' }];
+const templates = [{ slug: 'rose', name: 'Rose', price: 1 }, { slug: 'amber', name: 'Amber', price: 1 }];
 const schema = readFileSync(new URL('../migrations/0001_initial.sql', import.meta.url), 'utf8');
 
 async function memoryFixture(t) {

@@ -57,9 +57,11 @@ assert.equal(r.status, 200, await r.clone().text());
 r = await publish(audioDraft); assert.equal(r.status, 200, await r.clone().text());
 r = await fetch(base + media); assert.equal(r.status, 200); assert.equal(r.headers.get('content-type'), 'audio/wav');
 assert.deepEqual(Buffer.from(await r.arrayBuffer()), music);
-// The staged backend is reachable only with local flags; its UI must remain locked.
+// The free builder is unlocked only under the explicit local staging flags.
 r = await fetch(base + '/create/sealed-with-a-kiss'); assert.equal(r.status, 200);
-assert.match(await r.text(), /Publishing unavailable/);
+const builder = await r.text();
+assert.match(builder, /id="publish" class="button publish" aria-describedby="free-publish-hint"/);
+assert.doesNotMatch(builder, /paigaam-pay\.js|pc-inline-checkout/);
 console.log(JSON.stringify({ localOnly: true, checkoutDisabled: true, freeTemplatesPublishedAndRead: published,
   ownerReplayStable: true, concurrentPublishRequests: results.length, concurrentSlugWinners: 1,
-  foreignOwnerRejected: true, paidPublishBlocked: true, publishedAudioVerified: true, builderStillLocked: true }, null, 2));
+  foreignOwnerRejected: true, paidPublishBlocked: true, publishedAudioVerified: true, builderUnlockedUnderLocalFlags: true }, null, 2));

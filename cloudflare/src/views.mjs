@@ -16,11 +16,11 @@ const { doveSVG } = logo;
 const { OCCASIONS, occasionForCategory } = occasions;
 const { bfdayCreatePage } = createPages;
 const PREVIEW_NOTICE = '<aside role="status" style="padding:8px 20px;background:#5b1725;color:#fff;text-align:center;font:12px/1.45 system-ui">Cloudflare preview · Orders and publishing are unavailable. Catalogue is in source order; previous database, custom ordering and invitations have not been imported.</aside>';
-function cleanShell(html) {
+function cleanShell(html, showPreviewNotice = true) {
   return html.replace(/<link[^>]+href="\/css\/creator-coupon\.css[^>]*>\s*/g, '')
     .replace(/<script[^>]+src="\/js\/(?:creator-coupon|welcome-back)\.js[^>]*><\/script>\s*/g, '')
     .replace('</head>', '<meta name="robots" content="noindex,nofollow"></head>')
-    .replace(/(<body\b[^>]*>)/i, '$1' + PREVIEW_NOTICE);
+    .replace(/(<body\b[^>]*>)/i, '$1' + (showPreviewNotice ? PREVIEW_NOTICE : ''));
 }
 function page(title, body, opts) { return cleanShell(layout.page(title, body, opts)); }
 // Same computation as templates/registry.js, without its Node/database imports.
@@ -846,18 +846,48 @@ export function catalogPage(templates) { return originalGalleryPage(templates); 
 export function detailPage(template) { return originalDetailPage(template); }
 export function builderPage(template, baseUrl = '', options = {}) {
   if (baseUrl && typeof baseUrl === 'object') { options = baseUrl; baseUrl = options.baseUrl || ''; }
+  // This is a server-only opt-in: the caller must independently establish DB,
+  // R2/MEDIA, DRAFTS_ENABLED and FREE_PUBLISH_ENABLED readiness, and supply
+  // the authoritative live price. Neither template defaults nor request
+  // parameters are proof of readiness.
+  const freeBuilder = Object.hasOwn(options, 'enableFreeBuilder') && options.enableFreeBuilder === true &&
+    Object.hasOwn(options, 'price') && options.price === 0;
   const t = { ...template, config: { ...template.config } };
-  let html = bfdayCreatePage(t, options);
-  // Do not render a nonfunctional payment form or promise successful publication.
+  // Pin the value used by the original renderer to the exact zero just checked.
+  let html = bfdayCreatePage(t, freeBuilder ? { ...options, price: 0 } : options);
+  // Never expose a payment form or payment scripts on this view.
   html = html.replace(/<section class="pc-inline-checkout[\s\S]*?<\/section>/, '')
-    .replace(/<script[^>]+src="\/js\/paigaam-pay\.js[^>]*><\/script>\s*/g, '')
-    .replace('<h2 tabindex="-1">Ready to send</h2>', '<h2 tabindex="-1">Preview only</h2>')
-    .replace('<p>Publish and share — it takes one tap.</p>', '<p>Publishing is unavailable in this preview.</p>')
-    .replace(/<button type="button" id="publish"[\s\S]*?<\/button>/, '<button type="button" id="publish" class="button publish" disabled aria-disabled="true">Publishing unavailable</button>')
-    .replace(/<p class="hint">(?:Secure payment via Razorpay\.[\s\S]*?|Free\. The link stays live;[\s\S]*?)<\/p>/, '<p class="hint">Drafts, media uploads and checkout are disabled in this preview.</p>');
+    .replace(/<script[^>]+src="\/js\/paigaam-pay\.js[^>]*><\/script>\s*/g, '');
+  if (freeBuilder) {
+    // Keep the original free hint and associate it with the send button.
+    html = html.replace('<button type="button" id="publish" class="button publish" >', '<button type="button" id="publish" class="button publish" aria-describedby="free-publish-hint">')
+      .replace('<p class="hint">Free. The link stays live; only you can edit it before publishing.</p>', '<p class="hint" id="free-publish-hint">Free. The link stays live; only you can edit it before publishing.</p>');
+  } else {
+    // Do not promise successful publication in the default preview.
+    html = html.replace('<h2 tabindex="-1">Ready to send</h2>', '<h2 tabindex="-1">Preview only</h2>')
+      .replace('<p>Publish and share — it takes one tap.</p>', '<p>Publishing is unavailable in this preview.</p>')
+      .replace(/<button type="button" id="publish"[\s\S]*?<\/button>/, '<button type="button" id="publish" class="button publish" disabled aria-disabled="true">Publishing unavailable</button>')
+      .replace(/<p class="hint">(?:Secure payment via Razorpay\.[\s\S]*?|Free\. The link stays live;[\s\S]*?)<\/p>/, '<p class="hint">Drafts, media uploads and checkout are disabled in this preview.</p>');
+  }
   let origin = '';
   try { origin = new URL(baseUrl).origin; } catch { /* relative preview is fine */ }
-  if (origin) html = html.replace(/https:\/\/paigaam\.cc(?=[\/"<])/g, () => esc(origin));
+  if (origin) {
+    // A resumed draft is user data, not a shell URL: leave its JSON unchanged.
+    html = freeBuilder
+      ? html.replace(/(<script type="application\/json" id="wizardBoot">[\s\S]*?<\/script>)|https:\/\/paigaam\.cc(?=[\/"<])/g, (match, boot) => boot || esc(origin))
+      : html.replace(/https:\/\/paigaam\.cc(?=[\/"<])/g, () => esc(origin));
+  }
+  if (freeBuilder && origin) {
+    // The original shell can also have a different BASE_URL. Keep its image
+    // paths, but use the actual serving origin for its share metadata.
+    const shellOrigin = /<meta property="og:url" content="([^"]*)">/.exec(html)?.[1];
+    if (shellOrigin !== undefined) {
+      html = html.replace(/(<meta (?:property="og:(?:url|image)"|name="twitter:image") content=")([^"]*)(")/g,
+        (tag, before, value, after) => value === shellOrigin || value.startsWith(shellOrigin + '/')
+          ? before + esc(origin) + value.slice(shellOrigin.length) + after : tag);
+    }
+  }
+  if (freeBuilder) return cleanShell(html, false);
   // The wizard might enable its publish button when navigating; prevent this even
   // if a stale or browser-restored draft happens to be present.
   const guard = `<script>(function(){function lock(){var b=document.getElementById('publish');if(b){if(!b.disabled)b.disabled=true;b.setAttribute('aria-disabled','true');if(b.textContent!=='Publishing unavailable')b.textContent='Publishing unavailable';}document.querySelectorAll('input[type=file]').forEach(function(f){if(!f.disabled)f.disabled=true;f.title='Uploads are unavailable in this preview';});}document.addEventListener('click',function(e){if(e.target.closest&&e.target.closest('#publish')){e.preventDefault();e.stopImmediatePropagation();}},true);document.addEventListener('DOMContentLoaded',function(){lock();new MutationObserver(lock).observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['disabled']});});})();</script>`;
