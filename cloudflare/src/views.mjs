@@ -15,7 +15,7 @@ const { esc } = layout;
 const { doveSVG } = logo;
 const { OCCASIONS, occasionForCategory } = occasions;
 const { bfdayCreatePage } = createPages;
-const PREVIEW_NOTICE = '<aside role="status" style="padding:8px 20px;background:#5b1725;color:#fff;text-align:center;font:12px/1.45 system-ui">Cloudflare preview · Drafts, media uploads, publishing and payments are unavailable. Existing invitations have not been imported.</aside>';
+const PREVIEW_NOTICE = '<aside role="status" style="padding:8px 20px;background:#5b1725;color:#fff;text-align:center;font:12px/1.45 system-ui">Cloudflare preview · Orders and publishing are unavailable. Catalogue is in source order; previous database, custom ordering and invitations have not been imported.</aside>';
 function cleanShell(html) {
   return html.replace(/<link[^>]+href="\/css\/creator-coupon\.css[^>]*>\s*/g, '')
     .replace(/<script[^>]+src="\/js\/(?:creator-coupon|welcome-back)\.js[^>]*><\/script>\s*/g, '')
@@ -62,6 +62,7 @@ function templateCard(t, opts = {}) {
   const custom = cfg.custom || t.custom;
   const createHref = opts.createHref || `/create/${esc(t.slug)}`;
   const previewHref = opts.previewHref || `/templates/${esc(t.slug)}`;
+  const available = t.supported !== false;
   const free = Number(t.price) === 0;
   const pinfo = priceInfo(t);
   // Search haystack: name, category, description, tags + occasion aliases.
@@ -73,8 +74,8 @@ function templateCard(t, opts = {}) {
   const thumbnail = t.thumbnail_url ? `<img class="tcard__poster" src="${esc(t.thumbnail_url)}" alt="" aria-hidden="true" loading="lazy" style="position:absolute;inset:0;z-index:1;width:100%;height:100%;object-fit:cover" onerror="this.style.display='none'">` : '';
   // Quick-preview payload: rendered into the modal on tap (no navigation).
   const qp = JSON.stringify({
-    slug: t.slug, name: t.name, desc: t.description || '', price: free ? 'FREE' : `\u20B9${t.price}`,
-    thumbnail: t.thumbnail_url || '', bg: theme.bg || '#F4EADD', detail: previewHref, create: createHref, free,
+    slug: t.slug, name: t.name, desc: t.description || '', price: !available ? 'Restoring' : free ? 'FREE' : `\u20B9${t.price}`,
+    thumbnail: t.thumbnail_url || '', bg: theme.bg || '#F4EADD', detail: previewHref, create: available ? createHref : previewHref, free: available && free, ...(available ? {} : { available: false }),
   }).replace(/</g, '\\u003c');
   return `<article class="tcard reveal" data-occasion="${esc(String(t.category).toLowerCase())}" data-price="${esc(Number(t.price))}" data-search="${esc(haystack)}" data-slug="${esc(t.slug)}">
   <a class="tcard__frame${custom ? ' tcard__frame--custom' : ''}" style="background:${esc(theme.bg || '#F4EADD')}" href="${previewHref}" aria-label="See the ${esc(t.name)} Paigaam">
@@ -83,8 +84,8 @@ function templateCard(t, opts = {}) {
     <span class="tcard__name" style="color:${esc(accent)}">${esc(t.name.toUpperCase())}</span>
     <span class="tcard__cat">${esc(t.category)}</span>
     <span class="tcard__badges">
-      ${free ? '<span class="pill pill--free">Free</span>' : ''}
-      ${t.isNew ? '<span class="pill pill--gold">New</span>' : ''}
+      ${!available ? '<span class="pill pill--gold">Restoring</span>' : free ? '<span class="pill pill--free">Free</span>' : ''}
+      ${available && t.isNew ? '<span class="pill pill--gold">New</span>' : ''}
     </span>
     <button type="button" class="tcard__quick" data-quick="${esc(t.slug)}" data-qp="${esc(qp)}" aria-label="Quick preview of the ${esc(t.name)} Paigaam" aria-haspopup="dialog">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M2 12s3.5-6.5 10-6.5S22 12 22 12s-3.5 6.5-10 6.5S2 12 2 12Z"/><circle cx="12" cy="12" r="2.8"/></svg>
@@ -92,12 +93,12 @@ function templateCard(t, opts = {}) {
   </a>
   <div class="tcard__meta">
     <span class="tcard__title">${esc(t.name)}</span>
-    ${free ? '<span class="tcard__price tcard__price--free">FREE</span>' : `<span class="tcard__price">${pinfo.list ? `<s>\u20B9${pinfo.list}</s>` : ''}\u20B9${pinfo.sale}</span>`}
+    ${!available ? '<span class="tcard__price">Restoring</span>' : free ? '<span class="tcard__price tcard__price--free">FREE</span>' : `<span class="tcard__price">${pinfo.list ? `<s>\u20B9${pinfo.list}</s>` : ''}\u20B9${pinfo.sale}</span>`}
   </div>
   <p class="tcard__desc">${esc(t.description || '')}</p>
   <span class="tcard__occ-label">${esc(t.category)}</span>
   <div class="tcard__actions">
-    <a class="tcard__create" href="${createHref}" data-track="template_create_clicked" data-template="${esc(t.slug)}" data-occasion="${esc(String(t.category).toLowerCase())}">Create</a>
+    ${available ? `<a class="tcard__create" href="${createHref}" data-track="template_create_clicked" data-template="${esc(t.slug)}" data-occasion="${esc(String(t.category).toLowerCase())}">Create</a>` : '<span class="tcard__create" aria-disabled="true">Restoring</span>'}
     <a class="tcard__preview-link" href="${previewHref}" data-track="template_viewed" data-template="${esc(t.slug)}">Preview</a>
   </div>
 </article>`;
@@ -214,7 +215,7 @@ function home(templates, opts = {}) {
       <div class="hero__device reveal in" style="transition-delay:150ms" aria-hidden="true">
         <div class="phone">
           <div class="phone__screen">
-            <iframe title="Preview of a Paigaam experience" src="/${esc(featured[0] ? featured[0].slug : 'sealed-with-a-kiss')}/demo" style="width:100%;height:100%;border:0" loading="lazy" scrolling="no" tabindex="-1" sandbox="allow-same-origin allow-scripts"></iframe>
+            <iframe title="Preview of a Paigaam experience" src="/${esc((templates.find(t => t.supported !== false) || { slug: 'sealed-with-a-kiss' }).slug)}/demo" style="width:100%;height:100%;border:0" loading="lazy" scrolling="no" tabindex="-1" sandbox="allow-same-origin allow-scripts"></iframe>
           </div>
         </div>
       </div>
@@ -540,6 +541,7 @@ function gallery(templates, state = {}, opts = {}) {
       qpmPrice.textContent = d.price || '';
       qpmPrice.classList.toggle('qpm__price--free', !!d.free);
       qpmCreate.href = d.create || '#';
+      qpmCreate.hidden = d.available === false;
       qpmCreate.setAttribute('data-template', d.slug || '');
       qpmDetail.href = d.detail || '#';
       // A static poster keeps even the quick-look modal silent; the full
@@ -802,7 +804,7 @@ export function adaptTemplate(template, dbRow = null) {
   return { ...template, slug: template.slug || c.slug, name: dbRow?.name ?? template.name ?? c.name,
     category: template.category ?? c.category, description: template.description ?? c.description ?? '',
     thumbnail_url: template.thumbnail_url ?? c.thumbnail_url ?? '', price, list_price: listPrice,
-    tags: template.tags ?? c.tags ?? [], config: { ...c, custom: false }, custom: false };
+    tags: template.tags ?? c.tags ?? [], config: { ...c }, custom: !!(template.custom ?? c.custom) };
 }
 function adapted(templates, rows) {
   const lookup = rows instanceof Map ? rows : new Map((rows || []).map(row => [row.slug, row]));
@@ -814,7 +816,12 @@ export function originalHomePage(templates, opts = {}) {
   return home(list, { ...opts, ...(trending ? { trending } : {}) });
 }
 export function originalGalleryPage(templates, state = {}, opts = {}) { return gallery(adapted(templates, opts.rows), state, opts); }
-export function originalDetailPage(template, opts = {}) { return templateDetail(adaptTemplate(template, opts.row), opts); }
+export function originalDetailPage(template, opts = {}) {
+  const t = adaptTemplate(template, opts.row);
+  if (t.supported !== false) return templateDetail(t, opts);
+  const preview = t.slug === 'maafi' ? '<iframe title="Maafi original demo" src="/maafi/demo" style="width:100%;height:100%;border:0" loading="lazy"></iframe>' : '<div style="padding:30px;text-align:center">This design’s preview is still being restored.</div>';
+  return page(t.name, `<main><div class="wrap"><div class="detail"><div class="reveal in"><div class="phone"><div class="phone__screen">${preview}</div></div></div><div class="reveal in"><span class="kicker">${esc(t.category)}</span><h1 class="section__title" style="letter-spacing:0.14em">${esc(t.name.toUpperCase())}</h1><p>${esc(t.description)}</p><p role="status">This design’s customizer and ordering are not yet available in this Cloudflare preview.</p><div class="detail__actions"><a class="btn btn--ghost" href="/templates">Back to templates</a></div></div></div></div></main>`, {current:'/templates',description:t.description});
+}
 export function originalOccasionPage(occasion, templates, opts = {}) {
   const occ = typeof occasion === 'string' ? OCCASIONS.find(o => o.slug === occasion) : occasion;
   return occ ? occasionPage(occ, adapted(templates, opts.rows)) : null;

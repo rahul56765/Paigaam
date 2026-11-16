@@ -37,13 +37,25 @@ test('checkout defaults disabled; only exact flags and recognized configured key
     { enabled: false, mode: 'disabled' });
 });
 
-test('disabled and unapproved live credentials cannot make any gateway request', async t => {
+test('disabled and unapproved live credentials cannot create gateway orders', async t => {
   mockFetch(t);
   for (const config of [{}, { ...env, CHECKOUT_ENABLED: 'false' }, { ...env, RAZORPAY_KEY_ID: 'rzp_live_abc' }]) {
     await assert.rejects(razorpayCreateOrder(config, { amount: 100 }), code('razorpay_disabled'));
-    await assert.rejects(fetchPayment(config, 'pay_abc'), code('razorpay_disabled'));
   }
+  await assert.rejects(fetchPayment({}, 'pay_abc'), code('razorpay_disabled'));
   assert.equal(fetch.mock.callCount(), 0);
+});
+
+test('read-only reconciliation fetch works with checkout paused but never creates orders', async t => {
+  const paused = { ...env, CHECKOUT_ENABLED:'false', RAZORPAY_KEY_ID:'rzp_live_abc123' };
+  mockFetch(t, async (url, options) => {
+    assert.equal(url, 'https://api.razorpay.com/v1/payments/pay_abc123');
+    assert.equal(options.method, 'GET'); assert.equal(options.body, undefined);
+    return Response.json(captured);
+  });
+  assert.deepEqual(await fetchPayment(paused, captured.id),captured);
+  await assert.rejects(razorpayCreateOrder(paused,{amount:100}),code('razorpay_disabled'));
+  assert.equal(fetch.mock.callCount(),1);
 });
 
 test('order uses server-side Basic auth, paise, receipt and notes; valid small amount accepted', async t => {

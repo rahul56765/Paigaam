@@ -3,6 +3,7 @@ import * as store from './store.mjs';
 import * as payments from './payments.mjs';
 import { fail, randomHex, identity, assertOrigin, readJSON, readBytes, json, html } from './security.mjs';
 import { list, bySlug } from './catalog.generated.mjs';
+import { fullCatalog, fullBySlug } from './full-catalog.generated.mjs';
 import { originalHomePage, originalGalleryPage, originalDetailPage, originalOccasionPage, originalOccasionsIndex, originalLegalPage, originalContactPage, builderPage } from './views.mjs';
 import occasions from '../../lib/occasions.js';
 import fields from '../../lib/bfday/fields.js';
@@ -48,7 +49,7 @@ async function capture(env,order,paymentId) {
 }
 async function handle(request,env) {
   const u = new URL(request.url), origin=u.origin, path=u.pathname.replace(/\/+$/,'')||'/';
-  if (request.method==='GET' && path==='/status') return json({application:'paigaam-cloudflare-preview',templates:list.length,checkout:payments.checkoutMode(env).mode,video:false,legacyDataImported:false});
+  if (request.method==='GET' && path==='/status') return json({application:'paigaam-cloudflare-preview',templates:fullCatalog.length,portedTemplates:list.length,checkout:payments.checkoutMode(env).mode,video:false,legacyDataImported:false,catalogOrder:'source-seed-not-legacy-db'});
   if (path==='/api/razorpay/webhook' && request.method==='POST') {
     requireStorage(env); const raw = await readBytes(request,262144);
     if (!await payments.verifyWebhookSignature(env,raw,request.headers.get('x-razorpay-signature'))) throw fail('invalid_signature',401);
@@ -66,17 +67,24 @@ async function handle(request,env) {
     await owned(env,order.invite_id,person);
     return json(result(await capture(env,order,b.razorpay_payment_id),origin));
   }
-  if(request.method==='GET'&&path==='/')return html(originalHomePage(list));
+  if(request.method==='GET'&&path==='/')return html(originalHomePage(fullCatalog));
   if(request.method==='GET'&&path==='/templates'){
     const valid=(key,choices,def)=>choices.includes(u.searchParams.get(key))?u.searchParams.get(key):def;
     const state={q:(u.searchParams.get('q')||'').slice(0,200),occasion:valid('occasion',['all',...occasions.OCCASIONS.map(o=>o.slug)],'all'),price:valid('price',['all','free','under','over'],'all'),sort:valid('sort',['newest','popular','price-asc','price-desc'],'newest')};
-    return html(originalGalleryPage(list,state));
+    return html(originalGalleryPage(fullCatalog,state));
   }
-  if(request.method==='GET'&&path==='/occasions')return html(originalOccasionsIndex(list));
+  if(request.method==='GET'&&path==='/occasions')return html(originalOccasionsIndex(fullCatalog));
   if(request.method==='GET'&&path==='/contact')return html(originalContactPage());
   if(request.method==='GET'&&['/privacy','/terms','/refund'].includes(path))return html(originalLegalPage(path.slice(1)));
   let m=path.match(/^\/templates\/([a-z0-9-]+)$/);
-  if(request.method==='GET'&&m){const occasion=occasions.OCCASIONS.find(o=>o.slug===m[1]);if(occasion)return html(originalOccasionPage(occasion,list));const t=bySlug(m[1]);return t?html(originalDetailPage(t,{baseUrl:origin})):unavailable();}
+  if(request.method==='GET'&&m){const occasion=occasions.OCCASIONS.find(o=>o.slug===m[1]);if(occasion)return html(originalOccasionPage(occasion,fullCatalog));const t=fullBySlug(m[1]);return t?html(originalDetailPage(t,{baseUrl:origin})):unavailable();}
+  if(request.method==='GET'&&path==='/maafi/demo'){
+    if(!env.ASSETS)throw fail('not_found',404);
+    const asset=await env.ASSETS.fetch(new Request(new URL('/maafi/demo.data',origin),request));
+    if(!asset.ok)throw fail('not_found',404);
+    const headers=new Headers(asset.headers);headers.set('Content-Type','text/html; charset=utf-8');headers.set('Cache-Control','private, no-store');headers.set('X-Robots-Tag','noindex, nofollow');headers.set('X-Content-Type-Options','nosniff');
+    return new Response(asset.body,{status:asset.status,headers});
+  }
   m=path.match(/^\/template-view\/([a-z0-9-]+)$/);
   if(request.method==='GET'&&m){const t=bySlug(m[1]);return t?html(render(t,t.config.demo,origin,true)):unavailable();}
   if (request.method==='GET' && path==='/api/qr') {

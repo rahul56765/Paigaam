@@ -6,6 +6,8 @@ import vm from 'node:vm';
 import { createHash } from 'node:crypto';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
+import { generate as generateFullCatalog } from './full-catalog.mjs';
+import { buildLegacyDemo } from './legacy-demos.mjs';
 
 const ROOT = fileURLToPath(new URL('../../', import.meta.url));
 const OUT = path.join(ROOT, 'cloudflare/public');
@@ -123,6 +125,22 @@ generated += `\nfunction member(slug, original, schema, renderer) {\n  const con
 for (const [i, slug] of slugs.entries()) generated += `  member(${JSON.stringify(slug)}, config${i}, schema${i}, renderer${i}),\n`;
 generated += `];\nexport const list = templates;\nconst index = new Map(templates.map(t => [t.slug, t]));\nexport const bySlug = slug => index.get(slug) || null;\nexport const getTemplate = bySlug;\nexport const has = slug => index.has(slug);\nexport const errors = [];\nexport function displayName(slug, data = {}) {\n  const t = bySlug(slug);\n  if (!t) return 'You';\n  const id = t.config.displayField || (t.fields.find(f => f.type === 'text' && f.required) || t.fields.find(f => f.type === 'text') || {}).id;\n  return id && typeof data?.[id] === 'string' && data[id].trim() || 'You';\n}\nexport default templates;\n`;
 fs.writeFileSync(source('cloudflare/src/catalog.generated.mjs'), generated);
+generateFullCatalog();
+// Read-only, pinned legacy demo: no routes, customer data or payments are run.
+const maafi = buildLegacyDemo('maafi');
+for (const [url, bytes] of Object.entries(maafi.assets)) {
+  // The original favicon path conflicts with the isolated preview's restored
+  // brand favicon. Keep both without replacing either; only the demo points to
+  // its own original bytes.
+  const relative = url === '/brand/favicon-512.png' ? 'maafi/demo-favicon.png' : url.slice(1);
+  const target = safeFile(relative);
+  if (fs.existsSync(target)) {
+    if (hash(fs.readFileSync(target)) !== hash(bytes)) throw new Error('Legacy demo asset collision: ' + relative);
+  } else write(relative, bytes);
+}
+// A non-.html extension avoids Workers Assets' automatic extension redirects;
+// the Worker explicitly supplies the correct HTML Content-Type for /maafi/demo.
+write('maafi/demo.data', Buffer.from(maafi.html.replaceAll('/brand/favicon-512.png','/maafi/demo-favicon.png')));
 
 // Validate all referenced local files in actual demo HTML, builder HTML and
 // shipped CSS (including artwork and fonts), rather than silently shipping 404s.

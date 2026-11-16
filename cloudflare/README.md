@@ -4,10 +4,10 @@ This is an incremental port, **not feature parity with the Railway application**
 
 ## What is included
 
-- The **33 built-in shared-family templates** listed in `templates/bfday.js`, in their original order. Their original config, schema/validation, render functions, artwork, fonts and browser experiences are reused.
+- The **50 built-in source-catalogue entries**, in fresh-source seed order (not the old Railway database's ordering). The 33 shared-family entries reuse original config, schema/validation, render functions, artwork, fonts and browser experiences. The remaining 17 are visibly marked 'Restoring'; they cannot take orders or be customized yet. Maafi additionally has its exact original read-only demo, built from pinned source and fictional demo data.
 - The original home, dark navigation, gallery/filter and template-detail layouts, adapted from the original Paigaam page components. A compact notice identifies this as a preview, and the original theme and markup remain. DB-driven trending and previously saved Railway thumbnails are not available in this fresh data set.
 - The original `pages/bfdayCreate.js` wizard and immersive builder shell, including template-specific crop/edit tools. Preview-only guard disables photo upload and publication, removes creator-coupon/checkout scripts and uses the preview origin. It does not replace the builder with a generic form.
-- Original collection and detail layouts currently limited to these family members. Published links, uploads, ownership, payment and administrative handlers depend on the separate Worker implementation and its tests; a successful static build alone does not establish end-to-end support.
+- Original collection and detail layouts show all 50 built-in source entries. The 17 unported legacy entries show their metadata, not a claim of functioning customizers. The previous database may also contain studio clones, different prices, custom thumbnails and a different published order. Published links, uploads, ownership, payment and administrative handlers depend on the separate Worker implementation and its tests; a successful static build alone does not establish end-to-end support.
 - Existing **fixed opening clips** for Royal Vivah, Patra Vivah and Divya Vivah. These are ordinary shipped assets, not video generation.
 
 **Unavailable:** classic/non-shared template families (including Maafi, Sawaal, Ganapati, Shaadi Paigaam and Suvarna Vivah), magazines/Canva, creator studio, collaboration, creator referral/coupon campaigns, and Remotion/wedding-video generation. Existing Railway records, sessions and uploads are **not migrated**. Do not advertise these as working features. The build never copies `public/collab`, admin artwork/pages, a data directory, uploaded user content, magazine assets, Remotion dependencies or the large video-generation asset tree.
@@ -99,7 +99,7 @@ The Fetch API Worker router now connects the 33-template catalog, original
 builders, stateless previews, owner-isolated drafts, R2 upload authorization,
 QR generation, checkout intents and idempotent payment settlement.
 
-Verified locally: `node --test cloudflare/tests/*.test.mjs` passes 38 tests, including comparisons of the restored homepage, gallery and template details against the existing page markup,
+Verified locally: `node --test cloudflare/tests/*.test.mjs` passes 68 tests, including comparisons of the restored homepage, gallery and template details against the existing page markup, 50-entry source catalog, original Maafi read-only demo, paused-checkout reconciliation and a fail-closed local admin foundation. The admin foundation is not routed or deployed and cannot be enabled until runtime authentication and full security review; 68 test total includes the unrouted admin tests,
 including rendering all 33 demos/builders/details and a mocked paid order →
 capture → publication → duplicate verification flow. The D1 tests use an
 in-memory SQLite adapter and R2/gateway calls are mocked. This is NOT an actual
@@ -139,7 +139,9 @@ ID `988b991d-4ba7-41cd-bcf5-7c6eb5480f72`, version
 home, Vaidehi demo/builder, logo and builder JS returned 200; status reported 33
 family templates, checkout disabled, video disabled, and no legacy data imported.
 Posting a draft returned 503 drafts_offline; `/admin` returned 503. Existing image
-URLs in the collection returned 200. This is a public preview only, NOT a
+URLs in the collection returned 200. Later work adds the complete 50-entry source
+catalogue and Maafi read-only demo, still with legacy customizers unavailable.
+This is a public preview only, NOT a
 production-domain change; do not merge into main or attach paigaam.cc yet.
 See https://developers.cloudflare.com/workers/ci-cd/builds/ .
 

@@ -78,7 +78,7 @@ test('all builder pages retain original wizard but disable checkout and unsafe a
     assert.match(page, /id="bfForm"/, t.slug);
     assert.match(page, /id="liveFrame"/, t.slug);
     assert.match(page, /id="publish" class="button publish" disabled/, t.slug);
-    assert.match(page, /Drafts, media uploads, publishing and payments are unavailable/, t.slug);
+    assert.match(page, /Orders and publishing are unavailable/, t.slug);
     assert.doesNotMatch(page, /pc-inline-checkout|Secure payment via Razorpay|Checking your total/, t.slug);
     assert.match(page, /input\[type=file\]/, t.slug);
   }

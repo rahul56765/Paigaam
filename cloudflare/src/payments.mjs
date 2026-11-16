@@ -2,9 +2,9 @@
  * Amounts are integer paise. No credentials or upstream error bodies escape.
  * checkoutMode is fail-closed: exact string flags, configured recognized keys.
  * Test keys need CHECKOUT_ENABLED='true'; live keys additionally require
- * ALLOW_LIVE_PAYMENTS='true'. Both gateway operations enforce this gate.
- * Signature verification deliberately remains available while checkout is off,
- * so existing payments/webhooks can still be reconciled safely.
+ * ALLOW_LIVE_PAYMENTS='true'. Creating gateway orders enforces this gate.
+ * Fetching a payment is a read-only operation and remains available with valid
+ * credentials while checkout is off, so captured orders can be reconciled.
  */
 const API = 'https://api.razorpay.com/v1';
 const MAX_RESPONSE_BYTES = 65536;
@@ -69,7 +69,10 @@ async function readJSON(response) {
 }
 
 async function apiCall(env, method, path, body) {
-  if (!checkoutMode(env).enabled) throw failure('razorpay_disabled', 503);
+  const validCredentials = typeof env?.RAZORPAY_KEY_ID === 'string' && KEY_ID.test(env.RAZORPAY_KEY_ID) && secretPresent(env.RAZORPAY_KEY_SECRET);
+  // Read-only payment lookups must keep working after new checkout is paused;
+  // never allow a mutating gateway request unless the checkout gate is enabled.
+  if (!validCredentials || (method !== 'GET' && !checkoutMode(env).enabled)) throw failure('razorpay_disabled', 503);
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 15000);
   try {

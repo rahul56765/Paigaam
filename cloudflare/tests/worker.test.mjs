@@ -23,3 +23,23 @@ test('preview routes restore original home, navigation, filters and family detai
   for(const p of ['/templates/wedding','/templates/birthday','/templates/vaidehi','/occasions','/privacy','/terms','/refund','/contact','/template-view/vaidehi']){r=await worker.fetch(req(p),{});assert.equal(r.status,200,p);}
   r=await worker.fetch(req('/templates?occasion=%3C%2Fscript%3E%3Cscript%3Ealert(1)%3C%2Fscript%3E'),{});body=await r.text();assert.doesNotMatch(body,/<\/script><script>alert\(1\)<\/script>/);
 });
+
+test('signed captured webhook reconciles known pending order while new checkout is paused',async t=>{
+  const store=await import('../src/store.mjs');const env={...await fixture(t),CHECKOUT_ENABLED:'false',RAZORPAY_KEY_ID:'rzp_live_example',RAZORPAY_KEY_SECRET:'gateway-secret',RAZORPAY_WEBHOOK_SECRET:'webhook-secret'};
+  const d=await draft(env);const pg=await getInvite(env.DB,d.id);const order=await store.beginCheckout(env.DB,d.id,pg.owner_hash,9900,'INR');await store.setGatewayOrder(env.DB,order.id,'order_example');
+  const original=globalThis.fetch;t.after(()=>globalThis.fetch=original);let calls=0;globalThis.fetch=async(url,opts)=>{assert.equal(opts.method,'GET');calls++;return Response.json({id:'pay_example',order_id:'order_example',amount:9900,currency:'INR',status:'captured',captured:true,amount_refunded:0});};
+  const raw=JSON.stringify({event:'payment.captured',payload:{payment:{entity:{id:'pay_example',order_id:'order_example'}}}}),signature=createHmac('sha256','webhook-secret').update(raw).digest('hex');
+  const event=()=>new Request(origin+'/api/razorpay/webhook',{method:'POST',headers:{'Content-Type':'application/json','x-razorpay-signature':signature},body:raw});
+  let r=await worker.fetch(event(),env);assert.equal(r.status,200,await r.clone().text());assert.equal((await getInvite(env.DB,d.id)).status,'published');
+  r=await worker.fetch(event(),env);assert.equal(r.status,200);assert.equal(calls,2);
+  r=await worker.fetch(req('/api/vaidehi/publish',{id:d.id},d.cookie),env);assert.equal(r.status,503);assert.equal((await r.json()).error,'payments_offline');
+});
+
+test('complete source catalogue lists 50 designs in source order without claiming legacy ordering',async()=>{
+  const r=await worker.fetch(req('/templates'),{}), body=await r.text();assert.equal(r.status,200);
+  assert.equal((body.match(/<article class="tcard reveal"/g)||[]).length,50);assert.ok(body.indexOf('data-slug="sawaal"')<body.indexOf('data-slug="maafi"'));assert.ok(body.indexOf('data-slug="apology"')<body.indexOf('data-slug="sealed-with-a-kiss"'));
+  assert.match(body,/previous database, custom ordering and invitations have not been imported/);assert.match(body,/aria-disabled="true">Restoring/);
+  const d=await worker.fetch(req('/templates/maafi'),{}), text=await d.text();assert.equal(d.status,200);assert.match(text,/customizer and ordering are not yet available/);assert.match(text,/src="\/maafi\/demo"/);
+  const other=await worker.fetch(req('/templates/sawaal'),{});assert.equal(other.status,200);assert.match(await other.text(),/preview is still being restored/);
+  const x=await worker.fetch(req('/create/maafi'),{});assert.equal(x.status,503);
+});
