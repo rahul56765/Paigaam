@@ -13,7 +13,7 @@ try{
   page.on('pageerror',e=>errors.push(e.message));
   await page.goto(base+'/create/'+t.slug);
   const name=page.locator('#recipientName');await name.fill('Ananya');
-  const sender=page.locator('#senderName');if(await sender.count())await sender.fill('Rahul');
+  const sender=page.locator('#senderName');if(await sender.count()&&await sender.isVisible())await sender.fill('Rahul');
   const publish=page.locator('#publish');
   for(let n=0;n<12&&!await publish.isVisible();n++){await page.locator('#next').click();await page.waitForTimeout(50);}
   assert.ok(await publish.isVisible(),t.slug+': send step reachable');
