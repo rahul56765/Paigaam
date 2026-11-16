@@ -165,3 +165,56 @@ node scripts/runtime-smoke.mjs
 Only apply the initial schema once per database; do not reapply the raw schema
 file or reset a database that already has data. The remote preview schema/catalog
 have already been initialized; do not reapply them during Git deployment.
+
+## Pre-launch safety patch (2026-11-16, separate review branch)
+
+This patch is **not** production activation or full application parity. It does
+not change Wrangler flags, domains, bindings, SQL migrations, deployed storage,
+Railway resources or Editzy. Keep the read-only preview defaults in place.
+
+- `store.beginCheckout(db, id, ownerHash, amount, currency, expectedData)` now
+  requires the caller-validated persisted `customer_data` snapshot. The D1
+  batch compares the exact JSON when inserting the intent and locking the
+  invite. A competing autosave rejects checkout without creating a gateway
+  order or freezing different/unvalidated content. Reload/revalidate on a 409;
+  do not unlock or retry an ambiguous existing gateway intent automatically.
+- `store.addUpload(db, record, {kind, maxCount})` requires explicit image/audio
+  limits and matching MIME. The conditional INSERT enforces the per-kind count
+  cap atomically. Photos no longer consume the audio allowance. If the draft
+  locks or the quota is consumed while R2 I/O is in flight, the losing object is
+  removed. These are committed-metadata limits, **not** a global admission or
+  byte-budget/reservation system; cleanup failures still need orphan recovery.
+- The original Love Letter and Anniversary Blue `/api/:slug/audio` editors can
+  send MP3/WAV as `application/octet-stream`: the Worker sniffs the container,
+  rejects unsupported/mismatched bytes, stores canonical audio MIME, and retains
+  their 12 MiB/five-audio limits. Their local `songUrl` references now require
+  same-invite ownership and are anonymously readable only when referenced by a
+  published invite. External HTTPS song links retain their original semantics.
+- New checkout readiness also requires `RAZORPAY_WEBHOOK_SECRET`, in addition to
+  recognized credentials and the existing exact enable/live flags. Presence
+  alone does not establish that a webhook is configured or that acceptance tests
+  have passed. Read-only captured-payment reconciliation still works while new
+  checkout is paused.
+
+Validation in the patch sandbox: static build succeeds (33 runtime templates,
+50 source entries, 373 static files). All **122 dependency-free tests** pass;
+the safety-focused store/payment/Worker set passes **55/55**. Fixtures use
+in-memory SQLite, mocked R2 and mocked gateway calls, never real charges or
+production customer writes. `git diff --check` is clean.
+
+The complete suite is **not** verified here: `npm ci` returned npm E403 fetching
+`youch-core`, and an isolated installation of the declared `esbuild@0.25.12`
+also returned E403 from `registry.npmjs.org`. Consequently `views.test.mjs` cannot
+load esbuild, and Wrangler bundling/local-runtime acceptance was not rerun for
+this patch. Existing successful preview deployment is not evidence that these
+unmerged changes have been deployed.
+
+Remaining full-launch gates include all 17 legacy customizers and associated
+flows, atomic free publishing and production UI/resume integration, admin and
+creator/referral/refund operations, magazines/Canva, generated wedding video,
+durable rate/admission/byte quotas and retention/recovery, coordinated D1/R2
+restore tests, secure test-only payment configuration and browser/gateway
+acceptance. Only after feature acceptance should production routing be changed.
+An active Cloudflare zone is required for a Worker Custom Domain; the observed
+`paigaam.cc` zone is still pending, so any delegation change also requires the
+owner's explicit approval and a complete DNS inventory preserving Editzy/mail.

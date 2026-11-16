@@ -25,7 +25,9 @@ test('checkout defaults disabled; only exact flags and recognized configured key
   assert.deepEqual(checkoutMode(env), { enabled: true, mode: 'test' });
   for (const patch of [ { CHECKOUT_ENABLED: undefined }, { CHECKOUT_ENABLED: true },
     { CHECKOUT_ENABLED: '1' }, { CHECKOUT_ENABLED: 'TRUE' }, { RAZORPAY_KEY_ID: 'unknown' },
-    { RAZORPAY_KEY_SECRET: '' }, { RAZORPAY_KEY_SECRET: ' ' } ]) {
+    { RAZORPAY_KEY_SECRET: '' }, { RAZORPAY_KEY_SECRET: ' ' },
+    { RAZORPAY_WEBHOOK_SECRET: undefined }, { RAZORPAY_WEBHOOK_SECRET: '' },
+    { RAZORPAY_WEBHOOK_SECRET: ' ' } ]) {
     assert.deepEqual(checkoutMode({ ...env, ...patch }), { enabled: false, mode: 'disabled' });
   }
   const live = { ...env, RAZORPAY_KEY_ID: 'rzp_live_abc123' };

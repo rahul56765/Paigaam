@@ -23,7 +23,14 @@ async function owned(env, id, person, slug) {
   if (!person.hash || pg.owner_hash !== person.hash) throw fail('forbidden',403);
   return pg;
 }
-function refs(t,data) { return [...fields.imagesIn(t.fields,data), ...fields.audioIn(t.fields,data)]; }
+const KEEPSAKE_AUDIO = new Set(['love-letter','anniversary-blue']);
+function refs(t,data) {
+  const urls=[...fields.imagesIn(t.fields,data), ...fields.audioIn(t.fields,data)];
+  // These original editors expose uploaded music as a text songUrl field.
+  // External HTTPS music stays external; local media still needs ownership checks.
+  if(KEEPSAKE_AUDIO.has(t.slug)&&typeof data?.songUrl==='string'&&data.songUrl.startsWith('/bfday/uploads/')) urls.push(data.songUrl);
+  return [...new Set(urls)];
+}
 async function verifyMedia(env,t,pg,data) {
   for (const url of refs(t,data)) {
     const match = /^\/bfday\/uploads\/([^/?#]+)$/.exec(url);
@@ -139,16 +146,32 @@ async function handle(request,env) {
     }
     if(['upload','upload-audio','audio'].includes(action)) {
       const pg=await owned(env,u.searchParams.get('id'),person,t.slug);if(pg.status!=='draft')throw fail('draft_locked',409);
-      const isImage=action==='upload', cap=isImage?fields.maxImages(t.fields)*3+6:9;
+      const isImage=action==='upload', keepsake=!isImage&&action==='audio'&&KEEPSAKE_AUDIO.has(t.slug);
+      const kind=isImage?'image':'audio',cap=isImage?fields.maxImages(t.fields)*3+6:keepsake?5:9;
       if(isImage&&!fields.maxImages(t.fields))throw fail('not_found',404);
-      if(!isImage&&!t.fields.some(f=>f.type==='audio'))throw fail('not_found',404);
-      const prior=await store.listUploads(env.DB,pg.id);if(prior.length>=cap)throw fail('limit',429);
-      const mime=(request.headers.get('content-type')||'').split(';')[0].trim().toLowerCase(),types=isImage?images.EXT:audio.EXT;
-      if(!types[mime])throw fail(isImage?'invalid_image':'invalid_audio');
-      const bytes=Buffer.from(await readBytes(request,isImage?2*1024*1024:audio.MAX_BYTES));
-      const problem=isImage?images.checkImage(bytes,mime):audio.checkAudio(bytes,mime);if(problem)throw fail(problem,problem==='too_large'?413:400);
-      const key=randomHex(24)+'.'+types[mime];await env.MEDIA.put(key,bytes,{httpMetadata:{contentType:mime}});
-      try {if(!await store.addUpload(env.DB,{key,invite_id:pg.id,mime,size:bytes.length}))throw fail('draft_locked',409);}catch(e){await env.MEDIA.delete(key);throw e;}
+      if(!isImage&&!keepsake&&!t.fields.some(f=>f.type==='audio'))throw fail('not_found',404);
+      const prior=await store.listUploads(env.DB,pg.id);
+      const count=prior.filter(o=>isImage?o.mime.startsWith('image/'):o.mime.startsWith('audio/')||o.mime==='application/ogg').length;
+      if(count>=cap)throw fail('limit',429);
+      let mime=(request.headers.get('content-type')||'').split(';')[0].trim().toLowerCase(),ext;
+      const types=isImage?images.EXT:audio.EXT;
+      // Preserve the two original MP3/WAV editors' octet-stream contract, but
+      // infer and validate the actual container instead of trusting that header.
+      if(keepsake){if(mime!=='application/octet-stream'&&!['mp3','wav'].includes(types[mime]))throw fail('invalid_audio');}
+      else if(!types[mime])throw fail(isImage?'invalid_image':'invalid_audio');
+      const bytes=Buffer.from(await readBytes(request,isImage?2*1024*1024:keepsake?12*1024*1024:audio.MAX_BYTES));
+      if(keepsake){
+        ext=audio.sniffAudio(bytes);
+        if(!['mp3','wav'].includes(ext)||(mime!=='application/octet-stream'&&types[mime]!==ext))throw fail('invalid_audio');
+        mime=ext==='mp3'?'audio/mpeg':'audio/wav';
+      }else{
+        const problem=isImage?images.checkImage(bytes,mime):audio.checkAudio(bytes,mime);if(problem)throw fail(problem,problem==='too_large'?413:400);
+        ext=types[mime];
+      }
+      const key=randomHex(24)+'.'+ext;await env.MEDIA.put(key,bytes,{httpMetadata:{contentType:mime}});
+      // The preflight count is only an optimization. The D1 INSERT rechecks the
+      // cap atomically; losing concurrent requests must remove their R2 object.
+      try {if(!await store.addUpload(env.DB,{key,invite_id:pg.id,mime,size:bytes.length},{kind,maxCount:cap}))throw fail('upload_not_accepted',409);}catch(e){await env.MEDIA.delete(key);throw e;}
       return json({url:'/bfday/uploads/'+key});
     }
     if(action==='publish') {
@@ -157,7 +180,7 @@ async function handle(request,env) {
       const data=t.schema.validate(pg.customer_data,{mode:'strict'});await verifyMedia(env,t,pg,data);const live=await quote(env,t);
       if(live.price===0)throw fail('free_publish_not_enabled',503);
       let order=await store.getOrderForInvite(env.DB,id);
-      if(!order){order=await store.beginCheckout(env.DB,id,person.hash,live.price,live.currency);if(!order)throw fail('checkout_in_progress',409);
+      if(!order){order=await store.beginCheckout(env.DB,id,person.hash,live.price,live.currency,pg.customer_data);if(!order)throw fail('checkout_in_progress',409);
         const gateway=await payments.razorpayCreateOrder(env,{amount:order.amount,currency:order.currency,receipt:order.id,notes:{paigaam_id:id}});
         order=await store.setGatewayOrder(env.DB,order.id,gateway.id);if(!order)throw fail('checkout_reconciliation_required',409);
       }
