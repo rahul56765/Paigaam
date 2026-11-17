@@ -342,4 +342,20 @@ const q = {
   sessionsPrune: () => db.prepare('DELETE FROM sessions WHERE expires_at < ?').run(Date.now()),
 };
 
+q.templateBulkPrices = (ids, price, listPrice) => {
+  if (!Array.isArray(ids) || !ids.length || ids.length > 500 || ids.some(id => typeof id !== 'string' || !id || id.length > 128) ||
+      !Number.isSafeInteger(price) || !Number.isSafeInteger(listPrice) || price < 0 || listPrice < 0 || price > 1000000 || listPrice > 1000000 ||
+      (listPrice !== 0 && listPrice < price)) throw new Error('Invalid bulk prices');
+  const selected = [...new Set(ids)];
+  db.exec('BEGIN IMMEDIATE');
+  try {
+    const exists = db.prepare('SELECT id FROM templates WHERE id=?');
+    for (const id of selected) if (!exists.get(id)) throw new Error('Unknown template');
+    const update = db.prepare('UPDATE templates SET price=?,list_price=?,updated_at=? WHERE id=?');
+    const now = new Date().toISOString();
+    for (const id of selected) update.run(price, listPrice, now, id);
+    db.exec('COMMIT');
+    return selected.length;
+  } catch (error) { db.exec('ROLLBACK'); throw error; }
+};
 module.exports = { db, q, uid, DATA_DIR, PERSISTENT };
