@@ -166,7 +166,7 @@ function templatesAdmin(templates, message = '') {
       <label>Listing price (₹)<input class="input" name="list_price" type="number" min="0" max="1000000" step="1" required></label>
       <label>Selling price (₹)<input class="input" name="price" type="number" min="0" max="1000000" step="1" required></label>
       <button class="btn btn--primary" type="submit">Apply prices</button>
-      <span id="selection-count" role="status">0 selected</span>
+      <button class="btn btn--ghost" type="button" id="select-all-button">Select all</button><button class="btn btn--ghost" type="button" id="clear-selection-button">Clear selection</button><span id="selection-count" role="status">0 selected</span>
     </fieldset>
   </form>
   <div class="admin__table-wrap"><table class="table"><thead><tr>
@@ -194,8 +194,10 @@ function templatesAdmin(templates, message = '') {
   <script>
   (function(){
     var all=document.getElementById('select-all-templates'), boxes=Array.from(document.querySelectorAll('.template-selection')), form=document.getElementById('bulk-prices');
-    function update(){var n=boxes.filter(function(b){return b.checked;}).length;document.getElementById('selection-count').textContent=n+' selected';all.checked=n>0&&n===boxes.length;all.indeterminate=n>0&&n<boxes.length;form.querySelector('button').disabled=!n;}
+    function update(){var n=boxes.filter(function(b){return b.checked;}).length;document.getElementById('selection-count').textContent=n+' selected';all.checked=n>0&&n===boxes.length;all.indeterminate=n>0&&n<boxes.length;form.querySelector('button[type="submit"]').disabled=!n;}
     all.addEventListener('change',function(){boxes.forEach(function(b){b.checked=all.checked;});update();});
+    document.getElementById('select-all-button').addEventListener('click',function(){boxes.forEach(function(b){b.checked=true;});update();});
+    document.getElementById('clear-selection-button').addEventListener('click',function(){boxes.forEach(function(b){b.checked=false;});update();});
     boxes.forEach(function(b){b.addEventListener('change',update);});update();
   })();
   </script>`;

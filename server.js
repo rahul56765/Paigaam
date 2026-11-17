@@ -714,7 +714,7 @@ Sitemap: ${origin}/sitemap.xml
         const form = new URLSearchParams(await readBody(req));
         const ids = form.getAll('template_ids');
         const priceText = form.get('price'), listText = form.get('list_price');
-        if (!/^\\d{1,7}$/.test(priceText || '') || !/^\\d{1,7}$/.test(listText || '')) return send(res, 400, admin.templatesAdmin(q.templatesAll(), 'Enter whole rupee prices between 0 and 1,000,000.'));
+        if (!/^\d{1,7}$/.test(priceText || '') || !/^\d{1,7}$/.test(listText || '')) return send(res, 400, admin.templatesAdmin(q.templatesAll(), 'Enter whole rupee prices between 0 and 1,000,000.'));
         try {
           q.templateBulkPrices(ids, Number(priceText), Number(listText));
         } catch { return send(res, 400, admin.templatesAdmin(q.templatesAll(), 'Select valid templates. Listing price must be zero or at least the selling price.')); }
