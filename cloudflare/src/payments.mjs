@@ -1,6 +1,7 @@
 /** Cloudflare Workers payment primitives; Fetch + WebCrypto only.
  * Amounts are integer paise. No credentials or upstream error bodies escape.
- * checkoutMode is fail-closed: exact string flags, configured recognized keys.
+ * checkoutMode is fail-closed: exact string flags, configured recognized keys
+ * and a webhook secret so new orders cannot open without callback verification.
  * Test keys need CHECKOUT_ENABLED='true'; live keys additionally require
  * ALLOW_LIVE_PAYMENTS='true'. Creating gateway orders enforces this gate.
  * Fetching a payment is a read-only operation and remains available with valid
@@ -31,7 +32,7 @@ function validateQuote(amount, currency) {
 /** @returns {{enabled:boolean,mode:'disabled'|'test'|'live'}} */
 export function checkoutMode(env = {}) {
   const key = typeof env.RAZORPAY_KEY_ID === 'string' && KEY_ID.exec(env.RAZORPAY_KEY_ID);
-  if (env.CHECKOUT_ENABLED !== 'true' || !key || !secretPresent(env.RAZORPAY_KEY_SECRET)) {
+  if (env.CHECKOUT_ENABLED !== 'true' || !key || !secretPresent(env.RAZORPAY_KEY_SECRET) || !secretPresent(env.RAZORPAY_WEBHOOK_SECRET)) {
     return { enabled: false, mode: 'disabled' };
   }
   if (key[1] === 'live' && env.ALLOW_LIVE_PAYMENTS !== 'true') {
