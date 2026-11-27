@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<meta name="referrer" content="no-referrer">
+<meta name="theme-color" content="#660d19">
+<title>Birthday Scrapbook · Paigaam</title>
+<style>
+:root{--wine:#6c101e;--dark:#3b0912;--paper:#fff3dd;--ink:#39151a;--gold:#e6bd77;--script:"Brush Script MT","URW Chancery L",Georgia,serif}
+*{box-sizing:border-box}body{margin:0;background:#f8ebdb;color:var(--ink);font:16px/1.5 system-ui,sans-serif}button,input,textarea{font:inherit}button,a{touch-action:manipulation}button,.button{border:0;cursor:pointer;background:var(--wine);color:#fff5e8;text-decoration:none;border-radius:40px;padding:.65rem 1.2rem;font-weight:750;display:inline-flex;align-items:center;justify-content:center;min-height:44px}button:hover,.button:hover{filter:brightness(1.12)}:focus-visible{outline:3px solid #d99549;outline-offset:4px}button:disabled{opacity:.55;cursor:wait}h1,h2,p,figure{margin:0}.top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px clamp(16px,5vw,72px);background:#fff6e8;border-bottom:1px solid #ead3bd}.brand{color:var(--wine);font:bold 1.2rem Georgia;letter-spacing:.025em;text-decoration:none}.top .button{background:transparent;color:var(--wine);border:1px solid #bd8490}
+.builder{max-width:1360px;margin:auto;padding:clamp(18px,4vw,62px);display:grid;grid-template-columns:1.22fr .85fr;gap:clamp(20px,4vw,56px);align-items:start}.intro{margin-bottom:20px}.intro h1{font:bold clamp(2.2rem,5vw,4.5rem)/.98 Georgia;color:var(--wine);letter-spacing:-.055em}.intro p{margin-top:10px}.form{background:#fff8ed;border:1px solid #ead1ba;border-radius:20px;padding:clamp(16px,3vw,30px);box-shadow:0 10px 25px #6c101e12;display:grid;gap:13px}.form h2{font:bold 1.7rem Georgia}.names{display:grid;grid-template-columns:1fr 1fr;gap:10px}label{display:grid;gap:4px;font-weight:650;font-size:.93rem}input,textarea{width:100%;min-width:0;border:1px solid #cda99f;border-radius:8px;background:#fffdf8;color:var(--ink);padding:9px 10px}textarea{resize:vertical}small{font-size:.83rem}.thumbs{display:flex;flex-wrap:wrap;gap:6px}.thumbs img{width:52px;height:52px;object-fit:cover;border:2px solid white;box-shadow:0 1px 4px #0003}.share{display:grid;gap:8px}.share div{display:flex;flex-wrap:wrap;gap:6px}.error{color:#981c30}.previewLabel{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;font-weight:700}.previewLabel button{min-height:36px;padding:4px 12px;background:transparent;color:var(--wine);border:1px solid #bd8490}
+body.recipient{background:var(--dark);min-height:100svh;display:grid;place-items:center;padding:clamp(0px,3vw,32px)}.recipient #root{width:min(100%,1050px)}.scrap{position:relative;isolation:isolate;overflow:hidden;color:var(--paper);text-align:center;border:1px solid #9f5154;border-radius:14px;min-height:420px;background-color:var(--wine);background-image:radial-gradient(circle,#ffedcf 1.35px,transparent 1.85px),radial-gradient(circle,#ffedcf 1.35px,transparent 1.85px),radial-gradient(ellipse at 60% 20%,#861722,#4b0713);background-size:33px 33px,33px 33px,100% 100%;background-position:0 0,16.5px 16.5px,0 0;box-shadow:0 15px 30px #38070f35;container-type:inline-size}.recipient .scrap{min-height:min(680px,86svh);display:grid}.scene{position:relative;padding:clamp(20px,5cqw,54px);min-height:420px;display:grid;align-content:center;justify-items:center;gap:18px;animation:arrive .28s ease-out}.recipient .scene{min-height:inherit}@keyframes arrive{from{opacity:.25;transform:scale(.99)}to{opacity:1;transform:scale(1)}}.scene h1,.scene h2{font:bold italic clamp(1.8rem,5.5cqw,3.55rem)/1.08 var(--script);text-shadow:0 2px 5px #3c0718;overflow-wrap:anywhere}.scene p{font:italic clamp(1.05rem,3.1cqw,1.65rem)/1.35 Georgia}.actions{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap}.scrap button{background:#fff5e4;color:#6b0a18;box-shadow:0 4px 0 #29020c5e}.scrap .textbtn{background:#5b0c18;color:#ffebca;border:1px solid #d69a83;box-shadow:none}.cover{padding:0;display:grid;grid-template-columns:38% 62%;gap:0;align-content:stretch;justify-items:stretch}.coverphoto{display:grid;align-content:center;justify-items:center;gap:16px;padding:20px 12%;color:#7d2631;background:repeating-linear-gradient(-23deg,#9c4f4420 0 1px,transparent 1px 24px),#f7e4c7;border-right:3px double #a15c53}.coverphoto em{font:bold italic clamp(1.2rem,3.5cqw,2.2rem) var(--script)}.oval{width:100%;max-width:245px;aspect-ratio:4/5;position:relative;border-radius:50%;padding:8px;background:repeating-conic-gradient(#f2d18e 0 8deg,#8a5b2e 8deg 12deg,#b98441 12deg 19deg);box-shadow:0 0 0 2px #7b542b,0 0 0 5px #e8bf78,0 6px 14px #542a2e55}.oval img{border-radius:50%;height:100%;width:100%;object-fit:cover;display:block;border:2px solid #ffdf9b}.coverbody{display:grid;align-content:center;justify-items:center;gap:20px;padding:24px 10%;background:#50050d24}.for{font:700 .77rem system-ui;letter-spacing:.15em;text-transform:uppercase;overflow-wrap:anywhere}.cat{width:min(52%,220px);aspect-ratio:1;object-fit:cover;border-radius:47% 49% 45% 50%;border:5px solid #ffe7b7;box-shadow:5px 7px 0 #3e0718}.count{font:bold 1.25rem Georgia;color:#ffe6a5;min-height:1.5em}.gifts{display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(6px,3cqw,27px);width:min(100%,690px)}.scrap .gift{display:grid;gap:10px;background:transparent;color:var(--paper);box-shadow:none;border-radius:12px;padding:8px 2px}.gift:hover .box{transform:translateY(-7px) rotate(-3deg)}.gift span:last-child{font:700 clamp(.85rem,2.5cqw,1.2rem) Georgia}.box{position:relative;display:block;width:clamp(62px,19cqw,143px);max-width:100%;aspect-ratio:1.1;margin:20px auto 0;border-radius:6px 6px 10px 10px;background:linear-gradient(90deg,transparent 41%,#ed6277 41%,#9f1a36 58%,transparent 58%),linear-gradient(100deg,#aa283b,#35070e 83%);box-shadow:7px 8px 0 #33050c88,inset 0 0 0 1px #d8647866;transition:transform .2s}.box:before{content:"";position:absolute;top:0;left:-4%;width:108%;height:22%;border-radius:4px;background:linear-gradient(90deg,#8c1829 42%,#e65d75 42% 58%,#a72540 58%);box-shadow:0 4px 5px #3208109e}.box i,.box b{position:absolute;bottom:98%;width:34%;height:28%;border:5px solid #e06276;border-radius:70% 70% 15% 70%;left:17%;transform:rotate(20deg);box-shadow:0 1px 2px #24070f}.box b{left:49%;border-radius:70% 70% 70% 15%;transform:rotate(-20deg)}
+.lettergrid{display:grid;grid-template-columns: .85fr 1.15fr;gap:clamp(12px,5cqw,48px);align-items:center;width:100%;max-width:770px}.polaroid{position:relative;background:#fff5e2;padding:8px 8px 19px;color:#87132a;box-shadow:2px 6px 12px #30071685;transform:rotate(-5deg);text-align:center}.polaroid img{width:100%;display:block;aspect-ratio:1;object-fit:cover}.polaroid figcaption{margin-top:4px;font:italic .9rem Georgia}.paper{background:repeating-linear-gradient(#0000 0 26px,#d7af9e50 26px 27px),#fff6df;color:#4b2022;padding:clamp(15px,3cqw,29px);border:4px double #c79170;box-shadow:5px 6px 0 #3a07174f;overflow-wrap:anywhere}.paper p{font:italic clamp(1rem,2.6cqw,1.3rem)/1.55 Georgia;text-shadow:none}.paper .message{white-space:pre-wrap;margin:.65em 0}.tinsel{background:radial-gradient(circle at 12% 18%,#ffde8f 1px,transparent 3px),radial-gradient(circle at 84% 70%,#ffd58c 1px,transparent 3px),repeating-linear-gradient(0deg,#831826 0 27px,#741422 27px 54px);background-size:111px 103px,129px 133px,100% 100%}.cutout{display:flex;justify-content:center;flex-wrap:wrap;gap:.06em;text-shadow:none!important;text-transform:uppercase;font:900 clamp(1.6rem,6.2cqw,4rem)/1 Georgia!important}.cutout span{display:inline-block;padding:.06em .12em;background:#ffe7bd;color:#70202a;box-shadow:2px 4px 0 #29071155;transform:rotate(-6deg)}.cutout span:nth-child(even){background:#31121b;color:#fff0ce;transform:rotate(6deg)}.cutout span:nth-child(3n){background:#dd6d69;color:#2a0c13;transform:rotate(-3deg)}.string{width:100%;max-width:830px;position:relative;display:flex;flex-wrap:wrap;justify-content:center;gap:clamp(10px,2cqw,21px);padding:24px 0 8px}.string:before{content:"";position:absolute;inset:0 -20% auto;height:34px;border-bottom:2px solid #fae4ba;border-radius:50%}.string .polaroid{width:min(28%,136px);transform:rotate(-7deg);margin-bottom:8px;padding:6px 6px 14px}.string .polaroid:nth-child(even){transform:rotate(6deg);margin-top:7px}.clip{position:absolute;top:-18px;left:calc(50% - 5px);width:10px;height:28px;background:linear-gradient(90deg,#9e643d,#e9ba7c 33% 78%,#ac764f);border-radius:2px;z-index:1;box-shadow:1px 2px 3px #3b110880}.camera{width:min(71%,350px);aspect-ratio:1.6;display:grid;grid-template-columns:1.5fr .65fr;align-items:center;gap:8%;padding:8%;position:relative;border-radius:14px;background:radial-gradient(circle,#fff7df 1px,#0000 2px) 0 0 / 9px 9px,linear-gradient(135deg,#f1cfbb,#926c66,#f5d0b9);border:4px solid #f5dcc3;box-shadow:6px 9px 0 #410915}.camera img{width:100%;aspect-ratio:1.23;object-fit:cover;border:5px solid #302022;border-radius:5px}.camera i{aspect-ratio:1;border:5px double #edcbbb;background:radial-gradient(circle,#331b24 12%,#d1a698 15% 28%,#6c4c50 29% 48%,#e9d5bf 50%);border-radius:50%;box-shadow:2px 4px 5px #29131b69}.camera:before{content:"";position:absolute;left:13%;right:63%;height:10px;top:-12px;border-radius:5px 5px 0 0;background:#dcb4a0}.notecard{position:relative;max-width:465px;width:94%;rotate:-2deg;margin:23px 0 5px}.notecard:before{content:"";position:absolute;top:-22px;left:37%;width:26%;height:31px;border-radius:15px 15px 4px 4px;background:linear-gradient(#c69550,#f4ce83,#9a6337);box-shadow:0 2px 4px #53252480}.seal{position:absolute;right:-12px;bottom:-13px;color:#ac263e;font-size:3.3rem;text-shadow:2px 2px #ffd99a;line-height:1}.status{padding:24px;color:var(--paper);text-align:center}
+@media(max-width:850px){.builder{grid-template-columns:1fr;max-width:720px}.form{grid-row:auto}}
+@media(max-width:520px){.scrap{border-radius:9px}.recipient .scrap{min-height:100svh;border-radius:0;border:0}.cover{grid-template-columns:1fr;grid-template-rows:auto auto}.coverphoto{border-right:0;border-bottom:3px double #a15c53;padding:18px;gap:10px}.oval{width:min(46%,183px)}.coverbody{padding:23px 18px;gap:14px}.cover h2{font-size:2rem}.lettergrid{grid-template-columns:1fr}.lettergrid .polaroid{width:min(50%,170px);justify-self:center}.scene{gap:14px}.string .polaroid{width:28%}.names{grid-template-columns:1fr}.recipient .cover{grid-template-rows:1fr 1fr}.gift span:last-child{font-size:.86rem}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+
+/* Paper, foil and photo corners carry the reference through every size. */
+.coverphoto{position:relative;isolation:isolate;overflow:hidden}
+.coverphoto::before{content:"love you   ♡   love you   ♡   love you   ♡   love you   ♡   love you   ♡   love you   ♡   love you   ♡   love you   ♡   love you   ♡   love you   ♡   love you";position:absolute;inset:-20%;z-index:-1;rotate:-19deg;color:#924a4852;font:italic 1.65rem/1.75 Georgia;word-spacing:.3em}
+.oval::before,.oval::after{position:absolute;left:50%;translate:-50% 0;content:"❦";color:#f6d68e;text-shadow:1px 2px #795327;font-size:2.1rem;line-height:1}
+.oval::before{top:-18px}.oval::after{bottom:-18px;rotate:180deg}
+.lettergrid .polaroid::before{content:"";position:absolute;top:-8px;left:32%;width:38%;height:18px;rotate:-7deg;background:#e5bf88c9}
+.tinsel::after{content:"✧";position:absolute;top:7%;left:7%;color:#ffe2a7;font-size:2.4rem;pointer-events:none}
+@media(max-width:520px){.cover{grid-template-columns:37% 63%;grid-template-rows:1fr!important}.coverphoto{padding:10px;border-bottom:0;border-right:3px double #a15c53}.coverphoto em{font-size:1rem}.oval{width:91%}.coverbody{padding:24px 12px}.cover h2{font-size:clamp(1.45rem,6vw,2rem)}.coverbody .actions{gap:7px}.coverbody button{padding:8px 16px}}
+</style>
+</head>
+<body><main id="root"></main>
+<script id="scrapbook-data" type="application/json">__SCRAPBOOK_DATA__</script>
+<script>
+const root = document.querySelector('#root');
+const sample = {
+  partner:'My love', sender:'Your favorite person',
+  message:'Happy birthday, my love. I hope today feels like all the little things that make you happiest. Thank you for making ordinary days feel like memories worth keeping. I’m so glad you were born.',
+  note:'No matter how many birthdays pass, you’ll always have someone cheering a little too loudly for you.',
+  photos:['/scrapbook-art/cover.webp','/scrapbook-art/memory.webp','/scrapbook-art/booth.webp']
+};
+const escapeHTML = value => String(value).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const button = (label, target, style = '') => `<button type="button" class="${style}" data-to="${target}">${label}</button>`;
+const cutout = (word, tag = 'h2') => `<${tag} class="cutout" aria-label="${word}">${[...word].map(c => `<span aria-hidden="true">${c}</span>`).join('')}</${tag}>`;
+function mountScrapbook(host, data) {
+  let timer;
+  let stage = 'cover';
+  let opened = new Set();
+  const photo = index => `<img src="${escapeHTML(data.photos[index % data.photos.length])}" alt="${index === 0 ? 'Birthday portrait' : 'A memory together'}">`;
+  const partner = escapeHTML(data.partner);
+  const sender = escapeHTML(data.sender);
+  const back = button('Back to gifts','gifts','textbtn');
+  const show = (next, focus = false) => {
+    clearInterval(timer);
+    stage = next;
+    if (stage === 'cover') opened = new Set();
+    if (['letter','memories','birthday'].includes(stage)) opened.add(stage);
+    const gift = (label, target) => `<button type="button" class="gift" data-to="${target}"><span class="box" aria-hidden="true"><i></i><b></b></span><span>${label}</span></button>`;
+    const scenes = {
+      cover: () => `<div class="scene cover"><div class="coverphoto"><em>My favorite person</em><div class="oval">${photo(0)}</div><span aria-hidden="true">✦ ♥ ✦</span></div><div class="coverbody"><span class="for">For ${partner}</span><h2>I have a little surprise for you!<br>Wanna see it??</h2><div class="actions">${button('Yes','gifts')}${button('No','wrong')}</div></div></div>`,
+      wrong: () => `<div class="scene"><h2>WRONG ANSWER!!</h2><p>you have exactly 3 seconds to reconsider</p><img class="cat" src="/scrapbook-art/cat.webp" alt="A very unimpressed ginger cat"><div class="count" aria-hidden="true">3</div>${button('Try again','cover')}</div>`,
+      gifts: () => `<div class="scene"><h2>Gifts for you!!</h2><div class="gifts">${gift('A letter','letter')}${gift('Our memories','memories')}${gift('Birthday wish','birthday')}</div><p>Click any gift to open</p>${opened.size === 3 ? button('One last note','note','textbtn') : ''}</div>`,
+      letter: () => `<div class="scene"><div class="lettergrid"><figure class="polaroid">${photo(data.photos.length > 1 ? 1 : 0)}<figcaption>For my favorite person ♡</figcaption></figure><article class="paper"><p>Dear ${partner},</p><p class="message">${escapeHTML(data.message)}</p><p>With love,<br>${sender}</p></article></div><div class="actions">${back}${button('Next','memories')}</div></div>`,
+      memories: () => `<div class="scene tinsel">${cutout('Memories')}<div class="string">${data.photos.map((_,i) => `<figure class="polaroid"><span class="clip" aria-hidden="true"></span>${photo(i)}<figcaption aria-hidden="true">♥</figcaption></figure>`).join('')}</div><p>Us, together</p><div class="actions">${back}${button('Next','birthday')}</div></div>`,
+      birthday: () => `<div class="scene tinsel"><h2 class="cutout" aria-label="Happy Birthday, ${partner}">${[...'HAPPY'].map(c=>`<span aria-hidden="true">${c}</span>`).join('')}</h2><div class="camera">${photo(data.photos.length > 2 ? 2 : 0)}<i aria-hidden="true"></i></div>${cutout('Birthday','div')}<p>${partner} ♡</p><div class="actions">${back}${button('One last note','note')}</div></div>`,
+      note: () => `<div class="scene"><article class="paper notecard"><p class="message">${escapeHTML(data.note)}</p><p>Love, ${sender}</p><span class="seal" aria-hidden="true">♥</span></article>${button('Restart','cover')}</div>`
+    };
+    host.innerHTML = scenes[stage]();
+    if (focus) {
+      const target = host.querySelector('h2,article');
+      target?.setAttribute('tabindex','-1');
+      target?.focus({preventScroll:true});
+      host.scrollIntoView({block:'nearest'});
+    }
+    if (stage === 'wrong') {
+      let remaining = 3;
+      timer = setInterval(() => {
+        remaining -= 1;
+        host.querySelector('.count').textContent = remaining === 0 ? '♡' : remaining;
+        if (!remaining) clearInterval(timer);
+      },1000);
+    }
+  };
+  host.onclick = event => {
+    const control = event.target.closest('button[data-to]');
+    if (control && host.contains(control)) show(control.dataset.to,true);
+  };
+  show('cover');
+  return () => clearInterval(timer);
+}
+
+function renderBuilder() {
+  root.innerHTML = `<header class="top"><a href="/" class="brand">✦ Paigaam</a><a class="button" href="/birthday-scrapbook/demo">Open full demo</a></header>
+  <div class="builder"><section><div class="intro"><h1>Birthday<br>Scrapbook</h1><p>A little surprise for someone you love.</p></div><div class="previewLabel">Interactive preview<button type="button" id="refresh">Refresh preview</button></div><div class="scrap" id="preview"></div></section>
+  <form class="form" id="builder"><h2>Make it yours</h2><div class="names"><label>Partner’s name<input name="partner" required maxlength="40" placeholder="e.g. Alex"></label><label>Your name<input name="sender" required maxlength="40" placeholder="e.g. Sam"></label></div>
+  <label>Birthday message<textarea name="message" required maxlength="1800" rows="4" placeholder="Write your birthday letter…"></textarea></label>
+  <label>Final note<textarea name="note" required maxlength="200" rows="3" placeholder="One last thing you want them to know…"></textarea></label>
+  <label>Photos<input name="photos" type="file" multiple accept="image/jpeg,image/png,image/webp,image/avif,image/heic,image/heif" required></label>
+  <small>Choose 1–5 photos. The first is the cover, the second goes in the letter, and the third goes in the camera. All appear in Memories.</small>
+  <div class="thumbs" id="thumbs"></div><small>Anyone with the generated link can view your photos and messages.</small>
+  <button type="submit">Create birthday link</button><div id="feedback" role="status" aria-live="polite"></div><div id="share"></div></form></div>`;
+  const form = document.querySelector('#builder');
+  const preview = document.querySelector('#preview');
+  const feedback = document.querySelector('#feedback');
+  const share = document.querySelector('#share');
+  const thumbs = document.querySelector('#thumbs');
+  let photos = [];
+  let urls = [];
+  let stop;
+  let loading = false;
+  let selection = 0;
+  const fields = () => Object.fromEntries(['partner','sender','message','note'].map(key => [key,form.elements[key].value.trim()]));
+  const refresh = () => {
+    stop?.();
+    const data = {...sample};
+    for (const [key,value] of Object.entries(fields())) if (value) data[key] = value;
+    if (urls.length) data.photos = urls;
+    stop = mountScrapbook(preview,data);
+  };
+  const report = (message,error = false) => {
+    feedback.className = error ? 'error' : '';
+    feedback.textContent = message;
+  };
+  document.querySelector('#refresh').onclick = refresh;
+  refresh();
+  form.elements.photos.onchange = async () => {
+    const selected = Array.from(form.elements.photos.files);
+    const current = ++selection;
+    urls.forEach(url => URL.revokeObjectURL(url));
+    urls = [];
+    photos = [];
+    thumbs.replaceChildren();
+    refresh();
+    if (!selected.length || selected.length > 5) {
+      loading = false;
+      report('Choose between one and five photos.',true);
+      return;
+    }
+    loading = true;
+    report('Preparing photos…');
+    try {
+      const resized = [];
+      for (const file of selected) {
+        if (current !== selection) return;
+        resized.push(await preparePhoto(file));
+      }
+      if (current !== selection) return;
+      photos = resized;
+      urls = photos.map(file => URL.createObjectURL(file));
+      for (const [i,url] of urls.entries()) {
+        const image = new Image();
+        image.src = url;
+        image.alt = `Photo ${i+1}`;
+        thumbs.append(image);
+      }
+      refresh();
+      report('');
+    } catch (error) {
+      if (current === selection) report(error.message,true);
+    } finally {
+      if (current === selection) loading = false;
+    }
+  };
+  form.onsubmit = async event => {
+    event.preventDefault();
+    if (loading || !photos.length) return report(loading ? 'Wait for your photos to finish preparing.' : 'Choose at least one supported photo.',true);
+    const data = fields();
+    if (Object.values(data).some(value => !value)) return report('Fill in both names and messages.',true);
+    const submit = form.querySelector('[type=submit]');
+    submit.disabled = true;
+    share.replaceChildren();
+    report('Creating your birthday surprise…');
+    try {
+      const details = {recipientName:data.partner,senderName:data.sender,letter:data.message,finaleLine:data.note};
+      const post = async (action,payload) => {
+        const response = await fetch('/api/birthday-scrapbook/' + action,{
+          method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)
+        });
+        const result = await response.json();
+        if (!response.ok) throw new Error('Paigaam could not save this birthday surprise (' + result.error + ').');
+        return result;
+      };
+      const draft = await post('draft',{customer_data:details});
+      const uploaded = [];
+      for (const photo of photos) {
+        const response = await fetch('/api/birthday-scrapbook/upload?kind=photo&id=' + encodeURIComponent(draft.id),{
+          method:'POST',headers:{'Content-Type':'image/jpeg'},body:photo
+        });
+        if (!response.ok) throw new Error('Photo upload failed. Please try again.');
+        uploaded.push({url:(await response.json()).url});
+      }
+      await post('draft',{id:draft.id,customer_data:{...details,photos:uploaded}});
+      const result = await post('publish',{id:draft.id});
+      if (result.razorpay) {
+        await new Promise((resolve,reject) => {
+          const script=document.createElement('script');
+          script.src='https://checkout.razorpay.com/v1/checkout.js';
+          script.onload=resolve; script.onerror=()=>reject(new Error('Checkout could not load.'));
+          document.head.append(script);
+        });
+        await new Promise((resolve,reject) => new Razorpay({
+          key:result.keyId,order_id:result.orderId,amount:result.amount,currency:result.currency,
+          name:result.name,description:result.description,
+          modal:{ondismiss:()=>reject(new Error('Checkout closed.'))},
+          handler:async payment=>{
+            try {
+              const verify=await fetch('/api/razorpay/verify',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:draft.id,...payment})});
+              const verified=await verify.json();
+              if (!verify.ok || !verified.url) throw new Error('Payment verification is pending.');
+              result.url=verified.url; resolve();
+            } catch(error) { reject(error); }
+          }
+        }).open());
+      }
+      const url = new URL(result.url,location.origin).href;
+      share.className = 'share';
+      share.innerHTML = '<label>Birthday link<input readonly></label><div><button type="button">Copy link</button><a class="button" target="_blank" rel="noopener">Open birthday website</a></div>';
+      const input = share.querySelector('input');
+      input.value = url;
+      share.querySelector('a').href = url;
+      share.querySelector('button').onclick = async () => {
+        try { await navigator.clipboard.writeText(url); report('Link copied.'); }
+        catch { input.focus(); input.select(); report('Link selected. You can copy it from the field.'); }
+      };
+      report('Your birthday link is ready.');
+    } catch (error) {
+      report(error instanceof SyntaxError ? 'Could not create the link. Try again.' : error.message,true);
+    } finally {
+      submit.disabled = false;
+    }
+  };
+}
+async function preparePhoto(file) {
+  if (file.size > 25 * 1024 * 1024) throw new Error('Each original photo must be under 25 MB.');
+  const url = URL.createObjectURL(file);
+  try {
+    const image = new Image();
+    image.src = url;
+    await image.decode();
+    const scale = Math.min(1,1200 / Math.max(image.naturalWidth,image.naturalHeight));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.max(1,Math.round(image.naturalWidth * scale));
+    canvas.height = Math.max(1,Math.round(image.naturalHeight * scale));
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#fff3dd';
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+    ctx.drawImage(image,0,0,canvas.width,canvas.height);
+    const blob = await new Promise(resolve => canvas.toBlob(resolve,'image/jpeg',.82));
+    if (blob && blob.size <= 750000) return blob;
+    throw new Error('This photo is too large after resizing. Choose a smaller photo.');
+  } catch(error) {
+    if (error.message.includes('too large')) throw error;
+    throw new Error('This device could not read one of the photos. Try a JPG, PNG or WebP.');
+  } finally { URL.revokeObjectURL(url); }
+}
+const boot = JSON.parse(document.querySelector('#scrapbook-data').textContent);
+if (boot.mode === 'builder') renderBuilder();
+else {
+  document.body.className = 'recipient';
+  root.innerHTML = '<section class="scrap" aria-label="Birthday scrapbook"></section>';
+  const data = boot.data || sample;
+  document.title = 'A birthday surprise for ' + data.partner;
+  mountScrapbook(root.firstElementChild,data);
+}
+</script></body></html>
