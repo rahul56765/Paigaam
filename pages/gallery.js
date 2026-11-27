@@ -3,6 +3,19 @@ const { page, esc } = require('../lib/layout');
 const { templateCard } = require('./homeCards');
 const { OCCASIONS } = require('../lib/occasions');
 
+const birthdayScrapbookUrl = 'https://paigaam-birthday-scrapbook.bubblybrine8.chatgpt.site/';
+const birthdayScrapbook = {
+  slug: 'birthday-scrapbook',
+  name: 'Birthday Scrapbook',
+  category: 'Birthday',
+  description: 'A playful surprise with three gifts, a birthday letter, and your favorite photos.',
+  tags: ['scrapbook', 'photos', 'boyfriend', 'girlfriend', 'partner'],
+  price: 0,
+  isNew: true,
+  thumbnail_url: birthdayScrapbookUrl + 'art/cover.webp',
+  config: { theme: { bg: '#6c101e', accent: '#fff3dd' } },
+};
+
 const PRICE_FILTERS = [
   ['all', 'All prices'],
   ['free', 'Free'],
@@ -26,7 +39,7 @@ function gallery(templates, state = {}, opts = {}) {
   const sort = String(state.sort || 'newest').toLowerCase();
 
   // ---- server-side filtering (same logic the client script mirrors) ----
-  let list = templates.slice();
+  let list = [birthdayScrapbook, ...templates.filter(template => template.slug !== birthdayScrapbook.slug)];
   if (occasion !== 'all') {
     const occ = OCCASIONS.find(o => o.slug === occasion);
     const match = new Set((occ ? occ.slugs : [occasion]).map(s => s.toLowerCase()));
@@ -111,7 +124,10 @@ function gallery(templates, state = {}, opts = {}) {
     <p class="grid-count" id="gridCount">${countLine}</p>
 
     <div class="cards cards--grid" id="tplGrid">
-      ${list.map(t => templateCard(t)).join('')}
+      ${list.map(t => templateCard(t, t === birthdayScrapbook ? {
+        createHref: birthdayScrapbookUrl,
+        previewHref: birthdayScrapbookUrl + '?demo=1',
+      } : {})).join('')}
     </div>
 
     <!-- Quick preview modal: lightweight, muted, no navigation -->
