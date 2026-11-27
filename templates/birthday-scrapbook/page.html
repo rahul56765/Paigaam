@@ -16,15 +16,6 @@ body.recipient{background:var(--dark);min-height:100svh;display:grid;place-items
 @media(max-width:850px){.builder{grid-template-columns:1fr;max-width:720px}.form{grid-row:auto}}
 @media(max-width:520px){.scrap{border-radius:9px}.recipient .scrap{min-height:100svh;border-radius:0;border:0}.cover{grid-template-columns:1fr;grid-template-rows:auto auto}.coverphoto{border-right:0;border-bottom:3px double #a15c53;padding:18px;gap:10px}.oval{width:min(46%,183px)}.coverbody{padding:23px 18px;gap:14px}.cover h2{font-size:2rem}.lettergrid{grid-template-columns:1fr}.lettergrid .polaroid{width:min(50%,170px);justify-self:center}.scene{gap:14px}.string .polaroid{width:28%}.names{grid-template-columns:1fr}.recipient .cover{grid-template-rows:1fr 1fr}.gift span:last-child{font-size:.86rem}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
-
-/* Paper, foil and photo corners carry the reference through every size. */
-.coverphoto{position:relative;isolation:isolate;overflow:hidden}
-.coverphoto::before{content:"love you   ♡   love you   ♡   love you   ♡   love you   ♡   love you   ♡   love you   ♡   love you   ♡   love you   ♡   love you   ♡   love you   ♡   love you";position:absolute;inset:-20%;z-index:-1;rotate:-19deg;color:#924a4852;font:italic 1.65rem/1.75 Georgia;word-spacing:.3em}
-.oval::before,.oval::after{position:absolute;left:50%;translate:-50% 0;content:"❦";color:#f6d68e;text-shadow:1px 2px #795327;font-size:2.1rem;line-height:1}
-.oval::before{top:-18px}.oval::after{bottom:-18px;rotate:180deg}
-.lettergrid .polaroid::before{content:"";position:absolute;top:-8px;left:32%;width:38%;height:18px;rotate:-7deg;background:#e5bf88c9}
-.tinsel::after{content:"✧";position:absolute;top:7%;left:7%;color:#ffe2a7;font-size:2.4rem;pointer-events:none}
-@media(max-width:520px){.cover{grid-template-columns:37% 63%;grid-template-rows:1fr!important}.coverphoto{padding:10px;border-bottom:0;border-right:3px double #a15c53}.coverphoto em{font-size:1rem}.oval{width:91%}.coverbody{padding:24px 12px}.cover h2{font-size:clamp(1.45rem,6vw,2rem)}.coverbody .actions{gap:7px}.coverbody button{padding:8px 16px}}
 </style>
 </head>
 <body><main id="root"></main>
