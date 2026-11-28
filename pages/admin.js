@@ -156,16 +156,27 @@ function dashboard(stats, recent, opts = {}) {
 }
 
 /* ---------- templates ---------- */
-function templatesAdmin(templates) {
+function templatesAdmin(templates, message = '') {
   const inner = `
   <div class="admin__head"><h1>Templates</h1><a class="btn btn--primary btn--small" href="/admin/templates/new">New template</a></div>
+  ${message ? '<p role="status">' + esc(message) + '</p>' : ''}
+  <form id="bulk-prices" method="POST" action="/admin/templates/bulk-prices" onsubmit="return confirm('Apply these prices to all selected templates?')">
+    <fieldset style="display:flex;gap:16px;flex-wrap:wrap;padding:16px;margin-bottom:20px">
+      <legend>Set prices for selected templates</legend>
+      <label>Listing price (₹)<input class="input" name="list_price" type="number" min="0" max="1000000" step="1" required></label>
+      <label>Selling price (₹)<input class="input" name="price" type="number" min="0" max="1000000" step="1" required></label>
+      <button class="btn btn--primary" type="submit">Apply prices</button>
+      <span id="selection-count" role="status">0 selected</span>
+    </fieldset>
+  </form>
   <div class="admin__table-wrap"><table class="table"><thead><tr>
-    <th>Name</th><th>Category</th><th>Price</th><th>Status</th><th>Created</th><th>Actions</th>
+    <th><input type="checkbox" id="select-all-templates" aria-label="Select all templates"></th><th>Name</th><th>Category</th><th>Price</th><th>Status</th><th>Created</th><th>Actions</th>
   </tr></thead><tbody>
   ${templates.map(t => `<tr>
+    <td data-label="Select"><input type="checkbox" class="template-selection" form="bulk-prices" name="template_ids" value="${esc(t.id)}" aria-label="Select ${esc(t.name)}"></td>
     <td data-label="Template" class="serif">${esc(t.name)}</td>
     <td data-label="Category">${esc(t.category)}</td>
-    <td data-label="Price">${money(t.price, t.currency)}</td>
+    <td data-label="Price"><span>Selling: ${money(t.price, t.currency)}</span><br><small>Listing: ${money(t.list_price || 0, t.currency)}</small></td>
     <td data-label="Status">${badge(t.status)}</td>
     <td data-label="Created" style="color:var(--taupe)">${fmtDT(t.created_at)}</td>
     <td data-label="Actions"><div class="table-actions">${studioFamily.has(t.slug) ? `<a class="btn btn--ghost btn--small" href="/admin/studio/${esc(t.slug)}">Studio</a>` : ''}
@@ -179,7 +190,15 @@ function templatesAdmin(templates) {
       <form method="POST" action="/admin/templates/${esc(t.id)}/delete" style="display:inline" onsubmit="return confirm('Delete ${esc(t.name)}? Paigaams made with it will also be removed.')"><button class="link-btn link-btn--danger" type="submit">Delete</button></form>
     </div></td>
   </tr>`).join('')}
-  </tbody></table></div>`;
+  </tbody></table></div>
+  <script>
+  (function(){
+    var all=document.getElementById('select-all-templates'), boxes=Array.from(document.querySelectorAll('.template-selection')), form=document.getElementById('bulk-prices');
+    function update(){var n=boxes.filter(function(b){return b.checked;}).length;document.getElementById('selection-count').textContent=n+' selected';all.checked=n>0&&n===boxes.length;all.indeterminate=n>0&&n<boxes.length;form.querySelector('button').disabled=!n;}
+    all.addEventListener('change',function(){boxes.forEach(function(b){b.checked=all.checked;});update();});
+    boxes.forEach(function(b){b.addEventListener('change',update);});update();
+  })();
+  </script>`;
   return adminShell('/admin/templates', 'Templates', inner);
 }
 

@@ -709,7 +709,18 @@ Sitemap: ${origin}/sitemap.xml
         return send(res, 200, admin.dashboard(stats, paigaams.slice(0, 6), { persistent: !!process.env.DATA_DIR }));
       }
 
-      if (method === 'GET' && p === '/admin/templates') return send(res, 200, admin.templatesAdmin(q.templatesAll()));
+      if (method === 'POST' && p === '/admin/templates/bulk-prices') {
+        if (req.headers.origin !== new URL(BASE_URL).origin) return send(res, 403, 'Forbidden');
+        const form = new URLSearchParams(await readBody(req));
+        const ids = form.getAll('template_ids');
+        const priceText = form.get('price'), listText = form.get('list_price');
+        if (!/^\\d{1,7}$/.test(priceText || '') || !/^\\d{1,7}$/.test(listText || '')) return send(res, 400, admin.templatesAdmin(q.templatesAll(), 'Enter whole rupee prices between 0 and 1,000,000.'));
+        try {
+          q.templateBulkPrices(ids, Number(priceText), Number(listText));
+        } catch { return send(res, 400, admin.templatesAdmin(q.templatesAll(), 'Select valid templates. Listing price must be zero or at least the selling price.')); }
+        return redirect(res, '/admin/templates?prices=updated');
+      }
+      if (method === 'GET' && p === '/admin/templates') return send(res, 200, admin.templatesAdmin(q.templatesAll(), u.searchParams.get('prices') === 'updated' ? 'Selected template prices updated.' : ''));
       if (method === 'GET' && p === '/admin/templates/new') {
         return send(res, 200, admin.templateForm({ name: '', slug: '', category: 'Wedding', price: 499, description: '', thumbnail_url: '', status: 'draft', config: { fields: getTemplateConfig('noor').fields, sections: ['hero', 'message', 'details', 'closing'], theme: {} } }, true));
       }
